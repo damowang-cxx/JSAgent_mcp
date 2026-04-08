@@ -1,0 +1,28 @@
+{
+  "name": "js-reverser-mcp",
+  "version": "0.1.0",
+  "description": "Phase 1 minimal TypeScript MCP server skeleton for JS reverse engineering workflows.",
+  "type": "module",
+  "main": "./build/index.js",
+  "bin": {
+    "js-reverser-mcp": "./build/index.js"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node build/index.js",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
