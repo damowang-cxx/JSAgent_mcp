@@ -1,7 +1,7 @@
 {
   "name": "js-reverser-mcp",
-  "version": "0.2.0",
-  "description": "Phase 2 TypeScript MCP server skeleton with a reusable browser session layer.",
+  "version": "0.3.0",
+  "description": "Phase 3 TypeScript MCP server skeleton with runtime, page control, and minimal code collection.",
   "type": "module",
   "main": "./build/index.js",
   "bin": {

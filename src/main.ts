@@ -11,12 +11,13 @@ import {
 import { BrowserSessionManager } from './browser/BrowserSessionManager.js';
 import { normalizeError } from './core/errors.js';
 import { logger } from './core/logger.js';
+import { AppRuntime } from './runtime/AppRuntime.js';
 import { ToolRegistry } from './tools/ToolRegistry.js';
 import { allTools } from './tools/index.js';
 import type { RegisteredToolDefinition, ToolContext, ToolResult } from './tools/ToolDefinition.js';
 
 const serverName = 'js-reverser-mcp';
-const serverVersion = '0.2.0';
+const serverVersion = '0.3.0';
 
 function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (value === undefined) {
@@ -110,11 +111,13 @@ function registerEmptyResourceDiscovery(server: McpServer): void {
 
 async function main(): Promise<void> {
   const browserSession = createBrowserSessionManager();
+  const runtime = new AppRuntime(browserSession);
   const registry = new ToolRegistry();
   registry.registerMany(allTools);
 
   const context: ToolContext = {
     browserSession,
+    runtime,
     serverStartedAt: new Date(),
     registry,
     serverName,
