@@ -1,6 +1,6 @@
 # JS Reverser MCP
 
-Phase 3 minimal TypeScript MCP server for JavaScript reverse-engineering workflows.
+Phase 4 minimal TypeScript MCP server for JavaScript reverse-engineering workflows.
 
 ## Current Scope
 
@@ -11,14 +11,39 @@ The project currently includes:
 - shared `defineTool` / `ToolRegistry` infrastructure
 - structured JSON tool responses
 - shared `BrowserSessionManager`
-- shared `AppRuntime`
+- app-scoped `AppRuntime`
 - thin `PageController`
 - minimal in-memory `CodeCollector`
-- navigation, debugging, and basic reverse-engineering entry tools
+- minimal `HookManager`
+- minimal `NetworkCollector`
+- minimal `EvidenceStore`
 
-## Phase 2 Foundation
+## Design Principles
 
-The browser session layer from phase 2 is still the single source of truth for:
+The current implementation intentionally keeps these boundaries:
+
+- `BrowserSessionManager` remains the only owner of browser + selected page state
+- `AppRuntime` is app-scoped, not a global singleton
+- `PageController` stays thin and page-oriented
+- `CodeCollector` is only a collection entry point, not an analyzer
+- `HookManager` works as a facade over hook metadata, script generation, and data reading
+- evidence flows are artifact-first
+
+## Hook-First / Evidence-First
+
+Phase 4 follows these rules:
+
+- Hook-first
+  - prefer runtime sampling instead of breakpoint workflows
+- Evidence-first
+  - important observations can be written into task artifacts
+- no breakpoint workflow
+  - no pause / resume / step controls
+  - no full CDP Debugger implementation
+
+## Browser Foundation
+
+The browser session layer from earlier phases is still the single source of truth for:
 
 - browser lifecycle
 - page list
@@ -32,38 +57,103 @@ Browser connection modes:
 - `BROWSER_AUTO_CONNECT=true`
 - local Puppeteer launch fallback
 
-## Added In Phase 3
+## Added In Phase 4
 
-- `AppRuntime`
-  - combines `browserSession`, `pageController`, and `codeCollector`
-- `PageController`
-  - thin wrapper around the current selected page
-- minimal code collection entry point
-  - inline scripts
-  - external script URLs
-  - external script content fetch attempts
-  - in-memory cache
-  - summary + regex search
-- new tools:
-  - `evaluate_script`
-  - `collect_code`
-  - `list_collected_code`
-  - `search_collected_code`
+- Hook management
+  - `create_hook`
+  - `list_hooks`
+  - `inject_hook`
+  - `get_hook_data`
+  - `clear_hook_data`
+- network request observation
+  - `list_network_requests`
+  - `get_network_request`
+  - `clear_network_requests`
+- reverse task artifacts
+  - `open_reverse_task`
+  - `record_reverse_evidence`
 
-## Not Implemented Yet
+## Hook Capability Boundary
 
-Phase 3 still does not implement:
+Current hook support is intentionally small:
 
-- Hook systems
-- DevTools debugger / breakpoints
-- network collectors
-- console collectors
-- websocket collectors
-- LLM analyzer workflows
-- crypto / deobfuscation layers
-- task artifacts
-- `analyze_target`
-- advanced stealth systems
+- `function`
+  - wraps a global function or object method by `targetPath`
+- `fetch`
+  - wraps `window.fetch`
+- `xhr`
+  - wraps `XMLHttpRequest.prototype.open/send`
+
+Browser-side hook storage uses:
+
+- `window.JSAGENT_HOOK_STORE`
+- `window.JSAGENT_HOOK_META`
+- `window.JSAGENT_HOOKS_INSTALLED`
+
+Current hook limitations:
+
+- no plugin registry
+- no block / modify strategies
+- no worker / service worker hooks
+- no advanced serialization pipeline
+- no anti-debug bypass
+
+## Network Observation Boundary
+
+Current network support is also minimal:
+
+- attaches Puppeteer page listeners lazily
+- records request summaries only
+- supports:
+  - `request`
+  - `response`
+  - `requestfinished`
+  - `requestfailed`
+
+What it does not do:
+
+- no response body capture
+- no HAR export
+- no initiator stack tracing
+- no `break_on_xhr`
+- no WebSocket tracking
+
+## Evidence / Task Artifact Boundary
+
+Current task artifacts use this minimal structure:
+
+- `artifacts/tasks/<taskId>/task.json`
+- `timeline.jsonl`
+- `runtime-evidence.jsonl`
+- `network.jsonl`
+- `hooks.jsonl`
+- `snapshots/`
+
+The evidence layer does not yet implement:
+
+- rebuild bundles
+- env templates
+- report templates
+- algorithm workflows
+
+## Existing Phase 3 Features
+
+Still available:
+
+- `evaluate_script`
+- `collect_code`
+- `list_collected_code`
+- `search_collected_code`
+
+`evaluate_script` supports expression strings evaluated inside the selected page.
+
+Recommended examples:
+
+- `document.title`
+- `window.location.href`
+- `(() => ({ title: document.title, url: location.href }))()`
+
+If you need multiple statements, wrap them in an IIFE expression.
 
 ## Install And Run
 
@@ -107,40 +197,7 @@ Connection priority:
 3. `BROWSER_AUTO_CONNECT=true`
 4. local launch
 
-## Evaluate Script Behavior
-
-`evaluate_script` currently supports JavaScript expression strings evaluated inside the selected page.
-
-Recommended examples:
-
-- `document.title`
-- `window.location.href`
-- `Array.from(document.scripts).length`
-- `(() => ({ title: document.title, url: location.href }))()`
-
-If you need multiple statements, wrap them in an IIFE expression.
-
-## collect_code Capability Boundary
-
-Current `collect_code` behavior:
-
-- collects inline scripts from `document.querySelectorAll('script')`
-- collects external `script[src]` URLs
-- tries to fetch external script content from inside the page context
-- keeps the latest collected result set in an in-memory cache
-- supports summary and regex search over cached files
-
-Current `collect_code` limitations:
-
-- no worker / service worker collection
-- no dynamic script listener
-- no CDP response interception
-- no smart prioritization
-- no compression pipeline
-- no dependency graph
-- no analysis layer
-
-## Minimal Validation Flow
+## Suggested Validation Flow
 
 1. Start Chrome with remote debugging enabled.
 
@@ -148,7 +205,7 @@ Current `collect_code` limitations:
 chrome.exe --remote-debugging-port=9222
 ```
 
-2. Configure one of the browser connection environment variables.
+2. Configure one browser connection environment variable.
 
 PowerShell example:
 
@@ -162,66 +219,82 @@ $env:BROWSER_URL="http://127.0.0.1:9222"
 npm start
 ```
 
-4. Run tools in this order:
+4. Validate in this order:
 
-- `check_browser_health`
 - `list_pages`
 - `select_page`
-- `evaluate_script`
-- `collect_code`
-- `list_collected_code`
-- `search_collected_code`
+- `create_hook`
+- `inject_hook`
+- manually trigger a fetch or xhr request
+- `get_hook_data`
+- `list_network_requests`
+- `open_reverse_task`
+- `record_reverse_evidence`
 
 ## Example Tool Flow
 
-Check browser state:
-
-```json
-{}
-```
-
-List pages:
-
-```json
-{}
-```
-
-Evaluate a page expression:
+Create a fetch hook:
 
 ```json
 {
-  "expression": "document.title"
+  "type": "fetch",
+  "description": "Observe fetch calls"
 }
 ```
 
-Collect code from the current selected page:
+Inject it into the selected page:
 
 ```json
 {
-  "includeInline": true,
-  "includeExternal": true,
-  "returnMode": "summary"
+  "hookId": "fetch-example",
+  "currentDocument": true,
+  "futureDocuments": true
 }
 ```
 
-Collect code after navigating the selected page:
+Read hook data:
 
 ```json
 {
-  "url": "https://example.com",
-  "includeInline": true,
-  "includeExternal": true,
-  "returnMode": "full",
-  "timeout": 10000
+  "hookId": "fetch-example"
 }
 ```
 
-Search cached code:
+List network requests:
 
 ```json
 {
-  "pattern": "fetch\\(",
-  "limit": 10
+  "limit": 20
+}
+```
+
+Open a reverse task:
+
+```json
+{
+  "taskId": "demo-task",
+  "slug": "demo",
+  "targetUrl": "https://example.com",
+  "goal": "Observe hooks and requests"
+}
+```
+
+Record evidence:
+
+```json
+{
+  "taskId": "demo-task",
+  "type": "runtime-evidence",
+  "value": {
+    "note": "fetch hook fired"
+  },
+  "timelineEvent": {
+    "kind": "hook-fired"
+  },
+  "snapshotName": "hook-state",
+  "snapshotValue": {
+    "hookId": "fetch-example"
+  }
 }
 ```
 
@@ -245,24 +318,34 @@ Search cached code:
 
 - `evaluate_script`
 
+### Network Tools
+
+- `list_network_requests`
+- `get_network_request`
+- `clear_network_requests`
+
 ### Reverse Engineering Entry Tools
 
 - `collect_code`
 - `list_collected_code`
 - `search_collected_code`
+- `create_hook`
+- `list_hooks`
+- `inject_hook`
+- `get_hook_data`
+- `clear_hook_data`
+- `open_reverse_task`
+- `record_reverse_evidence`
 
-## Design Constraints
+## Still Not Implemented
 
-The current implementation intentionally keeps these boundaries:
+Phase 4 still does not implement:
 
-- `BrowserSessionManager` remains the only owner of browser + selected page state
-- `AppRuntime` is app-scoped, not a global singleton
-- `PageController` is a thin wrapper around the selected page
-- `CodeCollector` is only a code collection entry point, not a full reverse-engineering platform
-
-This keeps the codebase ready for future phases such as:
-
-- Hook systems
-- network collection
-- debugger tooling
-- analyzer workflows
+- breakpoint workflows
+- debugger stepping
+- full CDP response body capture
+- LLM analysis
+- crypto / deobfuscation
+- `analyze_target`
+- worker hook systems
+- full reverse-analysis orchestration
