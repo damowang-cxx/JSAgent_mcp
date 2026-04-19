@@ -8,14 +8,46 @@ import {
   ReadResourceRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 
+import { BrowserSessionManager } from './browser/BrowserSessionManager.js';
 import { normalizeError } from './core/errors.js';
 import { logger } from './core/logger.js';
 import { ToolRegistry } from './tools/ToolRegistry.js';
-import { coreTools } from './tools/index.js';
+import { allTools } from './tools/index.js';
 import type { RegisteredToolDefinition, ToolContext, ToolResult } from './tools/ToolDefinition.js';
 
 const serverName = 'js-reverser-mcp';
-const serverVersion = '0.1.0';
+const serverVersion = '0.2.0';
+
+function parseBooleanEnv(value: string | undefined): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  switch (value.trim().toLowerCase()) {
+    case '1':
+    case 'true':
+    case 'yes':
+    case 'on':
+      return true;
+    case '0':
+    case 'false':
+    case 'no':
+    case 'off':
+      return false;
+    default:
+      return undefined;
+  }
+}
+
+function createBrowserSessionManager(): BrowserSessionManager {
+  return new BrowserSessionManager({
+    autoConnect: parseBooleanEnv(process.env.BROWSER_AUTO_CONNECT),
+    browserURL: process.env.BROWSER_URL,
+    executablePath: process.env.BROWSER_EXECUTABLE_PATH,
+    headless: parseBooleanEnv(process.env.BROWSER_HEADLESS),
+    wsEndpoint: process.env.BROWSER_WS_ENDPOINT
+  });
+}
 
 function toJsonToolResponse(result: ToolResult) {
   return {
@@ -77,10 +109,12 @@ function registerEmptyResourceDiscovery(server: McpServer): void {
 }
 
 async function main(): Promise<void> {
+  const browserSession = createBrowserSessionManager();
   const registry = new ToolRegistry();
-  registry.registerMany(coreTools);
+  registry.registerMany(allTools);
 
   const context: ToolContext = {
+    browserSession,
     serverStartedAt: new Date(),
     registry,
     serverName,
@@ -98,6 +132,20 @@ async function main(): Promise<void> {
   await server.connect(transport);
 
   logger.info(`${serverName} ${serverVersion} started with ${registry.values().length} tools`);
+
+  const shutdown = async (signal: string) => {
+    logger.info(`Shutting down ${serverName}`, { signal });
+    await browserSession.close();
+    process.exit(0);
+  };
+
+  process.once('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
+
+  process.once('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
 }
 
 main().catch((error: unknown) => {

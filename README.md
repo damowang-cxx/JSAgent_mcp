@@ -1,24 +1,52 @@
 # JS Reverser MCP
 
-第一期最小可运行 TypeScript MCP server 骨架。
+Phase 2 minimal TypeScript MCP server for JavaScript reverse-engineering workflows.
 
-## 当前实现
+## Current Scope
 
-- TypeScript + ESM 项目结构。
-- 基于 `@modelcontextprotocol/sdk` 的 stdio MCP server。
-- 统一工具定义与工具注册表。
-- 基础 stderr logger。
-- 统一工具错误结构。
-- 3 个只读核心工具：
-  - `ping`
-  - `get_server_info`
-  - `list_tools_summary`
+This repository currently includes:
 
-## 当前未实现
+- TypeScript + ESM project structure
+- stdio MCP server based on `@modelcontextprotocol/sdk`
+- shared `defineTool` / `ToolRegistry` infrastructure
+- structured JSON tool responses
+- reusable `BrowserSessionManager`
+- minimal anti-detection preload injection
+- minimal navigation tools
 
-第一期不包含浏览器控制、Puppeteer、Runtime、Collector、Hook、AI、任务工件等能力。
+Phase 2 focuses on a stable browser session layer and does not yet include reverse-analysis runtime features.
 
-## 使用方式
+## Added In Phase 2
+
+- Browser connection via `BROWSER_URL`
+- Browser connection via `BROWSER_WS_ENDPOINT`
+- Auto-detect remote debugging targets on `127.0.0.1:9222` to `127.0.0.1:9225`
+- Local browser launch fallback through Puppeteer
+- Shared page context management with persistent selected page state
+- Minimal preload patching for:
+  - `navigator.webdriver`
+  - `window.chrome.runtime`
+  - `navigator.languages`
+- Navigation tools:
+  - `check_browser_health`
+  - `list_pages`
+  - `select_page`
+  - `new_page`
+  - `navigate_page`
+
+## Not Implemented Yet
+
+Phase 2 does not implement:
+
+- Runtime assembly layer
+- `CodeCollector`
+- Hook management
+- LLM / Analyzer workflows
+- Task artifacts
+- Network / Console / WebSocket collectors
+- DevTools debugger breakpoint tools
+
+## Install And Run
 
 ```bash
 npm install
@@ -26,63 +54,105 @@ npm run build
 npm start
 ```
 
-开发模式：
+Development mode:
 
 ```bash
 npm run dev
 ```
 
-类型检查：
+Type check:
 
 ```bash
 npm run typecheck
 ```
 
-## 工具列表
+## Browser Connection Options
 
-### `ping`
+The MCP server reads browser session options from environment variables:
 
-返回健康检查结果。
+- `BROWSER_URL`
+  - Example: `http://127.0.0.1:9222`
+- `BROWSER_WS_ENDPOINT`
+  - Example: `ws://127.0.0.1:9222/devtools/browser/...`
+- `BROWSER_AUTO_CONNECT=true`
+  - Probes `127.0.0.1:9222` to `127.0.0.1:9225`
+- `BROWSER_HEADLESS`
+  - Used when launching a local browser
+- `BROWSER_EXECUTABLE_PATH`
+  - Optional local Chrome / Chromium executable path
 
-参数：
+Connection priority:
 
-```json
-{
-  "message": "optional string"
-}
+1. `BROWSER_WS_ENDPOINT`
+2. `BROWSER_URL`
+3. `BROWSER_AUTO_CONNECT=true`
+4. launch local browser
+
+## Minimal Validation Flow
+
+1. Start Chrome with remote debugging enabled.
+
+```bash
+chrome.exe --remote-debugging-port=9222
 ```
 
-返回：
+2. Set one of the browser connection environment variables.
 
-```json
-{
-  "ok": true,
-  "tool": "ping",
-  "pong": "pong",
-  "timestamp": "2026-04-08T00:00:00.000Z"
-}
+PowerShell example:
+
+```powershell
+$env:BROWSER_URL="http://127.0.0.1:9222"
 ```
 
-### `get_server_info`
+Or:
 
-返回当前服务基本信息。
-
-参数：
-
-```json
-{}
+```powershell
+$env:BROWSER_AUTO_CONNECT="true"
 ```
 
-### `list_tools_summary`
+3. Start the MCP server.
 
-返回当前已注册工具摘要。
-
-参数：
-
-```json
-{}
+```bash
+npm start
 ```
 
-## 第二期方向
+4. Call tools in order:
 
-第二期建议进入浏览器会话层，围绕浏览器生命周期、页面会话、Runtime 执行边界和后续采集能力建立独立模块，不把浏览器状态塞进第一期 core 工具层。
+- `check_browser_health`
+- `list_pages`
+- `new_page`
+- `navigate_page`
+- `select_page`
+
+Example expectations:
+
+- `check_browser_health` returns connection state and selected page summary
+- `list_pages` returns structured page summaries
+- `new_page` creates a new page and makes it selected
+- `navigate_page` keeps the selected page alive across later tool calls
+
+## Tool Summary
+
+### Phase 1 Core Tools
+
+- `ping`
+- `get_server_info`
+- `list_tools_summary`
+
+### Phase 2 Navigation Tools
+
+- `check_browser_health`
+- `list_pages`
+- `select_page`
+- `new_page`
+- `navigate_page`
+
+## Next Direction
+
+The current browser session layer is intentionally small so it can be extended naturally in the next phase toward:
+
+- runtime composition
+- page controller abstractions
+- collectors
+- hook systems
+- reverse-analysis workflows

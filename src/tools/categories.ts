@@ -1,3 +1,4 @@
 export enum ToolCategory {
-  CORE = 'core'
+  CORE = 'core',
+  NAVIGATION = 'navigation'
 }
