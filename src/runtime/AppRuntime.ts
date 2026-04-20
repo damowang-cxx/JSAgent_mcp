@@ -19,7 +19,14 @@ import { FixtureStabilizer } from '../patch/FixtureStabilizer.js';
 import { PatchApplier } from '../patch/PatchApplier.js';
 import { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
 import { PatchPlanManager } from '../patch/PatchPlanManager.js';
+import { BoundaryDefiner } from '../pure/BoundaryDefiner.js';
+import { FreezeManager } from '../pure/FreezeManager.js';
+import { PureFixtureBuilder } from '../pure/PureFixtureBuilder.js';
+import { PureNodeExtractor } from '../pure/PureNodeExtractor.js';
+import { PureVerifier } from '../pure/PureVerifier.js';
+import { RuntimeTraceSampler } from '../pure/RuntimeTraceSampler.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
+import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
@@ -30,6 +37,7 @@ import { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
 import { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
 import { PatchWorkflowRunner } from '../workflow/PatchWorkflowRunner.js';
+import { PureExtractionRunner } from '../workflow/PureExtractionRunner.js';
 import { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 import type { AppRuntimeServices } from './types.js';
@@ -59,6 +67,14 @@ export class AppRuntime implements AppRuntimeServices {
   readonly fixtureStabilizer: FixtureStabilizer;
   readonly patchWorkflowRunner: PatchWorkflowRunner;
   readonly patchReportBuilder: PatchReportBuilder;
+  readonly freezeManager: FreezeManager;
+  readonly runtimeTraceSampler: RuntimeTraceSampler;
+  readonly boundaryDefiner: BoundaryDefiner;
+  readonly pureFixtureBuilder: PureFixtureBuilder;
+  readonly pureNodeExtractor: PureNodeExtractor;
+  readonly pureVerifier: PureVerifier;
+  readonly pureExtractionRunner: PureExtractionRunner;
+  readonly pureReportBuilder: PureReportBuilder;
   readonly rebuildWorkflowRunner: RebuildWorkflowRunner;
   readonly rebuildReportBuilder: RebuildReportBuilder;
   readonly hookManager: HookManager;
@@ -109,6 +125,12 @@ export class AppRuntime implements AppRuntimeServices {
     this.patchApplier = new PatchApplier();
     this.acceptanceRecorder = new AcceptanceRecorder(this.evidenceStore);
     this.patchReportBuilder = new PatchReportBuilder();
+    this.runtimeTraceSampler = new RuntimeTraceSampler();
+    this.boundaryDefiner = new BoundaryDefiner();
+    this.pureFixtureBuilder = new PureFixtureBuilder();
+    this.pureNodeExtractor = new PureNodeExtractor(this.evidenceStore);
+    this.pureVerifier = new PureVerifier();
+    this.pureReportBuilder = new PureReportBuilder();
     this.sessionReporter = new SessionReporter({
       browserSession,
       codeCollector: this.codeCollector,
@@ -178,6 +200,26 @@ export class AppRuntime implements AppRuntimeServices {
       patchLoopRunner: this.patchLoopRunner,
       patchReportBuilder: this.patchReportBuilder,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner
+    });
+    this.freezeManager = new FreezeManager({
+      acceptanceRecorder: this.acceptanceRecorder,
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      evidenceStore: this.evidenceStore,
+      fixtureExtractor: this.fixtureExtractor,
+      patchWorkflowRunner: this.patchWorkflowRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner
+    });
+    this.pureExtractionRunner = new PureExtractionRunner({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      boundaryDefiner: this.boundaryDefiner,
+      evidenceStore: this.evidenceStore,
+      freezeManager: this.freezeManager,
+      pureFixtureBuilder: this.pureFixtureBuilder,
+      pureNodeExtractor: this.pureNodeExtractor,
+      pureReportBuilder: this.pureReportBuilder,
+      pureVerifier: this.pureVerifier,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      runtimeTraceSampler: this.runtimeTraceSampler
     });
   }
 
@@ -279,6 +321,38 @@ export class AppRuntime implements AppRuntimeServices {
 
   getPatchReportBuilder(): PatchReportBuilder {
     return this.patchReportBuilder;
+  }
+
+  getFreezeManager(): FreezeManager {
+    return this.freezeManager;
+  }
+
+  getRuntimeTraceSampler(): RuntimeTraceSampler {
+    return this.runtimeTraceSampler;
+  }
+
+  getBoundaryDefiner(): BoundaryDefiner {
+    return this.boundaryDefiner;
+  }
+
+  getPureFixtureBuilder(): PureFixtureBuilder {
+    return this.pureFixtureBuilder;
+  }
+
+  getPureNodeExtractor(): PureNodeExtractor {
+    return this.pureNodeExtractor;
+  }
+
+  getPureVerifier(): PureVerifier {
+    return this.pureVerifier;
+  }
+
+  getPureExtractionRunner(): PureExtractionRunner {
+    return this.pureExtractionRunner;
+  }
+
+  getPureReportBuilder(): PureReportBuilder {
+    return this.pureReportBuilder;
   }
 
   getRebuildWorkflowRunner(): RebuildWorkflowRunner {

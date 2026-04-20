@@ -30,6 +30,7 @@ The project currently includes:
 - rebuild/patch workflow runner and report exporter
 - patch plan manager, single-patch applier, patch iteration runner, and acceptance recorder
 - fixture stabilization and patch workflow report exporter
+- PureExtraction gate, frozen sample manager, runtime trace sampler, Node pure scaffold, verifier, and pure report exporter
 
 ## Design Principles
 
@@ -45,6 +46,8 @@ The project currently includes:
   - patch suggestions should address the first explainable mismatch, not a broad env template
 - Re-test immediately
   - every applied patch must be followed by a rebuild probe and divergence comparison
+- Boundary-before-rewrite
+  - define inputs, environment state, intermediates, and outputs before generating a pure scaffold
 - single browser session owner
   - `BrowserSessionManager` remains the only owner of browser + selected page state
 - app-scoped runtime
@@ -206,6 +209,46 @@ Phase 9 follows these boundaries:
 - fixture stabilization is a coarse consistency check, not a mathematical proof
 - acceptance is manually or externally supplied evidence, not an integrated server protocol
 - no AI patching, Python port, full DOM/browser emulation, or automatic repair system is implemented
+
+## Added In Phase 10
+
+Phase 10 adds the first PureExtraction infrastructure:
+
+- `freeze_runtime_sample`
+  - freezes an accepted sample after the pure gate passes
+  - writes `run/frozen-sample.json` when a task is provided
+- `export_runtime_trace`
+  - samples the local rebuild runtime rather than returning to browser-first sampling
+  - records call / return / error / intermediate trace records
+- `define_pure_boundary`
+  - deterministically defines explicit inputs, derived inputs, environment state, intermediates, outputs, and excluded runtime noise
+- `build_pure_fixture`
+  - builds a fixture from the frozen sample, boundary, and optional runtime trace
+- `extract_node_pure`
+  - generates a Node-only pure scaffold under task `run/node-pure/` or a temporary pure artifact directory
+  - creates `pure-entry.js`, `pure-impl.js`, `fixtures.json`, `pure-readme.md`, and `metadata.json`
+- `verify_node_pure`
+  - runs the Node pure scaffold and compares structured output against the fixture expected output
+- `run_pure_workflow`
+  - chains gate check, freeze, local trace, boundary, fixture, Node scaffold, and verification
+- `export_pure_report`
+  - exports the latest PureExtraction workflow as JSON or Markdown
+
+Phase 10 follows these design rules:
+
+- Gate before extraction: acceptance must be passed and rebuild/patch gate must be matched or resolved
+- Freeze-first: the frozen sample is the truth source for fixture and verification
+- Hook-local-runtime: runtime trace is collected from local rebuild runtime first
+- Boundary-before-rewrite: no pure scaffold is generated before boundary definition
+- Fixture-before-port: verification must use stable fixture output
+- Node-before-Python: no Python or other language port is generated in this phase
+- Evidence-first: `run/*.json` snapshots and `run/node-pure/` files are task-local artifacts
+
+Phase 10 boundaries:
+
+- Node pure output is a scaffold, not a guaranteed complete automatic pure implementation
+- verification is deterministic comparison, not symbolic proof
+- no Python port, external AI provider, full AST/CFG/SSA/taint engine, full debugger, or second browser manager is implemented
 
 ## Code Collection Boundary
 
@@ -373,6 +416,14 @@ npm start
 - `run_patch_iteration`
 - `mark_acceptance`
 - `export_patch_report`
+- `freeze_runtime_sample`
+- `export_runtime_trace`
+- `define_pure_boundary`
+- `build_pure_fixture`
+- `extract_node_pure`
+- `verify_node_pure`
+- `run_pure_workflow`
+- `export_pure_report`
 - `export_reverse_report`
 - `export_session_report`
 - `collection_diff`
@@ -567,6 +618,31 @@ Export a patch report:
 }
 ```
 
+Run the PureExtraction workflow:
+
+```json
+{
+  "taskId": "pure-demo",
+  "source": "patch-last",
+  "targetFunctionName": "__target_sign",
+  "probeExpressions": ["globalThis.location?.href"],
+  "traceTimeoutMs": 5000,
+  "verifyTimeoutMs": 5000,
+  "overwrite": true,
+  "writeEvidence": true
+}
+```
+
+Export a pure report:
+
+```json
+{
+  "format": "markdown",
+  "taskId": "pure-demo",
+  "writeSnapshot": true
+}
+```
+
 ## Tool Summary
 
 ### Core Tools
@@ -634,6 +710,14 @@ Export a patch report:
 - `mark_acceptance`
 - `stabilize_fixture`
 - `export_patch_report`
+- `freeze_runtime_sample`
+- `export_runtime_trace`
+- `define_pure_boundary`
+- `build_pure_fixture`
+- `extract_node_pure`
+- `verify_node_pure`
+- `run_pure_workflow`
+- `export_pure_report`
 - `analyze_target`
 
 ## Still Not Implemented
@@ -656,4 +740,6 @@ The current stage still does not implement:
 - service-side verification
 - AI automatic patching
 - bulk automatic environment repair
+- completed automatic pure implementation
+- Python or other host-language port
 - global runtime singleton patterns

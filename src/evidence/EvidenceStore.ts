@@ -27,6 +27,20 @@ function assertSafeSegment(name: string, label: string): void {
   }
 }
 
+function assertSafeSnapshotName(name: string): void {
+  const normalized = name.replace(/\\/g, '/');
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith('/') ||
+    normalized.includes('..') ||
+    normalized.split('/').some((segment) => segment.length === 0)
+  ) {
+    throw new AppError('INVALID_SNAPSHOT_NAME', `Invalid snapshotName: ${name}`, {
+      snapshotName: name
+    });
+  }
+}
+
 export class EvidenceStore {
   readonly rootDir: string;
 
@@ -92,18 +106,44 @@ export class EvidenceStore {
 
   async writeSnapshot(taskId: string, name: string, value: unknown): Promise<void> {
     await this.ensureTaskExists(taskId);
-    assertSafeSegment(name, 'snapshotName');
+    assertSafeSnapshotName(name);
 
-    const targetPath = path.join(this.getTaskDir(taskId), 'snapshots', `${name}.json`);
+    const targetPath = this.resolveSnapshotPath(taskId, name);
     await this.writeJsonFile(targetPath, value);
     await this.touchTask(taskId);
   }
 
+  async readLog(taskId: string, name: EvidenceLogName): Promise<Array<Record<string, unknown>>> {
+    await this.ensureTaskExists(taskId);
+
+    const targetPath = path.join(this.getTaskDir(taskId), `${name}.jsonl`);
+    if (!(await pathExists(targetPath))) {
+      return [];
+    }
+
+    const raw = await readFile(targetPath, 'utf8');
+    return raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        try {
+          const parsed = JSON.parse(line) as unknown;
+          return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : { value: parsed };
+        } catch {
+          return {
+            parseError: true,
+            raw: line
+          };
+        }
+      });
+  }
+
   async readSnapshot(taskId: string, name: string): Promise<unknown | undefined> {
     await this.ensureTaskExists(taskId);
-    assertSafeSegment(name, 'snapshotName');
+    assertSafeSnapshotName(name);
 
-    const targetPath = path.join(this.getTaskDir(taskId), 'snapshots', `${name}.json`);
+    const targetPath = this.resolveSnapshotPath(taskId, name);
     if (!(await pathExists(targetPath))) {
       return undefined;
     }
@@ -159,7 +199,21 @@ export class EvidenceStore {
     await appendFile(targetPath, `${JSON.stringify(value)}\n`, 'utf8');
   }
 
+  private resolveSnapshotPath(taskId: string, name: string): string {
+    const normalized = name.replace(/\\/g, '/');
+    const snapshotRoot = path.join(this.getTaskDir(taskId), 'snapshots');
+    const targetPath = path.resolve(snapshotRoot, `${normalized}.json`);
+    const relative = path.relative(snapshotRoot, targetPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new AppError('INVALID_SNAPSHOT_NAME', `Invalid snapshotName: ${name}`, {
+        snapshotName: name
+      });
+    }
+    return targetPath;
+  }
+
   private async writeJsonFile(targetPath: string, value: unknown): Promise<void> {
+    await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
   }
 }

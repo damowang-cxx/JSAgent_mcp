@@ -19,7 +19,14 @@ import type { FixtureStabilizer } from '../patch/FixtureStabilizer.js';
 import type { PatchApplier } from '../patch/PatchApplier.js';
 import type { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
 import type { PatchPlanManager } from '../patch/PatchPlanManager.js';
+import type { BoundaryDefiner } from '../pure/BoundaryDefiner.js';
+import type { FreezeManager } from '../pure/FreezeManager.js';
+import type { PureFixtureBuilder } from '../pure/PureFixtureBuilder.js';
+import type { PureNodeExtractor } from '../pure/PureNodeExtractor.js';
+import type { PureVerifier } from '../pure/PureVerifier.js';
+import type { RuntimeTraceSampler } from '../pure/RuntimeTraceSampler.js';
 import type { PatchReportBuilder } from '../report/PatchReportBuilder.js';
+import type { PureReportBuilder } from '../report/PureReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import type { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
@@ -30,6 +37,7 @@ import type { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js'
 import type { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import type { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
 import type { PatchWorkflowRunner } from '../workflow/PatchWorkflowRunner.js';
+import type { PureExtractionRunner } from '../workflow/PureExtractionRunner.js';
 import type { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import type { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 
@@ -59,6 +67,14 @@ export interface AppRuntimeServices {
   fixtureStabilizer: FixtureStabilizer;
   patchWorkflowRunner: PatchWorkflowRunner;
   patchReportBuilder: PatchReportBuilder;
+  freezeManager: FreezeManager;
+  runtimeTraceSampler: RuntimeTraceSampler;
+  boundaryDefiner: BoundaryDefiner;
+  pureFixtureBuilder: PureFixtureBuilder;
+  pureNodeExtractor: PureNodeExtractor;
+  pureVerifier: PureVerifier;
+  pureExtractionRunner: PureExtractionRunner;
+  pureReportBuilder: PureReportBuilder;
   rebuildWorkflowRunner: RebuildWorkflowRunner;
   rebuildReportBuilder: RebuildReportBuilder;
   hookManager: HookManager;

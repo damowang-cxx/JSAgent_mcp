@@ -26,6 +26,7 @@ export interface AppliedPatchRecord {
   status: AppliedPatchStatus;
   reason: string;
   basedOn: string[];
+  deduplicated?: boolean;
 }
 
 export interface DivergenceProgress {

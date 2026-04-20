@@ -20,13 +20,18 @@ import { correlateRequestFlowsTool } from './reverse/correlateRequestFlows.js';
 import { compareRebuildResultTool } from './reverse/compareRebuildResult.js';
 import { createHookTool } from './reverse/createHook.js';
 import { deobfuscateCodeTool } from './reverse/deobfuscateCode.js';
+import { definePureBoundaryTool } from './reverse/definePureBoundary.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
+import { exportPureReportTool } from './reverse/exportPureReport.js';
 import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
 import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
+import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
+import { extractNodePureTool } from './reverse/extractNodePure.js';
+import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
@@ -43,6 +48,7 @@ import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
 import { runPatchIterationTool } from './reverse/runPatchIteration.js';
+import { runPureWorkflowTool } from './reverse/runPureWorkflow.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
@@ -50,6 +56,8 @@ import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
 import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { understandCodeTool } from './reverse/understandCode.js';
+import { verifyNodePureTool } from './reverse/verifyNodePure.js';
+import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
 export const coreTools = [pingTool, getServerInfoTool, listToolsSummaryTool] satisfies readonly RegisteredToolDefinition[];
@@ -106,6 +114,14 @@ export const reverseTools = [
   markAcceptanceTool,
   stabilizeFixtureTool,
   exportPatchReportTool,
+  freezeRuntimeSampleTool,
+  exportRuntimeTraceTool,
+  definePureBoundaryTool,
+  buildPureFixtureTool,
+  extractNodePureTool,
+  verifyNodePureTool,
+  runPureWorkflowTool,
+  exportPureReportTool,
   analyzeTargetTool
 ] satisfies readonly RegisteredToolDefinition[];
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
@@ -123,14 +139,19 @@ export {
   correlateRequestFlowsTool,
   createHookTool,
   deobfuscateCodeTool,
+  definePureBoundaryTool,
   detectCryptoTool,
   diffEnvRequirementsTool,
   evaluateScriptTool,
   exportPatchReportTool,
+  exportPureReportTool,
   exportRebuildBundleTool,
   exportRebuildReportTool,
   exportReverseReportTool,
+  exportRuntimeTraceTool,
   exportSessionReportTool,
+  extractNodePureTool,
+  freezeRuntimeSampleTool,
   getCollectedCodeFileTool,
   getHookDataTool,
   getNetworkRequestTool,
@@ -155,6 +176,7 @@ export {
   removeXhrBreakpointTool,
   riskPanelTool,
   runPatchIterationTool,
+  runPureWorkflowTool,
   runRebuildProbeTool,
   runRebuildWorkflowTool,
   savePureFixtureTool,
@@ -162,5 +184,7 @@ export {
   selectPageTool,
   stabilizeFixtureTool,
   summarizeCodeTool,
-  understandCodeTool
+  understandCodeTool,
+  verifyNodePureTool,
+  buildPureFixtureTool
 };

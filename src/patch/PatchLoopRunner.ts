@@ -8,6 +8,7 @@ import type { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
 import type { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
 import type { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import type { RebuildRunResult, RuntimeFixture } from '../rebuild/types.js';
+import { writeJsonFile } from '../rebuild/serialization.js';
 import type { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
 import type { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import { compareDivergenceProgress } from './divergenceTracking.js';
@@ -63,10 +64,17 @@ export class PatchLoopRunner {
       : lastRebuild!.bundle;
 
     const fixture = await this.extractFixture(options.fixtureSource);
+    const fixturePath = await this.resolveFixturePath(bundleDir, bundle.fixtureFile ?? null, fixture);
+    const effectiveBundle = fixturePath && !bundle.fixtureFile
+      ? {
+          ...bundle,
+          fixtureFile: fixturePath
+        }
+      : bundle;
     const initialRun = await this.deps.rebuildRunner.run({
       bundleDir,
       envOverrides: options.run?.envOverrides,
-      fixturePath: bundle.fixtureFile ?? undefined,
+      fixturePath: fixturePath ?? undefined,
       timeoutMs: options.run?.timeoutMs
     });
     const initialComparison = await this.deps.divergenceComparator.compare({
@@ -104,7 +112,7 @@ export class PatchLoopRunner {
       finalRun = await this.deps.rebuildRunner.run({
         bundleDir,
         envOverrides: options.run?.envOverrides,
-        fixturePath: bundle.fixtureFile ?? undefined,
+        fixturePath: fixturePath ?? undefined,
         timeoutMs: options.run?.timeoutMs
       });
       finalComparison = await this.deps.divergenceComparator.compare({
@@ -117,7 +125,7 @@ export class PatchLoopRunner {
     const divergenceProgress = compareDivergenceProgress(initialComparison.divergence, finalComparison.divergence);
     const result: PatchIterationResult = {
       appliedPatch,
-      bundle,
+      bundle: effectiveBundle,
       comparison: finalComparison,
       divergenceProgress,
       endedAt: new Date().toISOString(),
@@ -155,6 +163,24 @@ export class PatchLoopRunner {
     } catch {
       return lastAnalyze ? this.deps.fixtureExtractor.extractFromAnalyzeTargetResult(lastAnalyze) : null;
     }
+  }
+
+  private async resolveFixturePath(
+    bundleDir: string,
+    existingFixtureFile: string | null,
+    fixture: RuntimeFixture | null
+  ): Promise<string | null> {
+    if (existingFixtureFile) {
+      return existingFixtureFile;
+    }
+
+    if (!fixture) {
+      return null;
+    }
+
+    const fixturePath = path.join(bundleDir, '.jsagent-patch-fixture.json');
+    await writeJsonFile(fixturePath, fixture);
+    return fixturePath;
   }
 
   private buildNextActions(

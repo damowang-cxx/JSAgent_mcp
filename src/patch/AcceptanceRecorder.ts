@@ -40,11 +40,52 @@ export class AcceptanceRecorder {
   }
 
   async list(taskId: string): Promise<AcceptanceRecord[]> {
-    return [...(this.records.get(taskId) ?? [])];
+    const evidenceRecords = await this.loadFromEvidence(taskId);
+    const merged = new Map<string, AcceptanceRecord>();
+    for (const record of [...evidenceRecords, ...(this.records.get(taskId) ?? [])]) {
+      merged.set(`${record.recordedAt}:${record.status}:${record.targetUrl ?? ''}`, record);
+    }
+
+    const records = Array.from(merged.values()).sort((left, right) => left.recordedAt.localeCompare(right.recordedAt));
+    this.records.set(taskId, records);
+    return records;
   }
 
   async latest(taskId: string): Promise<AcceptanceRecord | null> {
+    const snapshot = await this.loadLatestSnapshot(taskId);
+    if (snapshot) {
+      const existing = this.records.get(taskId) ?? [];
+      this.records.set(taskId, [...existing, snapshot]);
+    }
     const records = await this.list(taskId);
     return records.at(-1) ?? null;
   }
+
+  private async loadFromEvidence(taskId: string): Promise<AcceptanceRecord[]> {
+    try {
+      const records = await this.evidenceStore.readLog(taskId, 'acceptance');
+      return records
+        .filter((record) => record.kind === 'patch_acceptance' && isRecord(record.acceptance))
+        .map((record) => record.acceptance as unknown as AcceptanceRecord)
+        .filter((record) => typeof record.taskId === 'string' && typeof record.recordedAt === 'string');
+    } catch {
+      return [];
+    }
+  }
+
+  private async loadLatestSnapshot(taskId: string): Promise<AcceptanceRecord | null> {
+    try {
+      const snapshot = await this.evidenceStore.readSnapshot(taskId, 'latest-acceptance');
+      if (isRecord(snapshot) && typeof snapshot.taskId === 'string' && typeof snapshot.recordedAt === 'string') {
+        return snapshot as unknown as AcceptanceRecord;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }

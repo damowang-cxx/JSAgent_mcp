@@ -44,11 +44,28 @@ export class PatchApplier {
       });
     }
 
+    const patchCode = options.suggestion.suggestedCode.trim();
     const patchId = `patch-${randomUUID()}`;
+    if (source.includes(patchCode)) {
+      return {
+        appliedAt: new Date().toISOString(),
+        basedOn: [...options.suggestion.basedOn, 'dedupe:suggestedCode'],
+        deduplicated: true,
+        patchId,
+        patchType: options.suggestion.patchType,
+        planId: options.planId ?? null,
+        reason: `${options.suggestion.reason} Already present in patch target; skipped duplicate append.`,
+        status: 'applied',
+        suggestedCode: options.suggestion.suggestedCode,
+        target: options.suggestion.target,
+        taskId: options.taskId ?? null
+      };
+    }
+
     const snippet = [
       '',
       `// JSAgent patch ${patchId}: ${options.suggestion.target}`,
-      options.suggestion.suggestedCode.trim(),
+      patchCode,
       ''
     ].join('\n');
 

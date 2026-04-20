@@ -1,10 +1,12 @@
 import type { AnalyzeTargetResult } from '../analysis/types.js';
 import type { PatchIterationResult, PatchWorkflowResult } from '../patch/types.js';
+import type { PureExtractionResult } from '../pure/types.js';
 import type { RebuildWorkflowResult } from '../rebuild/types.js';
 
 export type ReverseReportFormat = 'json' | 'markdown';
 export type RebuildReportFormat = 'json' | 'markdown';
 export type PatchReportFormat = 'json' | 'markdown';
+export type PureReportFormat = 'json' | 'markdown';
 
 export interface ReverseReportExport {
   json?: Record<string, unknown>;
@@ -29,4 +31,9 @@ export interface PatchIterationReportBuilderInput {
 export interface PatchWorkflowReportBuilderInput {
   result: PatchWorkflowResult;
   format: PatchReportFormat;
+}
+
+export interface PureReportBuilderInput {
+  result: PureExtractionResult;
+  format: PureReportFormat;
 }

@@ -33,13 +33,32 @@ export class PatchPlanManager {
   }
 
   async listPlans(taskId?: string): Promise<PatchPlan[]> {
-    const plans = Array.from(this.plans.values())
-      .filter((plan) => taskId === undefined || plan.taskId === taskId)
-      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+    const evidencePlans = taskId ? await this.loadPlansFromEvidence(taskId) : [];
+    for (const plan of evidencePlans) {
+      this.plans.set(plan.planId, plan);
+    }
+
+    const plansById = new Map<string, PatchPlan>();
+    for (const plan of [...evidencePlans, ...this.plans.values()]) {
+      if (taskId !== undefined && plan.taskId !== taskId) {
+        continue;
+      }
+      plansById.set(plan.planId, plan);
+    }
+    const plans = Array.from(plansById.values()).sort((left, right) => left.createdAt.localeCompare(right.createdAt));
     return plans;
   }
 
   async recordApplied(record: AppliedPatchRecord): Promise<void> {
+    if (record.taskId) {
+      const existing = await this.listApplied(record.taskId);
+      if (existing.some((item) => sameAppliedPatch(item, record))) {
+        return;
+      }
+    } else if (Array.from(this.applied.values()).some((item) => sameAppliedPatch(item, record))) {
+      return;
+    }
+
     this.applied.set(record.patchId, record);
     if (!record.taskId) {
       return;
@@ -54,9 +73,20 @@ export class PatchPlanManager {
   }
 
   async listApplied(taskId?: string): Promise<AppliedPatchRecord[]> {
-    return Array.from(this.applied.values())
-      .filter((record) => taskId === undefined || record.taskId === taskId)
-      .sort((left, right) => left.appliedAt.localeCompare(right.appliedAt));
+    const evidenceApplied = taskId ? await this.loadAppliedFromEvidence(taskId) : [];
+    for (const record of evidenceApplied) {
+      this.applied.set(record.patchId, record);
+    }
+
+    const appliedById = new Map<string, AppliedPatchRecord>();
+    for (const record of [...evidenceApplied, ...this.applied.values()]) {
+      if (taskId !== undefined && record.taskId !== taskId) {
+        continue;
+      }
+      appliedById.set(record.patchId, record);
+    }
+
+    return Array.from(appliedById.values()).sort((left, right) => left.appliedAt.localeCompare(right.appliedAt));
   }
 
   async getLatestPlan(taskId?: string): Promise<PatchPlan | null> {
@@ -97,6 +127,46 @@ export class PatchPlanManager {
     await this.persistPlan(updated, action);
   }
 
+  private async loadPlansFromEvidence(taskId: string): Promise<PatchPlan[]> {
+    try {
+      const records = await this.evidenceStore.readLog(taskId, 'runtime-evidence');
+      const plans = new Map<string, PatchPlan>();
+      for (const record of records) {
+        if (record.kind !== 'patch_plan' || !isRecord(record.plan)) {
+          continue;
+        }
+        const plan = record.plan as unknown as PatchPlan;
+        if (typeof plan.planId !== 'string') {
+          continue;
+        }
+        plans.set(plan.planId, plan);
+      }
+      return Array.from(plans.values());
+    } catch {
+      return [];
+    }
+  }
+
+  private async loadAppliedFromEvidence(taskId: string): Promise<AppliedPatchRecord[]> {
+    try {
+      const records = await this.evidenceStore.readLog(taskId, 'runtime-evidence');
+      const applied = new Map<string, AppliedPatchRecord>();
+      for (const record of records) {
+        if (record.kind !== 'applied_patch' || !isRecord(record.patch)) {
+          continue;
+        }
+        const patch = record.patch as unknown as AppliedPatchRecord;
+        if (typeof patch.patchId !== 'string') {
+          continue;
+        }
+        applied.set(patch.patchId, patch);
+      }
+      return Array.from(applied.values());
+    } catch {
+      return [];
+    }
+  }
+
   private async persistPlan(plan: PatchPlan, action: string): Promise<void> {
     if (!plan.taskId) {
       return;
@@ -110,4 +180,16 @@ export class PatchPlanManager {
     });
     await this.evidenceStore.writeSnapshot(plan.taskId, 'latest-patch-plan', plan);
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function sameAppliedPatch(left: AppliedPatchRecord, right: AppliedPatchRecord): boolean {
+  return (
+    left.planId === right.planId &&
+    left.target === right.target &&
+    (left.suggestedCode ?? '').trim() === (right.suggestedCode ?? '').trim()
+  );
 }

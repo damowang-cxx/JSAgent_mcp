@@ -67,11 +67,18 @@ export class PatchWorkflowRunner {
     const readyForPureExtraction = this.isReadyForPureExtraction(
       stabilization?.stability ?? null,
       patchIterations.at(-1) ?? null,
-      latestAcceptance
+      latestAcceptance,
+      rebuildResult.comparison.matched
     );
     const result: PatchWorkflowResult = {
       latestAcceptance,
-      nextActions: this.buildNextActions(readyForPureExtraction, stabilization?.stability ?? null, patchIterations.at(-1) ?? null, latestAcceptance),
+      nextActions: this.buildNextActions(
+        readyForPureExtraction,
+        stabilization?.stability ?? null,
+        patchIterations.at(-1) ?? null,
+        latestAcceptance,
+        rebuildResult.comparison.matched
+      ),
       patchIterations,
       readyForPureExtraction,
       rebuild: {
@@ -87,7 +94,12 @@ export class PatchWorkflowRunner {
             taskId: task.taskId
           }
         : null,
-      whyTheseSteps: this.buildWhyTheseSteps(stabilization?.stability ?? null, patchIterations.at(-1) ?? null, latestAcceptance)
+      whyTheseSteps: this.buildWhyTheseSteps(
+        stabilization?.stability ?? null,
+        patchIterations.at(-1) ?? null,
+        latestAcceptance,
+        rebuildResult.comparison.matched
+      )
     };
 
     if (options.writeEvidence && options.taskId) {
@@ -141,11 +153,16 @@ export class PatchWorkflowRunner {
   private isReadyForPureExtraction(
     stability: PatchWorkflowResult['stability'],
     latestIteration: PatchWorkflowResult['patchIterations'][number] | null,
-    latestAcceptance: PatchWorkflowResult['latestAcceptance']
+    latestAcceptance: PatchWorkflowResult['latestAcceptance'],
+    rebuildMatched: boolean
   ): boolean {
+    const patchGatePassed = latestIteration
+      ? latestIteration.divergenceProgress.resolved
+      : rebuildMatched;
+
     return Boolean(
       (stability?.stable ?? true) &&
-      latestIteration?.divergenceProgress.resolved &&
+      patchGatePassed &&
       latestAcceptance?.status === 'passed'
     );
   }
@@ -154,7 +171,8 @@ export class PatchWorkflowRunner {
     readyForPureExtraction: boolean,
     stability: PatchWorkflowResult['stability'],
     latestIteration: PatchWorkflowResult['patchIterations'][number] | null,
-    latestAcceptance: PatchWorkflowResult['latestAcceptance']
+    latestAcceptance: PatchWorkflowResult['latestAcceptance'],
+    rebuildMatched: boolean
   ): string[] {
     if (readyForPureExtraction) {
       return [
@@ -167,7 +185,7 @@ export class PatchWorkflowRunner {
     if (stability && !stability.stable) {
       actions.push('Collect another fixture sample before pure extraction because the current fixture drifted.');
     }
-    if (!latestIteration?.divergenceProgress.resolved) {
+    if (!(latestIteration?.divergenceProgress.resolved ?? rebuildMatched)) {
       actions.push('Run another single-patch iteration from the current first divergence.');
     }
     if (latestAcceptance?.status !== 'passed') {
@@ -179,7 +197,8 @@ export class PatchWorkflowRunner {
   private buildWhyTheseSteps(
     stability: PatchWorkflowResult['stability'],
     latestIteration: PatchWorkflowResult['patchIterations'][number] | null,
-    latestAcceptance: PatchWorkflowResult['latestAcceptance']
+    latestAcceptance: PatchWorkflowResult['latestAcceptance'],
+    rebuildMatched: boolean
   ): string[] {
     return [
       stability
@@ -187,7 +206,7 @@ export class PatchWorkflowRunner {
         : 'Fixture stabilization was not requested for this workflow run.',
       latestIteration
         ? `Latest patch iteration divergence resolved=${latestIteration.divergenceProgress.resolved}, movedForward=${latestIteration.divergenceProgress.movedForward}.`
-        : 'No patch iteration was executed.',
+        : `No patch iteration was executed; rebuild comparison matched=${rebuildMatched}.`,
       latestAcceptance
         ? `Latest acceptance status is ${latestAcceptance.status}.`
         : 'No acceptance record exists yet for this task.'
