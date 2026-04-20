@@ -209,6 +209,7 @@ export class PureExtractionRunner {
     await this.deps.evidenceStore.writeSnapshot(taskId, 'run/fixtures', result.fixture);
     await this.deps.evidenceStore.writeSnapshot(taskId, 'run/node-pure', result.nodePure);
     await this.deps.evidenceStore.writeSnapshot(taskId, 'run/pure-verification', result.verification);
+    await this.deps.evidenceStore.writeSnapshot(taskId, 'run/pure-extraction', result);
     const report = await this.deps.pureReportBuilder.build(result, 'markdown');
     await this.deps.evidenceStore.writeSnapshot(taskId, 'run/pure-report-markdown', report);
   }

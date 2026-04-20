@@ -11,6 +11,7 @@ import { clearNetworkRequestsTool } from './network/clearNetworkRequests.js';
 import { getNetworkRequestTool } from './network/getNetworkRequest.js';
 import { listNetworkRequestsTool } from './network/listNetworkRequests.js';
 import { analyzeTargetTool } from './reverse/analyzeTarget.js';
+import { analyzeUpgradeDiffTool } from './reverse/analyzeUpgradeDiff.js';
 import { applyPatchTool } from './reverse/applyPatch.js';
 import { breakOnXhrTool } from './reverse/breakOnXhr.js';
 import { collectCodeTool } from './reverse/collectCode.js';
@@ -22,8 +23,10 @@ import { createHookTool } from './reverse/createHook.js';
 import { deobfuscateCodeTool } from './reverse/deobfuscateCode.js';
 import { definePureBoundaryTool } from './reverse/definePureBoundary.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
+import { diffCrossLanguageTool } from './reverse/diffCrossLanguage.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
+import { exportPortReportTool } from './reverse/exportPortReport.js';
 import { exportPureReportTool } from './reverse/exportPureReport.js';
 import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
 import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
@@ -31,6 +34,7 @@ import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
+import { extractPythonPureTool } from './reverse/extractPythonPure.js';
 import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
@@ -48,6 +52,7 @@ import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
 import { runPatchIterationTool } from './reverse/runPatchIteration.js';
+import { runPortWorkflowTool } from './reverse/runPortWorkflow.js';
 import { runPureWorkflowTool } from './reverse/runPureWorkflow.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
@@ -57,6 +62,7 @@ import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { understandCodeTool } from './reverse/understandCode.js';
 import { verifyNodePureTool } from './reverse/verifyNodePure.js';
+import { verifyPythonPureTool } from './reverse/verifyPythonPure.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
@@ -122,12 +128,19 @@ export const reverseTools = [
   verifyNodePureTool,
   runPureWorkflowTool,
   exportPureReportTool,
+  extractPythonPureTool,
+  verifyPythonPureTool,
+  diffCrossLanguageTool,
+  runPortWorkflowTool,
+  exportPortReportTool,
+  analyzeUpgradeDiffTool,
   analyzeTargetTool
 ] satisfies readonly RegisteredToolDefinition[];
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
 
 export {
   analyzeTargetTool,
+  analyzeUpgradeDiffTool,
   applyPatchTool,
   breakOnXhrTool,
   checkBrowserHealthTool,
@@ -141,9 +154,11 @@ export {
   deobfuscateCodeTool,
   definePureBoundaryTool,
   detectCryptoTool,
+  diffCrossLanguageTool,
   diffEnvRequirementsTool,
   evaluateScriptTool,
   exportPatchReportTool,
+  exportPortReportTool,
   exportPureReportTool,
   exportRebuildBundleTool,
   exportRebuildReportTool,
@@ -151,6 +166,7 @@ export {
   exportRuntimeTraceTool,
   exportSessionReportTool,
   extractNodePureTool,
+  extractPythonPureTool,
   freezeRuntimeSampleTool,
   getCollectedCodeFileTool,
   getHookDataTool,
@@ -176,6 +192,7 @@ export {
   removeXhrBreakpointTool,
   riskPanelTool,
   runPatchIterationTool,
+  runPortWorkflowTool,
   runPureWorkflowTool,
   runRebuildProbeTool,
   runRebuildWorkflowTool,
@@ -186,5 +203,6 @@ export {
   summarizeCodeTool,
   understandCodeTool,
   verifyNodePureTool,
+  verifyPythonPureTool,
   buildPureFixtureTool
 };

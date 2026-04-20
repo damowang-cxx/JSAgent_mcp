@@ -19,6 +19,10 @@ import { FixtureStabilizer } from '../patch/FixtureStabilizer.js';
 import { PatchApplier } from '../patch/PatchApplier.js';
 import { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
 import { PatchPlanManager } from '../patch/PatchPlanManager.js';
+import { CrossLanguageDiff } from '../port/CrossLanguageDiff.js';
+import { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
+import { PythonPortExtractor } from '../port/PythonPortExtractor.js';
+import { UpgradeDiffRunner } from '../port/UpgradeDiffRunner.js';
 import { BoundaryDefiner } from '../pure/BoundaryDefiner.js';
 import { FreezeManager } from '../pure/FreezeManager.js';
 import { PureFixtureBuilder } from '../pure/PureFixtureBuilder.js';
@@ -26,6 +30,7 @@ import { PureNodeExtractor } from '../pure/PureNodeExtractor.js';
 import { PureVerifier } from '../pure/PureVerifier.js';
 import { RuntimeTraceSampler } from '../pure/RuntimeTraceSampler.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
+import { PortReportBuilder } from '../report/PortReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
@@ -37,6 +42,7 @@ import { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
 import { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
 import { PatchWorkflowRunner } from '../workflow/PatchWorkflowRunner.js';
+import { PortWorkflowRunner } from '../workflow/PortWorkflowRunner.js';
 import { PureExtractionRunner } from '../workflow/PureExtractionRunner.js';
 import { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
@@ -75,6 +81,12 @@ export class AppRuntime implements AppRuntimeServices {
   readonly pureVerifier: PureVerifier;
   readonly pureExtractionRunner: PureExtractionRunner;
   readonly pureReportBuilder: PureReportBuilder;
+  readonly pythonPortExtractor: PythonPortExtractor;
+  readonly crossLanguageVerifier: CrossLanguageVerifier;
+  readonly crossLanguageDiff: CrossLanguageDiff;
+  readonly upgradeDiffRunner: UpgradeDiffRunner;
+  readonly portWorkflowRunner: PortWorkflowRunner;
+  readonly portReportBuilder: PortReportBuilder;
   readonly rebuildWorkflowRunner: RebuildWorkflowRunner;
   readonly rebuildReportBuilder: RebuildReportBuilder;
   readonly hookManager: HookManager;
@@ -131,6 +143,11 @@ export class AppRuntime implements AppRuntimeServices {
     this.pureNodeExtractor = new PureNodeExtractor(this.evidenceStore);
     this.pureVerifier = new PureVerifier();
     this.pureReportBuilder = new PureReportBuilder();
+    this.pythonPortExtractor = new PythonPortExtractor(this.evidenceStore);
+    this.crossLanguageVerifier = new CrossLanguageVerifier();
+    this.crossLanguageDiff = new CrossLanguageDiff();
+    this.upgradeDiffRunner = new UpgradeDiffRunner();
+    this.portReportBuilder = new PortReportBuilder();
     this.sessionReporter = new SessionReporter({
       browserSession,
       codeCollector: this.codeCollector,
@@ -220,6 +237,14 @@ export class AppRuntime implements AppRuntimeServices {
       pureVerifier: this.pureVerifier,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner,
       runtimeTraceSampler: this.runtimeTraceSampler
+    });
+    this.portWorkflowRunner = new PortWorkflowRunner({
+      crossLanguageDiff: this.crossLanguageDiff,
+      crossLanguageVerifier: this.crossLanguageVerifier,
+      evidenceStore: this.evidenceStore,
+      portReportBuilder: this.portReportBuilder,
+      pureExtractionRunner: this.pureExtractionRunner,
+      pythonPortExtractor: this.pythonPortExtractor
     });
   }
 
@@ -353,6 +378,30 @@ export class AppRuntime implements AppRuntimeServices {
 
   getPureReportBuilder(): PureReportBuilder {
     return this.pureReportBuilder;
+  }
+
+  getPythonPortExtractor(): PythonPortExtractor {
+    return this.pythonPortExtractor;
+  }
+
+  getCrossLanguageVerifier(): CrossLanguageVerifier {
+    return this.crossLanguageVerifier;
+  }
+
+  getCrossLanguageDiff(): CrossLanguageDiff {
+    return this.crossLanguageDiff;
+  }
+
+  getUpgradeDiffRunner(): UpgradeDiffRunner {
+    return this.upgradeDiffRunner;
+  }
+
+  getPortWorkflowRunner(): PortWorkflowRunner {
+    return this.portWorkflowRunner;
+  }
+
+  getPortReportBuilder(): PortReportBuilder {
+    return this.portReportBuilder;
   }
 
   getRebuildWorkflowRunner(): RebuildWorkflowRunner {

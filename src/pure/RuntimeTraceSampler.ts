@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { readdir, writeFile } from 'node:fs/promises';
+import { rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { RuntimeTraceExport } from './types.js';
@@ -21,33 +21,38 @@ export class RuntimeTraceSampler {
     let stderr = '';
     let timedOut = false;
     const timeoutMs = options.timeoutMs ?? 10_000;
-    const result = await new Promise<{ exitCode: number | null; signal: string | null }>((resolve) => {
-      const child = spawn(process.execPath, [traceRunner], {
-        cwd: options.bundleDir,
-        env: {
-          ...process.env,
-          ...(options.fixturePath ? { JSAGENT_FIXTURE_PATH: options.fixturePath } : {})
-        },
-        windowsHide: true
+    let result: { exitCode: number | null; signal: string | null };
+    try {
+      result = await new Promise<{ exitCode: number | null; signal: string | null }>((resolve) => {
+        const child = spawn(process.execPath, [traceRunner], {
+          cwd: options.bundleDir,
+          env: {
+            ...process.env,
+            ...(options.fixturePath ? { JSAGENT_FIXTURE_PATH: options.fixturePath } : {})
+          },
+          windowsHide: true
+        });
+        const timer = setTimeout(() => {
+          timedOut = true;
+          child.kill('SIGTERM');
+        }, timeoutMs);
+        child.stdout.on('data', (chunk) => {
+          stdout += chunk.toString();
+        });
+        child.stderr.on('data', (chunk) => {
+          stderr += chunk.toString();
+        });
+        child.on('error', (error) => {
+          stderr += `${error.name}: ${error.message}\n`;
+        });
+        child.on('close', (exitCode, signal) => {
+          clearTimeout(timer);
+          resolve({ exitCode, signal });
+        });
       });
-      const timer = setTimeout(() => {
-        timedOut = true;
-        child.kill('SIGTERM');
-      }, timeoutMs);
-      child.stdout.on('data', (chunk) => {
-        stdout += chunk.toString();
-      });
-      child.stderr.on('data', (chunk) => {
-        stderr += chunk.toString();
-      });
-      child.on('error', (error) => {
-        stderr += `${error.name}: ${error.message}\n`;
-      });
-      child.on('close', (exitCode, signal) => {
-        clearTimeout(timer);
-        resolve({ exitCode, signal });
-      });
-    });
+    } finally {
+      await rm(traceRunner, { force: true });
+    }
 
     if (timedOut) {
       warnings.push(`Runtime trace timed out after ${timeoutMs}ms.`);

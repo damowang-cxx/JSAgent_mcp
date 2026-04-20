@@ -30,7 +30,14 @@ export const pureBoundarySchema = z
 export const pureFixtureSchema = z
   .object({
     boundary: pureBoundarySchema,
+    context: z
+      .object({
+        environmentState: z.record(z.string(), z.unknown()).optional()
+      })
+      .optional(),
     createdAt: z.string(),
+    derived: z.record(z.string(), z.unknown()).optional(),
+    evidence: z.unknown().optional(),
     expectedOutput: z.unknown(),
     input: z.record(z.string(), z.unknown()),
     intermediates: z.record(z.string(), z.unknown()).optional(),

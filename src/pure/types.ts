@@ -60,11 +60,26 @@ export interface PureFixture {
   createdAt: string;
   boundary: PureBoundary;
   input: Record<string, unknown>;
+  derived?: Record<string, unknown>;
+  context?: {
+    environmentState?: Record<string, unknown>;
+  };
   intermediates?: Record<string, unknown>;
   expectedOutput: unknown;
   source: {
     taskId?: string | null;
     sampleType: string;
+  };
+  evidence?: {
+    pageUrl?: string;
+    requestSample?: {
+      url: string;
+      method: string;
+      hasPostData: boolean;
+      headerKeys: string[];
+    } | null;
+    hookSampleCount: number;
+    traceRecordCount: number;
   };
   notes: string[];
 }

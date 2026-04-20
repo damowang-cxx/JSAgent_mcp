@@ -37,6 +37,8 @@ try {
   const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
   const result = await computePure(fixture.input ?? {}, {
     boundary: fixture.boundary,
+    derived: fixture.derived ?? {},
+    environmentState: fixture.context?.environmentState ?? {},
     expectedOutput: fixture.expectedOutput,
     intermediates: fixture.intermediates ?? null
   });

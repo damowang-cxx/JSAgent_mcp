@@ -1,6 +1,6 @@
 # JSAgent_mcp
 
-TypeScript MCP server for observe-first JavaScript reverse-engineering, static analysis, deobfuscation, and request correlation workflows.
+TypeScript MCP server for observe-first JavaScript reverse-engineering, static analysis, rebuild/patch, pure extraction, and port validation workflows.
 
 ## Current Scope
 
@@ -31,6 +31,7 @@ The project currently includes:
 - patch plan manager, single-patch applier, patch iteration runner, and acceptance recorder
 - fixture stabilization and patch workflow report exporter
 - PureExtraction gate, frozen sample manager, runtime trace sampler, Node pure scaffold, verifier, and pure report exporter
+- Python pure scaffold exporter, cross-language verifier/diff, port workflow, and upgrade-diff runner
 
 ## Design Principles
 
@@ -643,6 +644,57 @@ Export a pure report:
 }
 ```
 
+## Phase 11: Port / Cross-Language Validation / Upgrade-Diff
+
+Phase 11 moves from Node pure into scaffold-first host port infrastructure. The gate is intentionally strict: Python port tools require a passing PureExtraction baseline, including `readyForPort=true` and `verify_node_pure` success. If that gate is missing, the workflow returns `PORT_GATE_NOT_SATISFIED` instead of continuing.
+
+New capabilities:
+
+- `extract_python_pure`: export a Python scaffold from the Node pure baseline and the same pure fixture.
+- `verify_python_pure`: run Node pure and Python pure against the same fixture and compare structured JSON output.
+- `diff_cross_language`: summarize the cross-language first divergence and the smallest next action.
+- `run_port_workflow`: gate check, Python scaffold generation, verification, diff, and artifact snapshots.
+- `export_port_report`: export JSON or markdown reports for the latest port workflow.
+- `analyze_upgrade_diff`: compare old/new runtime, Node, and Python samples to locate the likely drift layer.
+
+Design boundaries:
+
+- Node remains the baseline. Python is downstream of the Node pure scaffold.
+- The Python fixture uses the same explicit input boundary; page dumps are not passed as Python input.
+- This is not an automatic Node-to-Python translator and does not produce an SDK wrapper.
+- Cross-language mismatch reports first divergence first; it does not auto-fix Python.
+
+Recommended Phase 11 validation flow:
+
+1. `run_pure_workflow` with `writeEvidence=true` until `readyForPort=true`.
+2. `extract_python_pure` with the same `taskId`.
+3. `verify_python_pure` using the returned Node entry, Python entry, and fixture file.
+4. `diff_cross_language` with the verification payload.
+5. `run_port_workflow` with `writeEvidence=true`.
+6. `export_port_report` as JSON and markdown.
+7. `analyze_upgrade_diff` with old/new runtime, Node, and Python sample outputs.
+
+Run the Port workflow:
+
+```json
+{
+  "taskId": "port-demo",
+  "overwrite": true,
+  "verifyTimeoutMs": 5000,
+  "writeEvidence": true
+}
+```
+
+Export a port report:
+
+```json
+{
+  "format": "markdown",
+  "taskId": "port-demo",
+  "writeSnapshot": true
+}
+```
+
 ## Tool Summary
 
 ### Core Tools
@@ -718,6 +770,12 @@ Export a pure report:
 - `verify_node_pure`
 - `run_pure_workflow`
 - `export_pure_report`
+- `extract_python_pure`
+- `verify_python_pure`
+- `diff_cross_language`
+- `run_port_workflow`
+- `export_port_report`
+- `analyze_upgrade_diff`
 - `analyze_target`
 
 ## Still Not Implemented
@@ -736,10 +794,10 @@ The current stage still does not implement:
 - absolute request-chain truth graph
 - auto replay
 - full browser/DOM rebuild emulation
-- Python or external-language port
+- complete external-language port/transpiler
 - service-side verification
 - AI automatic patching
 - bulk automatic environment repair
 - completed automatic pure implementation
-- Python or other host-language port
+- completed Python or other host-language implementation
 - global runtime singleton patterns
