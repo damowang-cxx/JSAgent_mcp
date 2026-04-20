@@ -14,8 +14,16 @@ import type { NetworkCollector } from '../network/NetworkCollector.js';
 import type { RequestInitiatorTracker } from '../network/RequestInitiatorTracker.js';
 import type { XhrWatchpointManager } from '../network/xhrWatchpoints.js';
 import type { PageController } from '../page/PageController.js';
+import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
+import type { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
+import type { EnvAccessLogger } from '../rebuild/EnvAccessLogger.js';
+import type { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
+import type { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
+import type { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
+import type { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import type { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
+import type { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import type { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 
 export interface AppRuntimeServices {
@@ -31,6 +39,14 @@ export interface AppRuntimeServices {
   deobfuscator: Deobfuscator;
   requestChainCorrelator: RequestChainCorrelator;
   reverseReportBuilder: ReverseReportBuilder;
+  rebuildBundleExporter: RebuildBundleExporter;
+  rebuildRunner: RebuildRunner;
+  envAccessLogger: EnvAccessLogger;
+  fixtureExtractor: FixtureExtractor;
+  divergenceComparator: DivergenceComparator;
+  patchAdvisor: PatchAdvisor;
+  rebuildWorkflowRunner: RebuildWorkflowRunner;
+  rebuildReportBuilder: RebuildReportBuilder;
   hookManager: HookManager;
   networkCollector: NetworkCollector;
   requestInitiatorTracker: RequestInitiatorTracker;

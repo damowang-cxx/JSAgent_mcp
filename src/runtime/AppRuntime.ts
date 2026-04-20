@@ -14,8 +14,16 @@ import { NetworkCollector } from '../network/NetworkCollector.js';
 import { RequestInitiatorTracker } from '../network/RequestInitiatorTracker.js';
 import { XhrWatchpointManager } from '../network/xhrWatchpoints.js';
 import { PageController } from '../page/PageController.js';
+import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
+import { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
+import { EnvAccessLogger } from '../rebuild/EnvAccessLogger.js';
+import { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
+import { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
+import { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
+import { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
+import { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 import type { AppRuntimeServices } from './types.js';
 
@@ -31,6 +39,14 @@ export class AppRuntime implements AppRuntimeServices {
   readonly deobfuscator: Deobfuscator;
   readonly requestChainCorrelator: RequestChainCorrelator;
   readonly reverseReportBuilder: ReverseReportBuilder;
+  readonly rebuildBundleExporter: RebuildBundleExporter;
+  readonly rebuildRunner: RebuildRunner;
+  readonly envAccessLogger: EnvAccessLogger;
+  readonly fixtureExtractor: FixtureExtractor;
+  readonly divergenceComparator: DivergenceComparator;
+  readonly patchAdvisor: PatchAdvisor;
+  readonly rebuildWorkflowRunner: RebuildWorkflowRunner;
+  readonly rebuildReportBuilder: RebuildReportBuilder;
   readonly hookManager: HookManager;
   readonly networkCollector: NetworkCollector;
   readonly requestInitiatorTracker: RequestInitiatorTracker;
@@ -58,6 +74,23 @@ export class AppRuntime implements AppRuntimeServices {
       networkCollector: this.networkCollector
     });
     this.reverseReportBuilder = new ReverseReportBuilder();
+    this.envAccessLogger = new EnvAccessLogger();
+    this.fixtureExtractor = new FixtureExtractor({
+      browserSession,
+      codeCollector: this.codeCollector,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector
+    });
+    this.rebuildBundleExporter = new RebuildBundleExporter({
+      codeCollector: this.codeCollector,
+      envAccessLogger: this.envAccessLogger,
+      evidenceStore: this.evidenceStore,
+      fixtureExtractor: this.fixtureExtractor
+    });
+    this.rebuildRunner = new RebuildRunner(this.envAccessLogger);
+    this.divergenceComparator = new DivergenceComparator();
+    this.patchAdvisor = new PatchAdvisor();
+    this.rebuildReportBuilder = new RebuildReportBuilder();
     this.sessionReporter = new SessionReporter({
       browserSession,
       codeCollector: this.codeCollector,
@@ -92,6 +125,17 @@ export class AppRuntime implements AppRuntimeServices {
       requestInitiatorTracker: this.requestInitiatorTracker,
       riskScorer: this.riskScorer,
       staticAnalyzer: this.staticAnalyzer
+    });
+    this.rebuildWorkflowRunner = new RebuildWorkflowRunner({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      browserSession,
+      divergenceComparator: this.divergenceComparator,
+      evidenceStore: this.evidenceStore,
+      fixtureExtractor: this.fixtureExtractor,
+      patchAdvisor: this.patchAdvisor,
+      rebuildBundleExporter: this.rebuildBundleExporter,
+      rebuildReportBuilder: this.rebuildReportBuilder,
+      rebuildRunner: this.rebuildRunner
     });
   }
 
@@ -141,6 +185,38 @@ export class AppRuntime implements AppRuntimeServices {
 
   getReverseReportBuilder(): ReverseReportBuilder {
     return this.reverseReportBuilder;
+  }
+
+  getRebuildBundleExporter(): RebuildBundleExporter {
+    return this.rebuildBundleExporter;
+  }
+
+  getRebuildRunner(): RebuildRunner {
+    return this.rebuildRunner;
+  }
+
+  getEnvAccessLogger(): EnvAccessLogger {
+    return this.envAccessLogger;
+  }
+
+  getFixtureExtractor(): FixtureExtractor {
+    return this.fixtureExtractor;
+  }
+
+  getDivergenceComparator(): DivergenceComparator {
+    return this.divergenceComparator;
+  }
+
+  getPatchAdvisor(): PatchAdvisor {
+    return this.patchAdvisor;
+  }
+
+  getRebuildWorkflowRunner(): RebuildWorkflowRunner {
+    return this.rebuildWorkflowRunner;
+  }
+
+  getRebuildReportBuilder(): RebuildReportBuilder {
+    return this.rebuildReportBuilder;
   }
 
   getHookManager(): HookManager {

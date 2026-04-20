@@ -14,6 +14,8 @@ export interface ObfuscationSignal {
 export interface TransformationRecord {
   type: string;
   description: string;
+  executed: boolean;
+  changed: boolean;
   success: boolean;
   detail?: Record<string, unknown>;
 }

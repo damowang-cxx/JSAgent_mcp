@@ -5,15 +5,12 @@ import type { AnalyzeTargetResult, AnalyzeTargetStep } from './types.js';
 export class ExplainEngine {
   explainDeobfuscation(result: DeobfuscateResult): string {
     const successful = result.transformations.filter((item) => item.success);
-    const changed = successful.filter((item) => {
-      const detail = item.detail ?? {};
-      return Object.values(detail).some((value) => typeof value === 'number' ? value > 0 : Boolean(value));
-    });
+    const changed = successful.filter((item) => item.changed);
     const warnings = result.warnings && result.warnings.length > 0 ? ` Warnings: ${result.warnings.slice(0, 3).join(' | ')}.` : '';
 
     return [
       `Detected ${result.obfuscationType.join(', ')}.`,
-      `${successful.length} pipeline step(s) completed; ${changed.length} reported concrete changes.`,
+      `${successful.length} pipeline step(s) executed successfully; ${changed.length} changed code.`,
       `Readability score is ${result.readabilityScore}, confidence is ${result.confidence}.`,
       warnings
     ].join(' ').trim();

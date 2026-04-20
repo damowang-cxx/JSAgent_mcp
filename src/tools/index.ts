@@ -16,9 +16,13 @@ import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
 import { clearHookDataTool } from './reverse/clearHookData.js';
 import { correlateRequestFlowsTool } from './reverse/correlateRequestFlows.js';
+import { compareRebuildResultTool } from './reverse/compareRebuildResult.js';
 import { createHookTool } from './reverse/createHook.js';
 import { deobfuscateCodeTool } from './reverse/deobfuscateCode.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
+import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
+import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
+import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
@@ -33,6 +37,9 @@ import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
+import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
+import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
+import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { understandCodeTool } from './reverse/understandCode.js';
@@ -78,6 +85,13 @@ export const reverseTools = [
   deobfuscateCodeTool,
   correlateRequestFlowsTool,
   exportReverseReportTool,
+  exportRebuildBundleTool,
+  runRebuildProbeTool,
+  compareRebuildResultTool,
+  diffEnvRequirementsTool,
+  savePureFixtureTool,
+  runRebuildWorkflowTool,
+  exportRebuildReportTool,
   analyzeTargetTool
 ] satisfies readonly RegisteredToolDefinition[];
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
@@ -90,11 +104,15 @@ export {
   clearNetworkRequestsTool,
   collectCodeTool,
   collectionDiffTool,
+  compareRebuildResultTool,
   correlateRequestFlowsTool,
   createHookTool,
   deobfuscateCodeTool,
   detectCryptoTool,
+  diffEnvRequirementsTool,
   evaluateScriptTool,
+  exportRebuildBundleTool,
+  exportRebuildReportTool,
   exportReverseReportTool,
   exportSessionReportTool,
   getCollectedCodeFileTool,
@@ -117,6 +135,9 @@ export {
   recordReverseEvidenceTool,
   removeXhrBreakpointTool,
   riskPanelTool,
+  runRebuildProbeTool,
+  runRebuildWorkflowTool,
+  savePureFixtureTool,
   searchCollectedCodeTool,
   selectPageTool,
   summarizeCodeTool,

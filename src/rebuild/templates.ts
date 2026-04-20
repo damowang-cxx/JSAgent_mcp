@@ -1,0 +1,151 @@
+import type { RuntimeFixture } from './types.js';
+import { toJsonLiteral } from './serialization.js';
+
+export function buildEnvShimCode(fixture: RuntimeFixture | null): string {
+  const pageUrl = fixture?.page.url ?? '';
+  const cookie = fixture?.requestSamples
+    .flatMap((request) => Object.entries(request.headers ?? {}))
+    .filter(([key]) => key.toLowerCase() === 'cookie')
+    .map(([, value]) => value)
+    .join('; ');
+
+  return `
+globalThis.window ??= globalThis;
+globalThis.self ??= globalThis;
+globalThis.global ??= globalThis;
+globalThis.location ??= { href: ${JSON.stringify(pageUrl)} };
+globalThis.navigator ??= { userAgent: 'JSAgent_mcp rebuild' };
+globalThis.document ??= { cookie: ${JSON.stringify(cookie)}, location: globalThis.location };
+globalThis.performance ??= { now: () => Date.now() };
+globalThis.screen ??= {};
+globalThis.atob ??= (value) => Buffer.from(String(value), 'base64').toString('utf8');
+globalThis.btoa ??= (value) => Buffer.from(String(value), 'utf8').toString('base64');
+globalThis.localStorage ??= createStorageShim();
+globalThis.sessionStorage ??= createStorageShim();
+globalThis.crypto ??= {};
+
+function createStorageShim(seed = {}) {
+  const store = new Map(Object.entries(seed).map(([key, value]) => [key, String(value)]));
+  return {
+    getItem(key) { return store.has(String(key)) ? store.get(String(key)) : null; },
+    setItem(key, value) { store.set(String(key), String(value)); },
+    removeItem(key) { store.delete(String(key)); },
+    clear() { store.clear(); },
+    key(index) { return Array.from(store.keys())[index] ?? null; },
+    get length() { return store.size; }
+  };
+}
+`.trim();
+}
+
+export function buildEntryCode(options: {
+  targetFiles: string[];
+  includeEnvShim: boolean;
+  includeAccessLogger: boolean;
+  fixtureFile?: string | null;
+  targetFunctionName?: string;
+}): string {
+  return `
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+${options.includeEnvShim ? "import './env-shim.js';" : ''}
+${options.includeAccessLogger ? "import './env-access-logger.js';" : ''}
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultFixturePath = ${JSON.stringify(options.fixtureFile ?? null)};
+const targetFiles = ${toJsonLiteral(options.targetFiles)};
+const targetFunctionName = ${JSON.stringify(options.targetFunctionName ?? null)};
+const envOverrides = safeJsonParse(process.env.JSAGENT_ENV_OVERRIDES, {});
+Object.assign(globalThis, envOverrides && typeof envOverrides === 'object' ? envOverrides : {});
+
+const fixture = await loadFixture(process.env.JSAGENT_FIXTURE_PATH || defaultFixturePath);
+globalThis.__JSAGENT_FIXTURE__ = fixture;
+
+try {
+  for (const relativeFile of targetFiles) {
+    const code = await readFile(path.join(__dirname, relativeFile), 'utf8');
+    vm.runInThisContext(code, { filename: relativeFile });
+  }
+
+  let result = {
+    status: 'loaded',
+    targetFunctionName,
+    fixtureSummary: summarizeFixture(fixture)
+  };
+
+  if (targetFunctionName && typeof globalThis[targetFunctionName] === 'function') {
+    const args = inferArgs(fixture);
+    result = {
+      status: 'called-target',
+      targetFunctionName,
+      args,
+      value: await globalThis[targetFunctionName](...args)
+    };
+  }
+
+  console.log(JSON.stringify({ __jsagent_result__: result }));
+} catch (error) {
+  console.error(JSON.stringify({
+    __jsagent_error__: {
+      name: error && error.name ? error.name : 'Error',
+      message: error && error.message ? error.message : String(error),
+      stack: error && error.stack ? error.stack : undefined
+    }
+  }));
+  process.exitCode = 1;
+} finally {
+  console.log(JSON.stringify({ __jsagent_env_access__: globalThis.__JSAGENT_ENV_ACCESS__ ?? [] }));
+}
+
+async function loadFixture(fixturePath) {
+  if (!fixturePath) {
+    return null;
+  }
+  try {
+    const absolutePath = path.isAbsolute(fixturePath) ? fixturePath : path.join(__dirname, fixturePath);
+    return JSON.parse(await readFile(absolutePath, 'utf8'));
+  } catch (error) {
+    return {
+      warning: 'fixture load failed',
+      message: error && error.message ? error.message : String(error)
+    };
+  }
+}
+
+function inferArgs(fixture) {
+  const firstHook = fixture?.hookSamples?.[0]?.record;
+  if (Array.isArray(firstHook?.args)) {
+    return firstHook.args;
+  }
+  const firstRequest = fixture?.requestSamples?.[0];
+  if (firstRequest) {
+    return [firstRequest.postData ?? firstRequest.url];
+  }
+  return [];
+}
+
+function summarizeFixture(fixture) {
+  if (!fixture) {
+    return null;
+  }
+  return {
+    requestSamples: Array.isArray(fixture.requestSamples) ? fixture.requestSamples.length : 0,
+    hookSamples: Array.isArray(fixture.hookSamples) ? fixture.hookSamples.length : 0,
+    source: fixture.source
+  };
+}
+
+function safeJsonParse(value, fallback) {
+  if (!value) {
+    return fallback;
+  }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+`.trim();
+}

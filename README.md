@@ -25,6 +25,9 @@ The project currently includes:
 - request-chain correlator
 - enhanced analyze workflow runner
 - reverse-focused report exporter
+- rebuild bundle exporter and Node probe runner
+- fixture extraction, first-divergence comparison, and deterministic patch advisor
+- rebuild/patch workflow runner and report exporter
 
 ## Design Principles
 
@@ -34,6 +37,10 @@ The project currently includes:
   - prefer runtime sampling over debugger-first workflows
 - Evidence-first
   - important observations should be writable into task artifacts
+- Rebuild-oriented
+  - move from observe/capture/analyze into local probeable bundles
+- Patch around first divergence
+  - patch suggestions should address the first explainable mismatch, not a broad env template
 - single browser session owner
   - `BrowserSessionManager` remains the only owner of browser + selected page state
 - app-scoped runtime
@@ -131,6 +138,39 @@ Design boundaries:
 - no external AI provider is connected
 - no VM-level restore, debugger platform, CFG/SSA/taint engine, or deep WebSocket protocol analysis is implemented
 
+## Added In Phase 8
+
+Phase 8 moves the workflow into rebuild/patch infrastructure:
+
+- `export_rebuild_bundle`
+  - exports collected top-priority code into a minimal local Node bundle
+  - supports `single-file` and `top-priority-merged` strategies
+  - can include `fixture.json`, `env-shim.js`, `env-access-logger.js`, `metadata.json`, and `entry.js`
+- `run_rebuild_probe`
+  - runs the generated `entry.js` with Node
+  - captures structured result/error payloads, stdout/stderr, timeout, and env access logs
+- `compare_rebuild_result`
+  - compares a rebuild run against expected output or fixture context
+  - reports only the first explainable divergence
+- `diff_env_requirements`
+  - emits deterministic patch suggestions around first divergence or the first env access miss
+  - does not apply patches automatically
+- `save_pure_fixture`
+  - extracts a compact runtime fixture from the current page or latest `analyze_target`
+  - can write it into task snapshots
+- `run_rebuild_workflow`
+  - chains fixture extraction, bundle export, probe run, first-divergence compare, and patch plan
+  - writes rebuild artifacts when `writeEvidence=true`
+- `export_rebuild_report`
+  - exports the latest rebuild workflow result as JSON or Markdown
+
+Phase 8 boundaries:
+
+- this is a Node rebuild probe, not full browser emulation
+- patch suggestions are deterministic hints, not automatic fixes
+- the fixture format is intentionally compact and prepares for later pure extraction
+- no Python port, service-side verifier, external AI patching, or full DOM shim is implemented
+
 ## Code Collection Boundary
 
 Current `CodeCollector` supports:
@@ -195,8 +235,8 @@ Current task artifacts use:
 The evidence layer stays minimal:
 
 - no report templating
-- no rebuild bundles
-- no environment scaffolding
+- rebuild bundles are written only by explicit rebuild tools/workflows
+- environment scaffolding is limited to minimal shim/probe files
 
 ## Existing Core Tooling
 
@@ -284,6 +324,13 @@ npm start
 - `deobfuscate_code`
 - `correlate_request_flows`
 - `analyze_target`
+- `save_pure_fixture`
+- `export_rebuild_bundle`
+- `run_rebuild_probe`
+- `compare_rebuild_result`
+- `diff_env_requirements`
+- `run_rebuild_workflow`
+- `export_rebuild_report`
 - `export_reverse_report`
 - `export_session_report`
 - `collection_diff`
@@ -415,6 +462,36 @@ Export a reverse-focused report from the latest analyze run:
 }
 ```
 
+Run the rebuild-oriented workflow:
+
+```json
+{
+  "taskId": "rebuild-demo",
+  "fixtureSource": "analyze-target-last",
+  "writeEvidence": true,
+  "export": {
+    "entryStrategy": "single-file",
+    "includeFixture": true,
+    "includeEnvShim": true,
+    "includeAccessLogger": true,
+    "overwrite": true
+  },
+  "run": {
+    "timeoutMs": 5000
+  }
+}
+```
+
+Export a rebuild report:
+
+```json
+{
+  "format": "markdown",
+  "taskId": "rebuild-demo",
+  "writeSnapshot": true
+}
+```
+
 ## Tool Summary
 
 ### Core Tools
@@ -468,6 +545,13 @@ Export a reverse-focused report from the latest analyze run:
 - `deobfuscate_code`
 - `correlate_request_flows`
 - `export_reverse_report`
+- `export_rebuild_bundle`
+- `run_rebuild_probe`
+- `compare_rebuild_result`
+- `diff_env_requirements`
+- `save_pure_fixture`
+- `run_rebuild_workflow`
+- `export_rebuild_report`
 - `analyze_target`
 
 ## Still Not Implemented
@@ -484,5 +568,8 @@ The current stage still does not implement:
 - full AST taint / callgraph / SSA framework
 - deep WebSocket protocol analysis
 - absolute request-chain truth graph
-- auto replay and rebuild-oriented workflows
+- auto replay
+- full browser/DOM rebuild emulation
+- Python or external-language port
+- service-side verification
 - global runtime singleton patterns

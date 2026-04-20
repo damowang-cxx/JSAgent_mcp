@@ -27,6 +27,10 @@ export class ReverseReportBuilder {
       page: result.page,
       priorityTargets: result.priorityTargets,
       recommendedNextSteps: result.recommendedNextSteps,
+      whyTheseSteps: result.whyTheseSteps,
+      stopIf: result.stopIf,
+      task: result.task,
+      report: result.report,
       requestFingerprints: result.requestFingerprints,
       risk: result.risk,
       summaries: result.summaries,
@@ -74,6 +78,14 @@ export class ReverseReportBuilder {
       '## Next Actions',
       '',
       ...result.recommendedNextSteps.slice(0, 12).map((step, index) => this.stepLine(step, index)),
+      '',
+      '## Why These Steps',
+      '',
+      ...this.bulletLines(result.whyTheseSteps, 'No workflow explanation was generated.'),
+      '',
+      '## Stop If',
+      '',
+      ...this.bulletLines(result.stopIf, 'No stop conditions were generated.'),
       '',
       ...(result.deobfuscation
         ? [
@@ -131,5 +143,13 @@ export class ReverseReportBuilder {
 
   private stepLine(step: AnalyzeTargetStep, index: number): string {
     return `- ${index + 1}. ${step.action}${step.tool ? ` (tool: ${step.tool})` : ''} - ${step.reason}`;
+  }
+
+  private bulletLines(values: readonly string[], empty: string): string[] {
+    if (values.length === 0) {
+      return [`- ${empty}`];
+    }
+
+    return values.slice(0, 12).map((value) => `- ${value}`);
   }
 }

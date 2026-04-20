@@ -98,14 +98,18 @@ export class Deobfuscator {
           warnings.push(...result.warnings);
         }
         transformations.push({
+          changed: result.changed,
           description: step.description,
           detail: result.detail,
+          executed: true,
           success: true,
           type: step.type
         });
       } catch (error) {
         transformations.push({
+          changed: false,
           description: `${step.description} Failed: ${error instanceof Error ? error.message : String(error)}`,
+          executed: true,
           success: false,
           type: step.type
         });
@@ -118,8 +122,8 @@ export class Deobfuscator {
     }
 
     const readabilityScore = calculateReadabilityScore(code);
-    const confidence = calculateConfidence(originalCode, code, transformations);
     const detectedTypes = obfuscationType.length > 0 ? obfuscationType : ['none-detected'];
+    const confidence = calculateConfidence(originalCode, code, transformations, detectedTypes);
     const result: DeobfuscateResult = {
       code,
       confidence,
@@ -146,7 +150,8 @@ export class Deobfuscator {
   }
 
   private defaultExplain(result: DeobfuscateResult): string {
-    const successes = result.transformations.filter((item) => item.success).length;
-    return `Detected ${result.obfuscationType.join(', ')}; ${successes} deterministic step(s) completed with confidence ${result.confidence}.`;
+    const executed = result.transformations.filter((item) => item.executed).length;
+    const changed = result.transformations.filter((item) => item.changed).length;
+    return `Detected ${result.obfuscationType.join(', ')}; ${executed} deterministic step(s) executed, ${changed} changed code, confidence ${result.confidence}.`;
   }
 }
