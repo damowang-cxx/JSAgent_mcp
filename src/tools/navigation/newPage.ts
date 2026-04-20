@@ -19,8 +19,23 @@ export const newPageTool = defineTool<NewPageParams>({
   },
   schema,
   handler: async ({ params }, context) => {
-    const page = await context.browserSession.newPage(params.url, params.timeout);
-    await context.runtime.getNetworkCollector().ensureAttachedToSelectedPage();
+    const networkCollector = context.runtime.getNetworkCollector();
+    const page = await context.browserSession.newPage();
+    await networkCollector.ensureAttachedToSelectedPage();
+
+    if (params.url) {
+      const navigation = await context.browserSession.navigateSelectedPage({
+        timeout: params.timeout,
+        type: 'url',
+        url: params.url
+      });
+      await networkCollector.ensureAttachedToSelectedPage();
+
+      return {
+        navigation: navigation.navigation,
+        page: navigation.page
+      };
+    }
 
     return {
       page

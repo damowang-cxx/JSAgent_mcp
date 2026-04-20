@@ -20,7 +20,7 @@ export const getRequestInitiatorTool = defineTool<GetRequestInitiatorParams>({
   description: 'Approximate which fetch/xhr call site triggered a collected network request.',
   annotations: {
     category: ToolCategory.REVERSE_ENGINEERING,
-    readOnlyHint: true
+    readOnlyHint: false
   },
   schema,
   handler: async ({ params }, context) => {

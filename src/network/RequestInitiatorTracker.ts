@@ -21,6 +21,7 @@ function toErrorMessage(error: unknown): string {
 export class RequestInitiatorTracker {
   private readonly attachedCurrentDocuments = new Set<string>();
   private readonly attachedFutureDocuments = new Set<string>();
+  private readonly trackedCloseListeners = new Set<string>();
 
   constructor(private readonly browserSession: BrowserSessionManager) {}
 
@@ -57,10 +58,14 @@ export class RequestInitiatorTracker {
       }
     }
 
-    page.once('close', () => {
-      this.attachedCurrentDocuments.delete(pageId);
-      this.attachedFutureDocuments.delete(pageId);
-    });
+    if (!this.trackedCloseListeners.has(pageId)) {
+      page.once('close', () => {
+        this.attachedCurrentDocuments.delete(pageId);
+        this.attachedFutureDocuments.delete(pageId);
+        this.trackedCloseListeners.delete(pageId);
+      });
+      this.trackedCloseListeners.add(pageId);
+    }
   }
 
   async getInitiatorHistory(page: Page): Promise<RequestInitiatorRecord[]> {

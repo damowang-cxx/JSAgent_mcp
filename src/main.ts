@@ -17,7 +17,7 @@ import { allTools } from './tools/index.js';
 import type { RegisteredToolDefinition, ToolContext, ToolResult } from './tools/ToolDefinition.js';
 
 const serverName = 'js-reverser-mcp';
-const serverVersion = '0.5.0';
+const serverVersion = '0.6.0';
 
 function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (value === undefined) {

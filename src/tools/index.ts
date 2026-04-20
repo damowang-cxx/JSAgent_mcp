@@ -10,11 +10,14 @@ import { selectPageTool } from './navigation/selectPage.js';
 import { clearNetworkRequestsTool } from './network/clearNetworkRequests.js';
 import { getNetworkRequestTool } from './network/getNetworkRequest.js';
 import { listNetworkRequestsTool } from './network/listNetworkRequests.js';
+import { analyzeTargetTool } from './reverse/analyzeTarget.js';
 import { breakOnXhrTool } from './reverse/breakOnXhr.js';
 import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
 import { clearHookDataTool } from './reverse/clearHookData.js';
 import { createHookTool } from './reverse/createHook.js';
+import { detectCryptoTool } from './reverse/detectCrypto.js';
+import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
@@ -26,7 +29,10 @@ import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
+import { riskPanelTool } from './reverse/riskPanel.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
+import { summarizeCodeTool } from './reverse/summarizeCode.js';
+import { understandCodeTool } from './reverse/understandCode.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
 export const coreTools = [pingTool, getServerInfoTool, listToolsSummaryTool] satisfies readonly RegisteredToolDefinition[];
@@ -60,11 +66,18 @@ export const reverseTools = [
   listXhrBreakpointsTool,
   openReverseTaskTool,
   recordReverseEvidenceTool,
-  probeReverseTargetTool
+  probeReverseTargetTool,
+  summarizeCodeTool,
+  understandCodeTool,
+  detectCryptoTool,
+  riskPanelTool,
+  exportSessionReportTool,
+  analyzeTargetTool
 ] satisfies readonly RegisteredToolDefinition[];
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
 
 export {
+  analyzeTargetTool,
   breakOnXhrTool,
   checkBrowserHealthTool,
   clearHookDataTool,
@@ -72,7 +85,9 @@ export {
   collectCodeTool,
   collectionDiffTool,
   createHookTool,
+  detectCryptoTool,
   evaluateScriptTool,
+  exportSessionReportTool,
   getCollectedCodeFileTool,
   getHookDataTool,
   getNetworkRequestTool,
@@ -92,6 +107,9 @@ export {
   probeReverseTargetTool,
   recordReverseEvidenceTool,
   removeXhrBreakpointTool,
+  riskPanelTool,
   searchCollectedCodeTool,
-  selectPageTool
+  selectPageTool,
+  summarizeCodeTool,
+  understandCodeTool
 };

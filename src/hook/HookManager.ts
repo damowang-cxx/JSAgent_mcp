@@ -19,6 +19,8 @@ export class HookManager {
   private readonly hookScriptFactory = new HookScriptFactory();
   private readonly hooks = new Map<string, HookMeta>();
   private readonly injectedTargets = new Map<string, Set<string>>();
+  private readonly currentDocumentTargets = new Map<string, Set<string>>();
+  private readonly futureDocumentTargets = new Map<string, Set<string>>();
 
   constructor(private readonly browserSession: BrowserSessionManager) {}
 
@@ -58,6 +60,8 @@ export class HookManager {
 
     this.hooks.set(hookId, meta);
     this.injectedTargets.set(hookId, new Set());
+    this.currentDocumentTargets.set(hookId, new Set());
+    this.futureDocumentTargets.set(hookId, new Set());
 
     return meta;
   }
@@ -88,34 +92,53 @@ export class HookManager {
       });
     }
 
+    const pageId = this.browserSession.getPageId(page);
+    const currentTargets = this.getTargetSet(this.currentDocumentTargets, hookId);
+    const futureTargets = this.getTargetSet(this.futureDocumentTargets, hookId);
+    const shouldInjectCurrentDocument = currentDocument && !currentTargets.has(pageId);
+    const shouldInjectFutureDocuments = futureDocuments && !futureTargets.has(pageId);
+
+    if (!shouldInjectCurrentDocument && !shouldInjectFutureDocuments) {
+      return {
+        hookId,
+        pageUrl: page.url()
+      };
+    }
+
     const script = this.hookScriptFactory.createScript({
       ...meta.config,
       hookId: meta.hookId
     });
 
     try {
-      if (futureDocuments) {
+      if (shouldInjectFutureDocuments) {
         await page.evaluateOnNewDocument(script);
+        futureTargets.add(pageId);
       }
 
-      if (currentDocument) {
+      if (shouldInjectCurrentDocument) {
         await page.evaluate((source) => {
           (0, eval)(source);
         }, script);
+        currentTargets.add(pageId);
       }
     } catch (error) {
       throw new AppError('HOOK_INJECTION_FAILED', `Failed to inject hook: ${toErrorMessage(error)}`, {
-        currentDocument,
-        futureDocuments,
+        currentDocument: shouldInjectCurrentDocument,
+        futureDocuments: shouldInjectFutureDocuments,
         hookId
       });
     }
 
-    const pageId = this.browserSession.getPageId(page);
-    const injectedTargets = this.injectedTargets.get(hookId);
-    injectedTargets?.add(pageId);
+    const injectedTargets = this.getTargetSet(this.injectedTargets, hookId);
+    for (const targetPageId of currentTargets) {
+      injectedTargets.add(targetPageId);
+    }
+    for (const targetPageId of futureTargets) {
+      injectedTargets.add(targetPageId);
+    }
 
-    meta.injectedTargets = injectedTargets?.size ?? meta.injectedTargets;
+    meta.injectedTargets = injectedTargets.size;
 
     return {
       hookId,
@@ -185,6 +208,8 @@ export class HookManager {
 
   removeHook(hookId: string): boolean {
     this.injectedTargets.delete(hookId);
+    this.currentDocumentTargets.delete(hookId);
+    this.futureDocumentTargets.delete(hookId);
     return this.hooks.delete(hookId);
   }
 
@@ -201,5 +226,16 @@ export class HookManager {
 
   private createHookId(type: HookCreateOptions['type']): string {
     return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private getTargetSet(targets: Map<string, Set<string>>, hookId: string): Set<string> {
+    const existing = targets.get(hookId);
+    if (existing) {
+      return existing;
+    }
+
+    const created = new Set<string>();
+    targets.set(hookId, created);
+    return created;
   }
 }

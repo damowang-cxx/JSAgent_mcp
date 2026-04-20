@@ -1,6 +1,6 @@
 # JS Reverser MCP
 
-Phase 5 TypeScript MCP server for observe-first JavaScript reverse-engineering workflows.
+Phase 6 TypeScript MCP server for observe-first JavaScript reverse-engineering and static analysis workflows.
 
 ## Current Scope
 
@@ -19,6 +19,9 @@ The project currently includes:
 - `XhrWatchpointManager`
 - minimal `EvidenceStore`
 - observe-first reverse workflow runner
+- deterministic static analysis layer
+- session report exporter
+- lite analyze workflow runner
 
 ## Design Principles
 
@@ -68,6 +71,36 @@ Connection priority:
   - `list_xhr_breakpoints`
 - observe-first workflow entry
   - `probe_reverse_target`
+
+## Added In Phase 6
+
+Phase 6 adds a structured understanding layer on top of the existing observe/capture runtime:
+
+- `summarize_code`
+  - deterministic single / batch / project summaries
+  - request, storage, crypto, DOM, and suspicious string highlights
+- `understand_code`
+  - static structure / business / security / metrics analysis
+  - file type hints, candidate functions, exported symbols, quality score
+- `detect_crypto`
+  - deterministic crypto algorithm, library, and security issue detection
+  - recognizes md5, sha1, sha256, hmac, aes, rsa, base64, crypto.subtle, pbkdf2
+- `risk_panel`
+  - combines static risks, crypto issues, hook records, and network request signals
+  - returns an explainable 0-100 score with recommendations
+- `export_session_report`
+  - exports collector, hook, network, evidence, and optional risk state
+  - supports `json` and `markdown`
+- `analyze_target`
+  - lite workflow: collect, summarize, understand, detect crypto, score risk, correlate hooks/network, recommend next steps
+  - can write key summaries into task artifacts when `writeEvidence=true`
+
+Phase 6 is static-first:
+
+- no external AI provider is required
+- all default analysis works offline with deterministic rules and heuristics
+- `useAI` is only a future placeholder in this phase
+- no deobfuscation, debugger stepping, SSA, taint engine, or full request-chain graph is implemented
 
 ## Code Collection Boundary
 
@@ -214,6 +247,13 @@ npm start
 - `get_request_initiator`
 - `collect_code` with `returnMode='summary'`
 - `collect_code` with `returnMode='top-priority'`
+- `get_collected_code_file`
+- `summarize_code`
+- `understand_code`
+- `detect_crypto`
+- `risk_panel`
+- `analyze_target`
+- `export_session_report`
 - `collection_diff`
 - `probe_reverse_target`
 
@@ -276,6 +316,36 @@ Probe a target:
 }
 ```
 
+Analyze a target with the Phase 6 lite workflow:
+
+```json
+{
+  "url": "https://example.com",
+  "topN": 6,
+  "hookPreset": "api-signature",
+  "autoInjectHooks": true,
+  "waitAfterHookMs": 500,
+  "taskId": "analyze-demo",
+  "writeEvidence": true,
+  "collect": {
+    "includeInline": true,
+    "includeExternal": true,
+    "includeDynamic": true,
+    "dynamicWaitMs": 1000
+  }
+}
+```
+
+Export a session report:
+
+```json
+{
+  "format": "markdown",
+  "includeHookData": true,
+  "includeRecentRequests": true
+}
+```
+
 ## Tool Summary
 
 ### Core Tools
@@ -321,16 +391,25 @@ Probe a target:
 - `open_reverse_task`
 - `record_reverse_evidence`
 - `probe_reverse_target`
+- `summarize_code`
+- `understand_code`
+- `detect_crypto`
+- `risk_panel`
+- `export_session_report`
+- `analyze_target`
 
 ## Still Not Implemented
 
-Phase 5 still does not implement:
+Phase 6 still does not implement:
 
 - full debugger workflows
 - pause / resume / stepInto / callframe tools
-- AI analyzer flows
-- crypto / deobfuscation pipelines
-- full `analyze_target`
+- AI provider platform
+- AI analyzer augmentation
+- deobfuscation pipelines
 - full response-body capture platform
 - worker hook ecosystems
+- full AST taint / callgraph / SSA framework
+- deep WebSocket protocol analysis
+- strong request-chain correlation graph
 - global runtime singleton patterns

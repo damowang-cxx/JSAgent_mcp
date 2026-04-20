@@ -26,7 +26,7 @@ export const collectCodeTool = defineTool<CollectCodeParams>({
   description: 'Collect JavaScript code from the selected page or a target URL with multiple return modes.',
   annotations: {
     category: ToolCategory.REVERSE_ENGINEERING,
-    readOnlyHint: true
+    readOnlyHint: false
   },
   schema,
   handler: async ({ params }, context) => {

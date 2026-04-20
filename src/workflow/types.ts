@@ -1,3 +1,4 @@
+import type { AnalyzeTargetResult } from '../analysis/types.js';
 import type { CollectedCodeSummaryResult, TopPriorityCollectedCodeResult } from '../collector/types.js';
 
 export interface ProbeReverseCollectOptions {
@@ -37,3 +38,29 @@ export interface ProbeReverseTargetResult {
   } | null;
   nextActions: string[];
 }
+
+export interface AnalyzeTargetCollectOptions {
+  includeInline?: boolean;
+  includeExternal?: boolean;
+  includeDynamic?: boolean;
+  dynamicWaitMs?: number;
+  maxTotalSize?: number;
+  maxFileSize?: number;
+}
+
+export interface AnalyzeTargetOptions {
+  url: string;
+  topN?: number;
+  hookPreset?: 'none' | 'api-signature' | 'network-core';
+  autoInjectHooks?: boolean;
+  waitAfterHookMs?: number;
+  maxFingerprints?: number;
+  collect?: AnalyzeTargetCollectOptions;
+  taskId?: string;
+  taskSlug?: string;
+  targetUrl?: string;
+  goal?: string;
+  writeEvidence?: boolean;
+}
+
+export type { AnalyzeTargetResult };

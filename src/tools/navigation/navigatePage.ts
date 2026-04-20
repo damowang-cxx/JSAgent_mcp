@@ -20,8 +20,10 @@ export const navigatePageTool = defineTool<NavigatePageParams>({
   },
   schema,
   handler: async ({ params }, context) => {
+    const networkCollector = context.runtime.getNetworkCollector();
+    await networkCollector.ensureAttachedToSelectedPage();
     const result = await context.browserSession.navigateSelectedPage(params);
-    await context.runtime.getNetworkCollector().ensureAttachedToSelectedPage();
+    await networkCollector.ensureAttachedToSelectedPage();
 
     return result;
   }
