@@ -15,8 +15,11 @@ import { breakOnXhrTool } from './reverse/breakOnXhr.js';
 import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
 import { clearHookDataTool } from './reverse/clearHookData.js';
+import { correlateRequestFlowsTool } from './reverse/correlateRequestFlows.js';
 import { createHookTool } from './reverse/createHook.js';
+import { deobfuscateCodeTool } from './reverse/deobfuscateCode.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
+import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
@@ -72,6 +75,9 @@ export const reverseTools = [
   detectCryptoTool,
   riskPanelTool,
   exportSessionReportTool,
+  deobfuscateCodeTool,
+  correlateRequestFlowsTool,
+  exportReverseReportTool,
   analyzeTargetTool
 ] satisfies readonly RegisteredToolDefinition[];
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
@@ -84,9 +90,12 @@ export {
   clearNetworkRequestsTool,
   collectCodeTool,
   collectionDiffTool,
+  correlateRequestFlowsTool,
   createHookTool,
+  deobfuscateCodeTool,
   detectCryptoTool,
   evaluateScriptTool,
+  exportReverseReportTool,
   exportSessionReportTool,
   getCollectedCodeFileTool,
   getHookDataTool,

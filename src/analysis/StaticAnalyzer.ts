@@ -18,14 +18,29 @@ export class StaticAnalyzer {
     focus?: StaticAnalysisFocus;
   }): Promise<StaticAnalysisResult> {
     const code = input.code ?? '';
+    const focus = input.focus ?? 'all';
+    const includeStructure = focus === 'all' || focus === 'structure';
+    const includeBusiness = focus === 'all' || focus === 'business';
+    const includeSecurity = focus === 'all' || focus === 'security';
     const metrics = this.computeMetrics(code);
-    const structure = this.analyzeStructure(code);
-    const business = this.analyzeBusinessSignals(code);
-    const security = this.analyzeSecurity(code);
+    const structure = includeStructure ? this.analyzeStructure(code) : this.emptyStructure();
+    const business = includeBusiness ? this.analyzeBusinessSignals(code) : this.emptyBusiness();
+    const security = includeSecurity ? this.analyzeSecurity(code) : this.emptySecurity();
     const businessSignalCount = Object.values(business).filter(Boolean).length;
 
     return {
       business,
+      focus,
+      focusNote:
+        focus === 'all'
+          ? 'All static analysis sections are included.'
+          : `Focus is ${focus}; non-focused sections are intentionally returned as minimal empty values.`,
+      includedSections: [
+        'metrics',
+        ...(includeStructure ? (['structure'] as const) : []),
+        ...(includeBusiness ? (['business'] as const) : []),
+        ...(includeSecurity ? (['security'] as const) : [])
+      ],
       metrics,
       qualityScore: computeStaticQualityScore({
         businessSignalCount,
@@ -38,6 +53,32 @@ export class StaticAnalyzer {
       }),
       security,
       structure
+    };
+  }
+
+  private emptyStructure(): StaticAnalysisResult['structure'] {
+    return {
+      candidateFunctions: [],
+      exportedSymbols: [],
+      fileTypeHints: [],
+      likelyModules: []
+    };
+  }
+
+  private emptyBusiness(): StaticAnalysisResult['business'] {
+    return {
+      cryptoRelated: false,
+      domRelated: false,
+      requestRelated: false,
+      storageRelated: false
+    };
+  }
+
+  private emptySecurity(): StaticAnalysisResult['security'] {
+    return {
+      dangerousApis: [],
+      risks: [],
+      suspiciousStrings: []
     };
   }
 

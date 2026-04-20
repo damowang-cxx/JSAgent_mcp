@@ -1,11 +1,11 @@
 {
-  "name": "js-reverser-mcp",
-  "version": "0.6.0",
-  "description": "Phase 6 TypeScript MCP server for observe-first JavaScript reverse-engineering and static analysis workflows.",
+  "name": "jsagent-mcp",
+  "version": "0.7.0",
+  "description": "TypeScript MCP server for observe-first JavaScript reverse-engineering, static analysis, deobfuscation, and request correlation workflows.",
   "type": "module",
   "main": "./build/index.js",
   "bin": {
-    "js-reverser-mcp": "./build/index.js"
+    "jsagent-mcp": "./build/index.js"
   },
   "engines": {
     "node": ">=20.19"

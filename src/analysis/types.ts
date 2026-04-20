@@ -1,4 +1,5 @@
 import type { CodeFileSummary } from '../collector/types.js';
+import type { CorrelationResult } from '../correlation/types.js';
 import type { NetworkRequestRecord } from '../network/types.js';
 
 export type RiskSeverity = 'low' | 'medium' | 'high';
@@ -22,6 +23,9 @@ export interface StaticRisk {
 }
 
 export interface StaticAnalysisResult {
+  focus: StaticAnalysisFocus;
+  includedSections: Array<'structure' | 'business' | 'security' | 'metrics'>;
+  focusNote?: string;
   structure: {
     fileTypeHints: string[];
     likelyModules: string[];
@@ -168,6 +172,7 @@ export interface AnalyzeTargetResult {
     preset: 'none' | 'api-signature' | 'network-core';
     injected: string[];
     signalCount: number;
+    coverageNote: string;
   };
   network: {
     totalObserved: number;
@@ -176,6 +181,18 @@ export interface AnalyzeTargetResult {
   };
   requestFingerprints: RequestFingerprint[];
   priorityTargets: PriorityTarget[];
+  correlation?: CorrelationResult | null;
+  deobfuscation?: {
+    confidence: number;
+    readabilityScore: number;
+    transformations: number;
+    obfuscationType: string[];
+    warnings?: string[];
+  } | null;
+  report?: {
+    format: 'json' | 'markdown';
+    summary: string;
+  } | null;
   recommendedNextSteps: AnalyzeTargetStep[];
   whyTheseSteps: string[];
   stopIf: string[];

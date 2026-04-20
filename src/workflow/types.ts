@@ -55,6 +55,12 @@ export interface AnalyzeTargetOptions {
   autoInjectHooks?: boolean;
   waitAfterHookMs?: number;
   maxFingerprints?: number;
+  maxCorrelatedFlows?: number;
+  correlationWindowMs?: number;
+  includeCorrelation?: boolean;
+  includeExplain?: boolean;
+  runDeobfuscation?: boolean;
+  exportReportFormat?: 'none' | 'json' | 'markdown';
   collect?: AnalyzeTargetCollectOptions;
   taskId?: string;
   taskSlug?: string;

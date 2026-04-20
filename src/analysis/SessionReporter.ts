@@ -186,7 +186,7 @@ export class SessionReporter {
 
   private toMarkdown(report: SessionReport): string {
     const lines = [
-      '# JS Reverser MCP Session Report',
+      '# JSAgent_mcp Session Report',
       '',
       `Generated At: ${report.generatedAt}`,
       '',

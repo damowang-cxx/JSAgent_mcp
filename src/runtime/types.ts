@@ -1,16 +1,20 @@
 import type { CodeSummarizer } from '../analysis/CodeSummarizer.js';
 import type { CryptoDetector } from '../analysis/CryptoDetector.js';
+import type { ExplainEngine } from '../analysis/ExplainEngine.js';
 import type { RiskScorer } from '../analysis/RiskScorer.js';
 import type { SessionReporter } from '../analysis/SessionReporter.js';
 import type { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
+import type { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
+import type { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { HookManager } from '../hook/HookManager.js';
 import type { NetworkCollector } from '../network/NetworkCollector.js';
 import type { RequestInitiatorTracker } from '../network/RequestInitiatorTracker.js';
 import type { XhrWatchpointManager } from '../network/xhrWatchpoints.js';
 import type { PageController } from '../page/PageController.js';
+import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import type { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
 import type { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 
@@ -23,6 +27,10 @@ export interface AppRuntimeServices {
   cryptoDetector: CryptoDetector;
   riskScorer: RiskScorer;
   sessionReporter: SessionReporter;
+  explainEngine: ExplainEngine;
+  deobfuscator: Deobfuscator;
+  requestChainCorrelator: RequestChainCorrelator;
+  reverseReportBuilder: ReverseReportBuilder;
   hookManager: HookManager;
   networkCollector: NetworkCollector;
   requestInitiatorTracker: RequestInitiatorTracker;

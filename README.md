@@ -1,6 +1,6 @@
-# JS Reverser MCP
+# JSAgent_mcp
 
-Phase 6 TypeScript MCP server for observe-first JavaScript reverse-engineering and static analysis workflows.
+TypeScript MCP server for observe-first JavaScript reverse-engineering, static analysis, deobfuscation, and request correlation workflows.
 
 ## Current Scope
 
@@ -21,7 +21,10 @@ The project currently includes:
 - observe-first reverse workflow runner
 - deterministic static analysis layer
 - session report exporter
-- lite analyze workflow runner
+- deterministic deobfuscation pipeline
+- request-chain correlator
+- enhanced analyze workflow runner
+- reverse-focused report exporter
 
 ## Design Principles
 
@@ -101,6 +104,32 @@ Phase 6 is static-first:
 - all default analysis works offline with deterministic rules and heuristics
 - `useAI` is only a future placeholder in this phase
 - no deobfuscation, debugger stepping, SSA, taint engine, or full request-chain graph is implemented
+
+## Added In Next Stage
+
+This stage follows the JSReverser-MCP design direction without copying its full complexity:
+
+- `deobfuscate_code`
+  - independent deterministic deobfuscation pipeline
+  - fixed phases: detect, unpack-like decode, simplify, string-array/accessor cleanup, rename/readability cleanup, optional local explain
+  - single step failures are recorded in `transformations` and do not abort the whole pipeline
+- `correlate_request_flows`
+  - correlates hook records, network records, and request initiator matches
+  - returns hook/network timeline, correlated flows, suspicious flows, request fingerprints, and priority targets
+- enhanced `analyze_target`
+  - supports `includeCorrelation`, `runDeobfuscation`, `includeExplain`, `exportReportFormat`
+  - returns correlation-aware priority targets, action plan, optional deobfuscation summary, and optional report preview
+  - writes `correlation-summary` and `deobfuscation-summary` snapshots when `writeEvidence=true`
+- `export_reverse_report`
+  - exports reverse-focused JSON or Markdown from the current session or the latest `analyze_target` result
+
+Design boundaries:
+
+- deobfuscation is separate from static analysis
+- correlation is approximate, not an absolute call-stack truth
+- all conclusions are derived from observed hook/network/initiator/code signals where available
+- no external AI provider is connected
+- no VM-level restore, debugger platform, CFG/SSA/taint engine, or deep WebSocket protocol analysis is implemented
 
 ## Code Collection Boundary
 
@@ -252,7 +281,10 @@ npm start
 - `understand_code`
 - `detect_crypto`
 - `risk_panel`
+- `deobfuscate_code`
+- `correlate_request_flows`
 - `analyze_target`
+- `export_reverse_report`
 - `export_session_report`
 - `collection_diff`
 - `probe_reverse_target`
@@ -316,7 +348,7 @@ Probe a target:
 }
 ```
 
-Analyze a target with the Phase 6 lite workflow:
+Analyze a target with the enhanced workflow:
 
 ```json
 {
@@ -325,6 +357,10 @@ Analyze a target with the Phase 6 lite workflow:
   "hookPreset": "api-signature",
   "autoInjectHooks": true,
   "waitAfterHookMs": 500,
+  "includeCorrelation": true,
+  "runDeobfuscation": true,
+  "includeExplain": true,
+  "exportReportFormat": "markdown",
   "taskId": "analyze-demo",
   "writeEvidence": true,
   "collect": {
@@ -336,6 +372,28 @@ Analyze a target with the Phase 6 lite workflow:
 }
 ```
 
+Run deterministic deobfuscation:
+
+```json
+{
+  "code": "eval(String.fromCharCode(99,111,110,115,116,32,120,61,49,59))",
+  "renameVariables": true,
+  "explain": true
+}
+```
+
+Correlate current request flows:
+
+```json
+{
+  "correlationWindowMs": 1500,
+  "maxFlows": 20,
+  "maxFingerprints": 12,
+  "candidateFunctions": ["signToken", "buildSignature"],
+  "cryptoAlgorithms": ["hmac", "sha256"]
+}
+```
+
 Export a session report:
 
 ```json
@@ -343,6 +401,17 @@ Export a session report:
   "format": "markdown",
   "includeHookData": true,
   "includeRecentRequests": true
+}
+```
+
+Export a reverse-focused report from the latest analyze run:
+
+```json
+{
+  "source": "analyze-target-last",
+  "format": "markdown",
+  "taskId": "report-demo",
+  "writeSnapshot": true
 }
 ```
 
@@ -396,20 +465,24 @@ Export a session report:
 - `detect_crypto`
 - `risk_panel`
 - `export_session_report`
+- `deobfuscate_code`
+- `correlate_request_flows`
+- `export_reverse_report`
 - `analyze_target`
 
 ## Still Not Implemented
 
-Phase 6 still does not implement:
+The current stage still does not implement:
 
 - full debugger workflows
 - pause / resume / stepInto / callframe tools
 - AI provider platform
 - AI analyzer augmentation
-- deobfuscation pipelines
+- complete VM-level deobfuscation
 - full response-body capture platform
 - worker hook ecosystems
 - full AST taint / callgraph / SSA framework
 - deep WebSocket protocol analysis
-- strong request-chain correlation graph
+- absolute request-chain truth graph
+- auto replay and rebuild-oriented workflows
 - global runtime singleton patterns
