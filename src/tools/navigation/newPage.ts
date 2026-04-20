@@ -18,7 +18,12 @@ export const newPageTool = defineTool<NewPageParams>({
     readOnlyHint: false
   },
   schema,
-  handler: async ({ params }, context) => ({
-    page: await context.browserSession.newPage(params.url, params.timeout)
-  })
+  handler: async ({ params }, context) => {
+    const page = await context.browserSession.newPage(params.url, params.timeout);
+    await context.runtime.getNetworkCollector().ensureAttachedToSelectedPage();
+
+    return {
+      page
+    };
+  }
 });

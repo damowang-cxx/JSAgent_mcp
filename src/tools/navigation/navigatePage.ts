@@ -19,5 +19,10 @@ export const navigatePageTool = defineTool<NavigatePageParams>({
     readOnlyHint: false
   },
   schema,
-  handler: ({ params }, context) => context.browserSession.navigateSelectedPage(params)
+  handler: async ({ params }, context) => {
+    const result = await context.browserSession.navigateSelectedPage(params);
+    await context.runtime.getNetworkCollector().ensureAttachedToSelectedPage();
+
+    return result;
+  }
 });

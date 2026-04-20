@@ -17,7 +17,12 @@ export const selectPageTool = defineTool<SelectPageParams>({
     readOnlyHint: true
   },
   schema,
-  handler: async ({ params }, context) => ({
-    selected: await context.browserSession.selectPage(params.pageIdx)
-  })
+  handler: async ({ params }, context) => {
+    const selected = await context.browserSession.selectPage(params.pageIdx);
+    await context.runtime.getNetworkCollector().ensureAttachedToSelectedPage();
+
+    return {
+      selected
+    };
+  }
 });

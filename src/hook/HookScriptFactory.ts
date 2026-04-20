@@ -30,6 +30,8 @@ export class HookScriptFactory {
       options,
       `
 const targetPath = ${JSON.stringify(targetPath)};
+const dispatchKey = ${JSON.stringify(`function:${targetPath}`)};
+subscribeToTarget(dispatchKey, { targetPath });
 
 function resolveTarget(path) {
   const segments = path.split('.').filter(Boolean);
@@ -69,13 +71,15 @@ if (!resolved || typeof resolved.value !== 'function') {
   return;
 }
 
-const original = resolved.value;
-if (original && original.__jsagentHookWrapped === hookId) {
-  markInstalled();
+if (resolved.value && resolved.value.__jsagentDispatchKey === dispatchKey) {
+  markTargetInstalled(dispatchKey, { targetPath });
   updateHookMeta({ targetPath });
   return;
 }
 
+const original = resolved.value && resolved.value.__jsagentOriginal
+  ? resolved.value.__jsagentOriginal
+  : resolved.value;
 const wrapped = function(...args) {
   const startedAt = new Date().toISOString();
 
@@ -84,8 +88,7 @@ const wrapped = function(...args) {
 
     if (result && typeof result.then === 'function') {
       return result.then((resolvedValue) => {
-        pushRecord({
-          hookId,
+        recordForSubscribers(dispatchKey, {
           targetPath,
           timestamp: startedAt,
           args: safeSerialize(args),
@@ -93,10 +96,9 @@ const wrapped = function(...args) {
         });
         return resolvedValue;
       }).catch((error) => {
-        pushRecord({
+        recordForSubscribers(dispatchKey, {
           error: safeSerialize(error),
           failed: true,
-          hookId,
           targetPath,
           timestamp: startedAt,
           args: safeSerialize(args)
@@ -105,8 +107,7 @@ const wrapped = function(...args) {
       });
     }
 
-    pushRecord({
-      hookId,
+    recordForSubscribers(dispatchKey, {
       targetPath,
       timestamp: startedAt,
       args: safeSerialize(args),
@@ -114,10 +115,9 @@ const wrapped = function(...args) {
     });
     return result;
   } catch (error) {
-    pushRecord({
+    recordForSubscribers(dispatchKey, {
       error: safeSerialize(error),
       failed: true,
-      hookId,
       targetPath,
       timestamp: startedAt,
       args: safeSerialize(args)
@@ -126,15 +126,20 @@ const wrapped = function(...args) {
   }
 };
 
-Object.defineProperty(wrapped, '__jsagentHookWrapped', {
+Object.defineProperty(wrapped, '__jsagentDispatchKey', {
   configurable: true,
   enumerable: false,
-  value: hookId
+  value: dispatchKey
+});
+
+Object.defineProperty(wrapped, '__jsagentOriginal', {
+  configurable: true,
+  enumerable: false,
+  value: original
 });
 
 resolved.parent[resolved.property] = wrapped;
-markInstalled();
-updateHookMeta({ targetPath });
+markTargetInstalled(dispatchKey, { targetPath });
 `
     );
   }
@@ -143,18 +148,22 @@ updateHookMeta({ targetPath });
     return this.wrapScript(
       options,
       `
+const dispatchKey = 'fetch';
+subscribeToTarget(dispatchKey, { targetPath: 'window.fetch' });
+
 if (typeof window.fetch !== 'function') {
   updateHookMeta({ lastError: 'window.fetch is not available', targetPath: 'window.fetch' });
   return;
 }
 
-const originalFetch = window.fetch;
-if (originalFetch && originalFetch.__jsagentHookWrapped === hookId) {
-  markInstalled();
-  updateHookMeta({ targetPath: 'window.fetch' });
+if (window.fetch && window.fetch.__jsagentDispatchKey === dispatchKey) {
+  markTargetInstalled(dispatchKey, { targetPath: 'window.fetch' });
   return;
 }
 
+const originalFetch = window.fetch && window.fetch.__jsagentOriginal
+  ? window.fetch.__jsagentOriginal
+  : window.fetch;
 const wrappedFetch = async function(...args) {
   const startedAt = new Date().toISOString();
   const requestInput = args[0];
@@ -172,8 +181,7 @@ const wrappedFetch = async function(...args) {
 
   try {
     const response = await originalFetch.apply(this, args);
-    pushRecord({
-      hookId,
+    recordForSubscribers(dispatchKey, {
       timestamp: startedAt,
       type: 'fetch',
       url,
@@ -185,8 +193,7 @@ const wrappedFetch = async function(...args) {
     });
     return response;
   } catch (error) {
-    pushRecord({
-      hookId,
+    recordForSubscribers(dispatchKey, {
       timestamp: startedAt,
       type: 'fetch',
       url,
@@ -200,15 +207,20 @@ const wrappedFetch = async function(...args) {
   }
 };
 
-Object.defineProperty(wrappedFetch, '__jsagentHookWrapped', {
+Object.defineProperty(wrappedFetch, '__jsagentDispatchKey', {
   configurable: true,
   enumerable: false,
-  value: hookId
+  value: dispatchKey
+});
+
+Object.defineProperty(wrappedFetch, '__jsagentOriginal', {
+  configurable: true,
+  enumerable: false,
+  value: originalFetch
 });
 
 window.fetch = wrappedFetch;
-markInstalled();
-updateHookMeta({ targetPath: 'window.fetch' });
+markTargetInstalled(dispatchKey, { targetPath: 'window.fetch' });
 `
     );
   }
@@ -217,24 +229,34 @@ updateHookMeta({ targetPath: 'window.fetch' });
     return this.wrapScript(
       options,
       `
+const dispatchKey = 'xhr';
+subscribeToTarget(dispatchKey, { targetPath: 'XMLHttpRequest.prototype' });
+
 const xhrPrototype = window.XMLHttpRequest && window.XMLHttpRequest.prototype;
 if (!xhrPrototype || typeof xhrPrototype.open !== 'function' || typeof xhrPrototype.send !== 'function') {
   updateHookMeta({ lastError: 'XMLHttpRequest is not available', targetPath: 'XMLHttpRequest.prototype' });
   return;
 }
 
-if (xhrPrototype.open && xhrPrototype.open.__jsagentHookWrapped === hookId) {
-  markInstalled();
-  updateHookMeta({ targetPath: 'XMLHttpRequest.prototype' });
+if (
+  xhrPrototype.open &&
+  xhrPrototype.send &&
+  xhrPrototype.open.__jsagentDispatchKey === dispatchKey &&
+  xhrPrototype.send.__jsagentDispatchKey === dispatchKey
+) {
+  markTargetInstalled(dispatchKey, { targetPath: 'XMLHttpRequest.prototype' });
   return;
 }
 
-const originalOpen = xhrPrototype.open;
-const originalSend = xhrPrototype.send;
+const originalOpen = xhrPrototype.open && xhrPrototype.open.__jsagentOriginal
+  ? xhrPrototype.open.__jsagentOriginal
+  : xhrPrototype.open;
+const originalSend = xhrPrototype.send && xhrPrototype.send.__jsagentOriginal
+  ? xhrPrototype.send.__jsagentOriginal
+  : xhrPrototype.send;
 
 xhrPrototype.open = function(method, url, ...rest) {
-  this.__jsagentXhrState = this.__jsagentXhrState || {};
-  this.__jsagentXhrState[hookId] = {
+  this.__jsagentXhrState = {
     method: typeof method === 'string' ? method : String(method),
     startedAt: new Date().toISOString(),
     url: typeof url === 'string' ? url : String(url)
@@ -243,24 +265,30 @@ xhrPrototype.open = function(method, url, ...rest) {
   return originalOpen.call(this, method, url, ...rest);
 };
 
-Object.defineProperty(xhrPrototype.open, '__jsagentHookWrapped', {
+Object.defineProperty(xhrPrototype.open, '__jsagentDispatchKey', {
   configurable: true,
   enumerable: false,
-  value: hookId
+  value: dispatchKey
+});
+
+Object.defineProperty(xhrPrototype.open, '__jsagentOriginal', {
+  configurable: true,
+  enumerable: false,
+  value: originalOpen
 });
 
 xhrPrototype.send = function(body) {
-  this.__jsagentXhrState = this.__jsagentXhrState || {};
-  const state = this.__jsagentXhrState[hookId] || {
-    method: 'GET',
-    startedAt: new Date().toISOString(),
-    url: ''
-  };
+  const state = this.__jsagentXhrState && typeof this.__jsagentXhrState === 'object'
+    ? this.__jsagentXhrState
+    : {
+        method: 'GET',
+        startedAt: new Date().toISOString(),
+        url: ''
+      };
 
   const emitRecord = (extra) => {
-    pushRecord({
+    recordForSubscribers(dispatchKey, {
       body: safeSerialize(body),
-      hookId,
       method: state.method,
       readyState: this.readyState,
       status: Number(this.status) || 0,
@@ -294,14 +322,19 @@ xhrPrototype.send = function(body) {
   return originalSend.call(this, body);
 };
 
-Object.defineProperty(xhrPrototype.send, '__jsagentHookWrapped', {
+Object.defineProperty(xhrPrototype.send, '__jsagentDispatchKey', {
   configurable: true,
   enumerable: false,
-  value: hookId
+  value: dispatchKey
 });
 
-markInstalled();
-updateHookMeta({ targetPath: 'XMLHttpRequest.prototype' });
+Object.defineProperty(xhrPrototype.send, '__jsagentOriginal', {
+  configurable: true,
+  enumerable: false,
+  value: originalSend
+});
+
+markTargetInstalled(dispatchKey, { targetPath: 'XMLHttpRequest.prototype' });
 `
     );
   }
@@ -326,13 +359,22 @@ updateHookMeta({ targetPath: 'XMLHttpRequest.prototype' });
   if (!root[hookMetaKey]) {
     root[hookMetaKey] = {};
   }
-  if (!root[hooksInstalledKey]) {
+  if (!root[hooksInstalledKey] || typeof root[hooksInstalledKey] !== 'object') {
     root[hooksInstalledKey] = {};
   }
 
   const store = root[hookStoreKey];
   const meta = root[hookMetaKey];
   const installed = root[hooksInstalledKey];
+  if (!installed.hookIds || typeof installed.hookIds !== 'object') {
+    installed.hookIds = {};
+  }
+  if (!installed.targets || typeof installed.targets !== 'object') {
+    installed.targets = {};
+  }
+
+  const installedHookIds = installed.hookIds;
+  const installedTargets = installed.targets;
 
   function safeSerialize(value, depth = 0) {
     if (value === null || value === undefined) {
@@ -399,15 +441,15 @@ updateHookMeta({ targetPath: 'XMLHttpRequest.prototype' });
     }
   }
 
-  function ensureRecordList() {
-    if (!Array.isArray(store[hookId])) {
-      store[hookId] = [];
+  function ensureRecordList(recordHookId) {
+    if (!Array.isArray(store[recordHookId])) {
+      store[recordHookId] = [];
     }
-    return store[hookId];
+    return store[recordHookId];
   }
 
-  function pushRecord(record) {
-    const list = ensureRecordList();
+  function pushRecord(recordHookId, record) {
+    const list = ensureRecordList(recordHookId);
     list.push(record);
     if (list.length > maxRecords) {
       list.splice(0, list.length - maxRecords);
@@ -427,14 +469,65 @@ updateHookMeta({ targetPath: 'XMLHttpRequest.prototype' });
     };
   }
 
-  function markInstalled() {
-    installed[hookId] = true;
-    updateHookMeta({ installed: true, installedAt: new Date().toISOString() });
+  function ensureTargetState(dispatchKey) {
+    if (!installedTargets[dispatchKey] || typeof installedTargets[dispatchKey] !== 'object') {
+      installedTargets[dispatchKey] = {
+        installed: false,
+        subscribers: []
+      };
+    }
+
+    if (!Array.isArray(installedTargets[dispatchKey].subscribers)) {
+      installedTargets[dispatchKey].subscribers = [];
+    }
+
+    return installedTargets[dispatchKey];
   }
 
-  if (installed[hookId]) {
-    updateHookMeta();
-    return;
+  function getSubscribers(dispatchKey) {
+    return ensureTargetState(dispatchKey).subscribers.slice();
+  }
+
+  function subscribeToTarget(dispatchKey, extra = {}) {
+    const targetState = ensureTargetState(dispatchKey);
+    if (!targetState.subscribers.includes(hookId)) {
+      targetState.subscribers.push(hookId);
+    }
+
+    installedHookIds[hookId] = true;
+    updateHookMeta({
+      installed: Boolean(targetState.installed),
+      installedAt: targetState.installedAt,
+      subscriptionKey: dispatchKey,
+      ...extra
+    });
+
+    return targetState;
+  }
+
+  function recordForSubscribers(dispatchKey, record) {
+    for (const subscriberHookId of getSubscribers(dispatchKey)) {
+      pushRecord(subscriberHookId, {
+        hookId: subscriberHookId,
+        ...record
+      });
+    }
+  }
+
+  function markTargetInstalled(dispatchKey, extra = {}) {
+    const targetState = ensureTargetState(dispatchKey);
+    if (!targetState.installedAt) {
+      targetState.installedAt = new Date().toISOString();
+    }
+
+    targetState.installed = true;
+    installedHookIds[hookId] = true;
+    updateHookMeta({
+      installed: true,
+      installedAt: targetState.installedAt,
+      subscriptionKey: dispatchKey,
+      ...extra
+    });
   }
 
   ${body}

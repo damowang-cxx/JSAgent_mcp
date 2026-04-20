@@ -2,7 +2,13 @@ import type { HTTPRequest, HTTPResponse, Page } from 'puppeteer';
 
 import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { AppError } from '../core/errors.js';
-import type { ListNetworkRequestsOptions, NetworkRequestRecord } from './types.js';
+import { RequestInitiatorTracker } from './RequestInitiatorTracker.js';
+import type {
+  ListNetworkRequestsOptions,
+  NetworkRequestRecord,
+  RequestInitiatorMatchResult,
+  RequestInitiatorRecord
+} from './types.js';
 
 const DEFAULT_MAX_REQUESTS_PER_PAGE = 500;
 const MAX_POST_DATA_LENGTH = 8_000;
@@ -21,6 +27,7 @@ export class NetworkCollector {
 
   constructor(
     private readonly browserSession: BrowserSessionManager,
+    private readonly requestInitiatorTracker: RequestInitiatorTracker,
     private readonly maxRequestsPerPage = DEFAULT_MAX_REQUESTS_PER_PAGE
   ) {}
 
@@ -42,16 +49,48 @@ export class NetworkCollector {
   }
 
   async getRequest(id: string): Promise<NetworkRequestRecord | null> {
-    for (const state of this.pageStates.values()) {
-      const record = state.requestIndex.get(id);
-      if (record) {
-        return {
-          ...record
-        };
-      }
+    const locatedRequest = this.findRequest(id);
+    if (!locatedRequest) {
+      return null;
     }
 
-    return null;
+    return {
+      ...locatedRequest.record
+    };
+  }
+
+  async getRequestInitiator(requestId: string, timeWindowMs = 2_000): Promise<RequestInitiatorMatchResult> {
+    const locatedRequest = this.findRequest(requestId);
+    if (!locatedRequest) {
+      return {
+        initiator: null,
+        requestId
+      };
+    }
+
+    const history = await this.requestInitiatorTracker.getInitiatorHistory(locatedRequest.state.page);
+    const exactMatch = this.findNearestInitiator(locatedRequest.record, history, timeWindowMs, true);
+    if (exactMatch) {
+      return {
+        initiator: exactMatch,
+        matchedBy: 'method+url+nearest-timestamp',
+        requestId
+      };
+    }
+
+    const urlMatch = this.findNearestInitiator(locatedRequest.record, history, timeWindowMs, false);
+    if (urlMatch) {
+      return {
+        initiator: urlMatch,
+        matchedBy: 'url+nearest-timestamp',
+        requestId
+      };
+    }
+
+    return {
+      initiator: null,
+      requestId
+    };
   }
 
   async clearSelectedPageRequests(): Promise<{ cleared: number }> {
@@ -77,7 +116,7 @@ export class NetworkCollector {
   }
 
   private ensurePageAttached(page: Page): PageNetworkState {
-    const pageId = this.getPageId(page);
+    const pageId = this.browserSession.getPageId(page);
     const existing = this.pageStates.get(pageId);
     if (existing) {
       return existing;
@@ -114,6 +153,20 @@ export class NetworkCollector {
 
     this.pageStates.set(pageId, state);
     return state;
+  }
+
+  private findRequest(id: string): { state: PageNetworkState; record: NetworkRequestRecord } | null {
+    for (const state of this.pageStates.values()) {
+      const record = state.requestIndex.get(id);
+      if (record) {
+        return {
+          record,
+          state
+        };
+      }
+    }
+
+    return null;
   }
 
   private onRequest(state: PageNetworkState, request: HTTPRequest): void {
@@ -199,23 +252,25 @@ export class NetworkCollector {
       }
     }
 
-    return records.filter((record) => {
-      if (urlExpression && !urlExpression.test(record.url)) {
-        return false;
-      }
+    return records
+      .filter((record) => {
+        if (urlExpression && !urlExpression.test(record.url)) {
+          return false;
+        }
 
-      if (options.method && record.method.toUpperCase() !== options.method.toUpperCase()) {
-        return false;
-      }
+        if (options.method && record.method.toUpperCase() !== options.method.toUpperCase()) {
+          return false;
+        }
 
-      if (options.resourceType && record.resourceType !== options.resourceType) {
-        return false;
-      }
+        if (options.resourceType && record.resourceType !== options.resourceType) {
+          return false;
+        }
 
-      return true;
-    }).map((record) => ({
-      ...record
-    }));
+        return true;
+      })
+      .map((record) => ({
+        ...record
+      }));
   }
 
   private calculateDurationMs(startedAt: string, endedAt: string): number | undefined {
@@ -229,13 +284,50 @@ export class NetworkCollector {
     return Math.max(0, ended - started);
   }
 
-  private getPageId(page: Page): string {
-    const target = page.target() as { _targetId?: string };
-    if (typeof target._targetId === 'string' && target._targetId.length > 0) {
-      return target._targetId;
+  private findNearestInitiator(
+    request: NetworkRequestRecord,
+    history: readonly RequestInitiatorRecord[],
+    timeWindowMs: number,
+    requireMethodMatch: boolean
+  ): RequestInitiatorRecord | null {
+    const requestStartedAt = Date.parse(request.startedAt);
+    if (Number.isNaN(requestStartedAt)) {
+      return null;
     }
 
-    return `page:${page.url()}`;
+    const requestMethod = request.method.toUpperCase();
+    const requestUrl = this.normalizeComparableUrl(request.url);
+    let bestMatch: RequestInitiatorRecord | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const candidate of history) {
+      if (this.normalizeComparableUrl(candidate.url) !== requestUrl) {
+        continue;
+      }
+
+      if (requireMethodMatch && candidate.method.toUpperCase() !== requestMethod) {
+        continue;
+      }
+
+      const candidateStartedAt = Date.parse(candidate.timestamp);
+      if (Number.isNaN(candidateStartedAt)) {
+        continue;
+      }
+
+      const distance = Math.abs(requestStartedAt - candidateStartedAt);
+      if (distance > timeWindowMs) {
+        continue;
+      }
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestMatch = {
+          ...candidate
+        };
+      }
+    }
+
+    return bestMatch;
   }
 
   private normalizePostData(postData: string | undefined): string | null {
@@ -244,5 +336,15 @@ export class NetworkCollector {
     }
 
     return postData.length > MAX_POST_DATA_LENGTH ? `${postData.slice(0, MAX_POST_DATA_LENGTH)}...[truncated]` : postData;
+  }
+
+  private normalizeComparableUrl(url: string): string {
+    try {
+      const normalizedUrl = new URL(url);
+      normalizedUrl.hash = '';
+      return normalizedUrl.toString();
+    } catch {
+      return url;
+    }
   }
 }

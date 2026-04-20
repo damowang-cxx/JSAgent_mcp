@@ -1,54 +1,39 @@
 # JS Reverser MCP
 
-Phase 4 minimal TypeScript MCP server for JavaScript reverse-engineering workflows.
+Phase 5 TypeScript MCP server for observe-first JavaScript reverse-engineering workflows.
 
 ## Current Scope
 
 The project currently includes:
 
-- TypeScript + ESM project structure
-- stdio MCP server based on `@modelcontextprotocol/sdk`
+- TypeScript + ESM MCP server based on `@modelcontextprotocol/sdk`
 - shared `defineTool` / `ToolRegistry` infrastructure
 - structured JSON tool responses
 - shared `BrowserSessionManager`
 - app-scoped `AppRuntime`
 - thin `PageController`
-- minimal in-memory `CodeCollector`
-- minimal `HookManager`
-- minimal `NetworkCollector`
+- enhanced `CodeCollector`
+- `HookManager`
+- `NetworkCollector`
+- `RequestInitiatorTracker`
+- `XhrWatchpointManager`
 - minimal `EvidenceStore`
+- observe-first reverse workflow runner
 
 ## Design Principles
 
-The current implementation intentionally keeps these boundaries:
-
-- `BrowserSessionManager` remains the only owner of browser + selected page state
-- `AppRuntime` is app-scoped, not a global singleton
-- `PageController` stays thin and page-oriented
-- `CodeCollector` is only a collection entry point, not an analyzer
-- `HookManager` works as a facade over hook metadata, script generation, and data reading
-- evidence flows are artifact-first
-
-## Hook-First / Evidence-First
-
-Phase 4 follows these rules:
-
-- Hook-first
-  - prefer runtime sampling instead of breakpoint workflows
+- Observe-first
+  - collect first, then narrow results
+- Hook-preferred
+  - prefer runtime sampling over debugger-first workflows
 - Evidence-first
-  - important observations can be written into task artifacts
-- no breakpoint workflow
-  - no pause / resume / step controls
-  - no full CDP Debugger implementation
+  - important observations should be writable into task artifacts
+- single browser session owner
+  - `BrowserSessionManager` remains the only owner of browser + selected page state
+- app-scoped runtime
+  - `AppRuntime` is composed in `main.ts`, not a global singleton
 
 ## Browser Foundation
-
-The browser session layer from earlier phases is still the single source of truth for:
-
-- browser lifecycle
-- page list
-- selected page state
-- minimal preload injection
 
 Browser connection modes:
 
@@ -57,70 +42,86 @@ Browser connection modes:
 - `BROWSER_AUTO_CONNECT=true`
 - local Puppeteer launch fallback
 
-## Added In Phase 4
+Connection priority:
 
-- Hook management
-  - `create_hook`
-  - `list_hooks`
-  - `inject_hook`
-  - `get_hook_data`
-  - `clear_hook_data`
-- network request observation
-  - `list_network_requests`
-  - `get_network_request`
-  - `clear_network_requests`
-- reverse task artifacts
-  - `open_reverse_task`
-  - `record_reverse_evidence`
+1. `BROWSER_WS_ENDPOINT`
+2. `BROWSER_URL`
+3. `BROWSER_AUTO_CONNECT=true`
+4. local launch
 
-## Hook Capability Boundary
+## Added In Phase 5
 
-Current hook support is intentionally small:
+- enhanced `collect_code`
+  - `returnMode='full' | 'summary' | 'pattern' | 'top-priority'`
+  - inline + external collection
+  - optional dynamic wait
+  - temporary CDP-based script body capture during collection
+- collection utilities
+  - `collection_diff`
+  - `get_collected_code_file`
+- request initiator tracing
+  - `get_request_initiator`
+  - method/url/timestamp nearest-match correlation
+- XHR / fetch watchpoints
+  - `break_on_xhr`
+  - `remove_xhr_breakpoint`
+  - `list_xhr_breakpoints`
+- observe-first workflow entry
+  - `probe_reverse_target`
 
-- `function`
-  - wraps a global function or object method by `targetPath`
-- `fetch`
-  - wraps `window.fetch`
-- `xhr`
-  - wraps `XMLHttpRequest.prototype.open/send`
+## Code Collection Boundary
 
-Browser-side hook storage uses:
+Current `CodeCollector` supports:
 
-- `window.JSAGENT_HOOK_STORE`
-- `window.JSAGENT_HOOK_META`
-- `window.JSAGENT_HOOKS_INSTALLED`
+- inline scripts
+- external scripts
+- current-page loaded script URLs
+- summary / pattern / top-priority retrieval
+- simple in-memory cache + diff
+- temporary CDP response-body capture only for JavaScript collection
 
-Current hook limitations:
+It still does not implement:
 
-- no plugin registry
-- no block / modify strategies
-- no worker / service worker hooks
-- no advanced serialization pipeline
-- no anti-debug bypass
+- workers / service workers
+- source maps
+- AST analysis
+- full dependency graphs
+- generic response-body platform for every request type
 
-## Network Observation Boundary
+## Request Initiator Boundary
 
-Current network support is also minimal:
+`get_request_initiator` is intentionally approximate:
 
-- attaches Puppeteer page listeners lazily
-- records request summaries only
-- supports:
-  - `request`
-  - `response`
-  - `requestfinished`
-  - `requestfailed`
+- page-side tracking wraps `fetch` and `XMLHttpRequest`
+- it records stack, URL, method, timestamp, and safe summaries
+- correlation is done by:
+  - method + URL + nearest timestamp
+  - or URL + nearest timestamp
 
-What it does not do:
+It is not a full CDP initiator-stack fidelity system.
 
-- no response body capture
-- no HAR export
-- no initiator stack tracing
-- no `break_on_xhr`
-- no WebSocket tracking
+Browser-side stores:
+
+- `window.JSAGENT_PENDING_INITIATORS`
+- `window.JSAGENT_INITIATOR_HISTORY`
+
+## XHR Watchpoint Boundary
+
+`break_on_xhr` is a watchpoint, not a full debugger breakpoint.
+
+- default mode is `record`
+- optional mode is `debugger-statement`
+- matching supports plain substring or regex
+- rules can be limited by HTTP method
+
+Browser-side stores:
+
+- `window.JSAGENT_XHR_WATCH_RULES`
+- `window.JSAGENT_XHR_WATCH_EVENTS`
 
 ## Evidence / Task Artifact Boundary
 
-Current task artifacts use this minimal structure:
+Current task artifacts use:
 
 - `artifacts/tasks/<taskId>/task.json`
 - `timeline.jsonl`
@@ -129,31 +130,37 @@ Current task artifacts use this minimal structure:
 - `hooks.jsonl`
 - `snapshots/`
 
-The evidence layer does not yet implement:
+The evidence layer stays minimal:
 
-- rebuild bundles
-- env templates
-- report templates
-- algorithm workflows
+- no report templating
+- no rebuild bundles
+- no environment scaffolding
 
-## Existing Phase 3 Features
+## Existing Core Tooling
 
-Still available:
+Still available from earlier phases:
 
+- `check_browser_health`
+- `list_pages`
+- `select_page`
+- `new_page`
+- `navigate_page`
 - `evaluate_script`
-- `collect_code`
-- `list_collected_code`
-- `search_collected_code`
+- `create_hook`
+- `inject_hook`
+- `get_hook_data`
+- `list_network_requests`
+- `get_network_request`
+- `open_reverse_task`
+- `record_reverse_evidence`
 
-`evaluate_script` supports expression strings evaluated inside the selected page.
+`evaluate_script` still expects an expression string. If you need multiple statements, wrap them in an IIFE.
 
-Recommended examples:
+Examples:
 
 - `document.title`
 - `window.location.href`
 - `(() => ({ title: document.title, url: location.href }))()`
-
-If you need multiple statements, wrap them in an IIFE expression.
 
 ## Install And Run
 
@@ -174,28 +181,6 @@ Type check:
 ```bash
 npm run typecheck
 ```
-
-## Browser Configuration
-
-The server reads browser options from environment variables:
-
-- `BROWSER_URL`
-  - example: `http://127.0.0.1:9222`
-- `BROWSER_WS_ENDPOINT`
-  - example: `ws://127.0.0.1:9222/devtools/browser/...`
-- `BROWSER_AUTO_CONNECT=true`
-  - probes `127.0.0.1:9222` to `127.0.0.1:9225`
-- `BROWSER_HEADLESS`
-  - used only when launching a local browser
-- `BROWSER_EXECUTABLE_PATH`
-  - optional custom Chrome / Chromium path
-
-Connection priority:
-
-1. `BROWSER_WS_ENDPOINT`
-2. `BROWSER_URL`
-3. `BROWSER_AUTO_CONNECT=true`
-4. local launch
 
 ## Suggested Validation Flow
 
@@ -223,77 +208,70 @@ npm start
 
 - `list_pages`
 - `select_page`
-- `create_hook`
-- `inject_hook`
-- manually trigger a fetch or xhr request
-- `get_hook_data`
 - `list_network_requests`
-- `open_reverse_task`
-- `record_reverse_evidence`
+- `break_on_xhr`
+- reproduce a request in the page
+- `get_request_initiator`
+- `collect_code` with `returnMode='summary'`
+- `collect_code` with `returnMode='top-priority'`
+- `collection_diff`
+- `probe_reverse_target`
 
 ## Example Tool Flow
 
-Create a fetch hook:
+Add a watchpoint:
 
 ```json
 {
-  "type": "fetch",
-  "description": "Observe fetch calls"
+  "url": "api",
+  "mode": "record"
 }
 ```
 
-Inject it into the selected page:
+Collect code summary:
 
 ```json
 {
-  "hookId": "fetch-example",
-  "currentDocument": true,
-  "futureDocuments": true
+  "returnMode": "summary",
+  "includeInline": true,
+  "includeExternal": true
 }
 ```
 
-Read hook data:
+Collect top-priority files:
 
 ```json
 {
-  "hookId": "fetch-example"
+  "returnMode": "top-priority",
+  "topN": 5,
+  "includeInline": true,
+  "includeExternal": true
 }
 ```
 
-List network requests:
+Get request initiator:
 
 ```json
 {
-  "limit": 20
+  "requestId": "page-1:3",
+  "includeSnapshot": true,
+  "taskId": "demo-task"
 }
 ```
 
-Open a reverse task:
+Probe a target:
 
 ```json
 {
-  "taskId": "demo-task",
-  "slug": "demo",
-  "targetUrl": "https://example.com",
-  "goal": "Observe hooks and requests"
-}
-```
-
-Record evidence:
-
-```json
-{
-  "taskId": "demo-task",
-  "type": "runtime-evidence",
-  "value": {
-    "note": "fetch hook fired"
-  },
-  "timelineEvent": {
-    "kind": "hook-fired"
-  },
-  "snapshotName": "hook-state",
-  "snapshotValue": {
-    "hookId": "fetch-example"
+  "url": "https://example.com",
+  "taskId": "probe-demo",
+  "autoInjectHooks": true,
+  "writeEvidence": true,
+  "collect": {
+    "returnMode": "top-priority",
+    "topN": 5,
+    "includeInline": true,
+    "includeExternal": true
   }
 }
 ```
@@ -327,6 +305,8 @@ Record evidence:
 ### Reverse Engineering Entry Tools
 
 - `collect_code`
+- `collection_diff`
+- `get_collected_code_file`
 - `list_collected_code`
 - `search_collected_code`
 - `create_hook`
@@ -334,18 +314,23 @@ Record evidence:
 - `inject_hook`
 - `get_hook_data`
 - `clear_hook_data`
+- `get_request_initiator`
+- `break_on_xhr`
+- `remove_xhr_breakpoint`
+- `list_xhr_breakpoints`
 - `open_reverse_task`
 - `record_reverse_evidence`
+- `probe_reverse_target`
 
 ## Still Not Implemented
 
-Phase 4 still does not implement:
+Phase 5 still does not implement:
 
-- breakpoint workflows
-- debugger stepping
-- full CDP response body capture
-- LLM analysis
-- crypto / deobfuscation
-- `analyze_target`
-- worker hook systems
-- full reverse-analysis orchestration
+- full debugger workflows
+- pause / resume / stepInto / callframe tools
+- AI analyzer flows
+- crypto / deobfuscation pipelines
+- full `analyze_target`
+- full response-body capture platform
+- worker hook ecosystems
+- global runtime singleton patterns

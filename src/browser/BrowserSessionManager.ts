@@ -49,6 +49,8 @@ export class BrowserSessionManager {
   private browser: Browser | null = null;
   private mode: BrowserConnectionMode | null = null;
   private options: BrowserSessionOptions;
+  private pageIdSequence = 0;
+  private readonly pageIds = new WeakMap<Page, string>();
   private pendingEnsure: Promise<Browser> | null = null;
   private readonly preloadRegisteredPageIds = new Set<string>();
   private selectedPageId: string | null = null;
@@ -172,6 +174,22 @@ export class BrowserSessionManager {
     }
 
     return pages.find((page) => this.getPageId(page) === this.selectedPageId) ?? null;
+  }
+
+  getPageId(page: Page): string {
+    const existingPageId = this.pageIds.get(page);
+    if (existingPageId) {
+      return existingPageId;
+    }
+
+    const target = page.target() as { _targetId?: string };
+    const pageId =
+      typeof target._targetId === 'string' && target._targetId.length > 0
+        ? target._targetId
+        : `page-${++this.pageIdSequence}`;
+
+    this.pageIds.set(page, pageId);
+    return pageId;
   }
 
   async selectPage(index: number): Promise<PageSummary> {
@@ -529,15 +547,6 @@ export class BrowserSessionManager {
       title,
       url: this.getPageUrl(page)
     };
-  }
-
-  private getPageId(page: Page): string {
-    const target = page.target() as { _targetId?: string };
-    if (typeof target._targetId === 'string' && target._targetId.length > 0) {
-      return target._targetId;
-    }
-
-    return `page:${this.getPageUrl(page)}`;
   }
 
   private getPageUrl(page: Page): string {

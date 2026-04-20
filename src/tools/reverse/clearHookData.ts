@@ -19,9 +19,10 @@ export const clearHookDataTool = defineTool<ClearHookDataParams>({
   schema,
   handler: async ({ params }, context) => {
     const page = await context.browserSession.getSelectedPage();
-    await context.runtime.getHookManager().clearHookData(page, params.hookId);
+    const result = await context.runtime.getHookManager().clearHookData(page, params.hookId);
 
     return {
+      clearedCount: result.clearedCount,
       ...(params.hookId ? { hookId: params.hookId } : {}),
       cleared: true
     };

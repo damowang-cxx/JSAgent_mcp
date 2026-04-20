@@ -1,7 +1,7 @@
 {
   "name": "js-reverser-mcp",
-  "version": "0.4.0",
-  "description": "Phase 4 TypeScript MCP server skeleton with hook management, network observation, and evidence artifacts.",
+  "version": "0.5.0",
+  "description": "Phase 5 TypeScript MCP server for observe-first JavaScript reverse-engineering workflows.",
   "type": "module",
   "main": "./build/index.js",
   "bin": {

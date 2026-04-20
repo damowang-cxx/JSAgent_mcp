@@ -1,5 +1,6 @@
 import type { Page } from 'puppeteer';
 
+import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { AppError } from '../core/errors.js';
 import { HookScriptFactory } from './HookScriptFactory.js';
 import type { HookCreateOptions, HookDataResult, HookInjectionOptions, HookManagerStats, HookMeta } from './types.js';
@@ -18,6 +19,8 @@ export class HookManager {
   private readonly hookScriptFactory = new HookScriptFactory();
   private readonly hooks = new Map<string, HookMeta>();
   private readonly injectedTargets = new Map<string, Set<string>>();
+
+  constructor(private readonly browserSession: BrowserSessionManager) {}
 
   createHook(options: HookCreateOptions): HookMeta {
     const hookId = options.hookId?.trim() || this.createHookId(options.type);
@@ -108,7 +111,7 @@ export class HookManager {
       });
     }
 
-    const pageId = this.getPageId(page);
+    const pageId = this.browserSession.getPageId(page);
     const injectedTargets = this.injectedTargets.get(hookId);
     injectedTargets?.add(pageId);
 
@@ -198,14 +201,5 @@ export class HookManager {
 
   private createHookId(type: HookCreateOptions['type']): string {
     return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  private getPageId(page: Page): string {
-    const target = page.target() as { _targetId?: string };
-    if (typeof target._targetId === 'string' && target._targetId.length > 0) {
-      return target._targetId;
-    }
-
-    return `page:${page.url()}`;
   }
 }
