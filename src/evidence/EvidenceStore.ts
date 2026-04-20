@@ -1,10 +1,17 @@
-import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AppError } from '../core/errors.js';
 import type { EvidenceLogName, OpenTaskInput, OpenTaskResult, ReverseTaskDescriptor } from './types.js';
 
-const ARTIFACT_LOG_FILES: readonly EvidenceLogName[] = ['runtime-evidence', 'network', 'hooks', 'acceptance'] as const;
+const ARTIFACT_LOG_FILES: readonly EvidenceLogName[] = [
+  'runtime-evidence',
+  'network',
+  'hooks',
+  'acceptance',
+  'regression-baselines',
+  'regression'
+] as const;
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -152,6 +159,31 @@ export class EvidenceStore {
     return JSON.parse(raw) as unknown;
   }
 
+  async readTaskDescriptor(taskId: string): Promise<ReverseTaskDescriptor | undefined> {
+    const taskFilePath = path.join(this.getTaskDir(taskId), 'task.json');
+    return await this.readDescriptor(taskFilePath);
+  }
+
+  async listLogs(taskId: string): Promise<EvidenceLogName[]> {
+    await this.ensureTaskExists(taskId);
+    const taskDir = this.getTaskDir(taskId);
+    const entries = await readdir(taskDir, { withFileTypes: true });
+    return entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.jsonl'))
+      .map((entry) => entry.name.replace(/\.jsonl$/, '') as EvidenceLogName)
+      .filter((name): name is EvidenceLogName => ARTIFACT_LOG_FILES.includes(name));
+  }
+
+  async listSnapshots(taskId: string): Promise<string[]> {
+    await this.ensureTaskExists(taskId);
+    const snapshotRoot = path.join(this.getTaskDir(taskId), 'snapshots');
+    if (!(await pathExists(snapshotRoot))) {
+      return [];
+    }
+
+    return await this.listSnapshotFiles(snapshotRoot, snapshotRoot);
+  }
+
   getTaskDir(taskId: string): string {
     assertSafeSegment(taskId, 'taskId');
     return path.join(this.rootDir, taskId);
@@ -215,5 +247,24 @@ export class EvidenceStore {
   private async writeJsonFile(targetPath: string, value: unknown): Promise<void> {
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  }
+
+  private async listSnapshotFiles(root: string, currentDir: string): Promise<string[]> {
+    const entries = await readdir(currentDir, { withFileTypes: true });
+    const names: string[] = [];
+
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        names.push(...await this.listSnapshotFiles(root, fullPath));
+        continue;
+      }
+
+      if (entry.isFile() && entry.name.endsWith('.json')) {
+        names.push(path.relative(root, fullPath).replace(/\\/g, '/').replace(/\.json$/, ''));
+      }
+    }
+
+    return names.sort();
   }
 }

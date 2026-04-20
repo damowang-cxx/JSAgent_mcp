@@ -32,6 +32,7 @@ The project currently includes:
 - fixture stabilization and patch workflow report exporter
 - PureExtraction gate, frozen sample manager, runtime trace sampler, Node pure scaffold, verifier, and pure report exporter
 - Python pure scaffold exporter, cross-language verifier/diff, port workflow, and upgrade-diff runner
+- canonical task manifest, stage gates, regression baseline registry, regression runner, SDK packager, and delivery workflow
 
 ## Design Principles
 
@@ -695,6 +696,76 @@ Export a port report:
 }
 ```
 
+## Phase 12: Artifact/Gate Closure + SDK Packaging / Regression Baseline
+
+Phase 12 turns task artifacts into the canonical state source. A stage is not considered done just because its tools exist; `evaluate_stage_gate` checks concrete artifacts and explains missing evidence.
+
+New capabilities:
+
+- `get_task_manifest`: reads or creates the canonical task manifest, latest pointers, stage state, and artifact index.
+- `evaluate_stage_gate`: evaluates one stage or all stages with reasons, missing artifacts, and next actions.
+- `register_regression_baseline`: registers a fixture-based baseline only after the pure or port gate passes.
+- `list_regression_baselines`: lists artifact-backed baselines for a task.
+- `run_regression_baseline`: reruns Node/Python pure outputs against the registered baseline and reports first divergence.
+- `export_sdk_package`: exports a minimal Node/Python/dual SDK package only after the required verification gate passes.
+- `export_task_state_report`: exports current stage, gates, latest pointers, missing artifacts, and next actions.
+- `export_regression_report`: exports the latest regression run report.
+- `run_delivery_workflow`: chains gates, baseline, regression, and SDK packaging into a delivery readiness result.
+
+Design rules:
+
+- Artifact-first: task snapshots and jsonl logs are the truth source; runtime cache is only a shortcut.
+- Stage-completion-first: Observe / Capture / Rebuild / Patch / PureExtraction / Port / Delivery have explicit gate checks.
+- Baseline-before-regression: baselines can only be registered after pure or port gate passes.
+- SDK-after-verification: Node SDK requires pure gate; Python/dual SDK requires port gate.
+- Evidence-first: manifests, baselines, regression runs, reports, and SDK exports are written back into task artifacts.
+
+Boundaries:
+
+- SDK packages are minimal delivery artifacts, not npm/PyPI publishing pipelines.
+- Regression is fixture-based deterministic comparison, not full CI integration.
+- Upgrade/regression mismatch reports first divergence and the smallest next action; it does not auto-fix code.
+
+Recommended Phase 12 validation flow:
+
+1. `run_port_workflow` with `writeEvidence=true`.
+2. `evaluate_stage_gate` with `{ "all": true }`.
+3. `register_regression_baseline`.
+4. `run_regression_baseline`.
+5. `export_sdk_package`.
+6. `export_task_state_report` as JSON and markdown.
+7. `export_regression_report` as JSON and markdown.
+8. `run_delivery_workflow`.
+
+Evaluate all gates:
+
+```json
+{
+  "taskId": "delivery-demo",
+  "all": true
+}
+```
+
+Register and run a baseline:
+
+```json
+{
+  "taskId": "delivery-demo",
+  "source": "port",
+  "notes": ["First delivery baseline after port gate."]
+}
+```
+
+Export a dual SDK package:
+
+```json
+{
+  "taskId": "delivery-demo",
+  "target": "dual",
+  "overwrite": true
+}
+```
+
 ## Tool Summary
 
 ### Core Tools
@@ -776,6 +847,15 @@ Export a port report:
 - `run_port_workflow`
 - `export_port_report`
 - `analyze_upgrade_diff`
+- `get_task_manifest`
+- `evaluate_stage_gate`
+- `register_regression_baseline`
+- `list_regression_baselines`
+- `run_regression_baseline`
+- `export_sdk_package`
+- `export_task_state_report`
+- `export_regression_report`
+- `run_delivery_workflow`
 - `analyze_target`
 
 ## Still Not Implemented
@@ -800,4 +880,7 @@ The current stage still does not implement:
 - bulk automatic environment repair
 - completed automatic pure implementation
 - completed Python or other host-language implementation
+- npm / PyPI automatic publishing
+- CI platform integration
+- complex multi-package SDK generation
 - global runtime singleton patterns

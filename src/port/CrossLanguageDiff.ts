@@ -8,6 +8,14 @@ function topLevelKeys(value: unknown): string[] {
   return isRecord(value) ? Object.keys(value).sort() : [];
 }
 
+function sameJson(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function topLevelValue(value: unknown, key: string): unknown {
+  return isRecord(value) ? value[key] : undefined;
+}
+
 export class CrossLanguageDiff {
   async diff(input: {
     nodeOutput?: unknown;
@@ -18,10 +26,23 @@ export class CrossLanguageDiff {
     const pythonOutput = input.pythonOutput !== undefined ? input.pythonOutput : input.verification.pythonOutput;
     const nodeKeys = topLevelKeys(nodeOutput);
     const pythonKeys = topLevelKeys(pythonOutput);
-    const unchangedParts = nodeKeys.filter((key) => pythonKeys.includes(key));
+    const unchangedParts = nodeKeys.filter((key) => (
+      pythonKeys.includes(key) &&
+      sameJson(topLevelValue(nodeOutput, key), topLevelValue(pythonOutput, key))
+    ));
     const changedParts = Array.from(new Set([...nodeKeys, ...pythonKeys]))
-      .filter((key) => !nodeKeys.includes(key) || !pythonKeys.includes(key))
+      .filter((key) => (
+        !nodeKeys.includes(key) ||
+        !pythonKeys.includes(key) ||
+        !sameJson(topLevelValue(nodeOutput, key), topLevelValue(pythonOutput, key))
+      ))
       .sort();
+    if (nodeKeys.length === 0 && pythonKeys.length === 0 && !sameJson(nodeOutput, pythonOutput)) {
+      changedParts.push('$');
+    }
+    if (nodeKeys.length === 0 && pythonKeys.length === 0 && sameJson(nodeOutput, pythonOutput) && nodeOutput !== undefined) {
+      unchangedParts.push('$');
+    }
     const matched = input.verification.ok;
 
     return {

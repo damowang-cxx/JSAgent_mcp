@@ -29,22 +29,33 @@ import { PureFixtureBuilder } from '../pure/PureFixtureBuilder.js';
 import { PureNodeExtractor } from '../pure/PureNodeExtractor.js';
 import { PureVerifier } from '../pure/PureVerifier.js';
 import { RuntimeTraceSampler } from '../pure/RuntimeTraceSampler.js';
+import { BaselineRegistry } from '../regression/BaselineRegistry.js';
+import { RegressionDiff } from '../regression/RegressionDiff.js';
+import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
 import { PortReportBuilder } from '../report/PortReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
+import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
+import { SdkReportBuilder } from '../report/SdkReportBuilder.js';
+import { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
 import { EnvAccessLogger } from '../rebuild/EnvAccessLogger.js';
 import { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
 import { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
 import { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
 import { RebuildRunner } from '../rebuild/RebuildRunner.js';
+import { SDKPackager } from '../sdk/SDKPackager.js';
+import { StageGateEvaluator } from '../task/StageGateEvaluator.js';
+import { TaskManifestManager } from '../task/TaskManifestManager.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
+import { DeliveryWorkflowRunner } from '../workflow/DeliveryWorkflowRunner.js';
 import { PatchWorkflowRunner } from '../workflow/PatchWorkflowRunner.js';
 import { PortWorkflowRunner } from '../workflow/PortWorkflowRunner.js';
 import { PureExtractionRunner } from '../workflow/PureExtractionRunner.js';
 import { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
+import { RegressionWorkflowRunner } from '../workflow/RegressionWorkflowRunner.js';
 import { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 import type { AppRuntimeServices } from './types.js';
 
@@ -94,6 +105,17 @@ export class AppRuntime implements AppRuntimeServices {
   readonly requestInitiatorTracker: RequestInitiatorTracker;
   readonly xhrWatchpointManager: XhrWatchpointManager;
   readonly evidenceStore: EvidenceStore;
+  readonly taskManifestManager: TaskManifestManager;
+  readonly stageGateEvaluator: StageGateEvaluator;
+  readonly baselineRegistry: BaselineRegistry;
+  readonly regressionRunner: RegressionRunner;
+  readonly regressionDiff: RegressionDiff;
+  readonly sdkPackager: SDKPackager;
+  readonly taskStateReportBuilder: TaskStateReportBuilder;
+  readonly regressionReportBuilder: RegressionReportBuilder;
+  readonly sdkReportBuilder: SdkReportBuilder;
+  readonly regressionWorkflowRunner: RegressionWorkflowRunner;
+  readonly deliveryWorkflowRunner: DeliveryWorkflowRunner;
   readonly reverseWorkflowRunner: ReverseWorkflowRunner;
   readonly analyzeTargetRunner: AnalyzeTargetRunner;
 
@@ -105,6 +127,11 @@ export class AppRuntime implements AppRuntimeServices {
     this.networkCollector = new NetworkCollector(browserSession, this.requestInitiatorTracker);
     this.xhrWatchpointManager = new XhrWatchpointManager(browserSession, this.requestInitiatorTracker);
     this.evidenceStore = new EvidenceStore();
+    this.taskManifestManager = new TaskManifestManager(this.evidenceStore);
+    this.stageGateEvaluator = new StageGateEvaluator({
+      evidenceStore: this.evidenceStore,
+      taskManifestManager: this.taskManifestManager
+    });
     this.codeSummarizer = new CodeSummarizer();
     this.staticAnalyzer = new StaticAnalyzer();
     this.cryptoDetector = new CryptoDetector();
@@ -245,6 +272,43 @@ export class AppRuntime implements AppRuntimeServices {
       portReportBuilder: this.portReportBuilder,
       pureExtractionRunner: this.pureExtractionRunner,
       pythonPortExtractor: this.pythonPortExtractor
+    });
+    this.regressionDiff = new RegressionDiff();
+    this.baselineRegistry = new BaselineRegistry({
+      evidenceStore: this.evidenceStore,
+      stageGateEvaluator: this.stageGateEvaluator,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.regressionRunner = new RegressionRunner({
+      baselineRegistry: this.baselineRegistry,
+      crossLanguageVerifier: this.crossLanguageVerifier,
+      evidenceStore: this.evidenceStore,
+      pureVerifier: this.pureVerifier,
+      regressionDiff: this.regressionDiff
+    });
+    this.sdkPackager = new SDKPackager({
+      baselineRegistry: this.baselineRegistry,
+      evidenceStore: this.evidenceStore,
+      stageGateEvaluator: this.stageGateEvaluator,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.taskStateReportBuilder = new TaskStateReportBuilder({
+      stageGateEvaluator: this.stageGateEvaluator,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.regressionReportBuilder = new RegressionReportBuilder();
+    this.sdkReportBuilder = new SdkReportBuilder();
+    this.regressionWorkflowRunner = new RegressionWorkflowRunner({
+      baselineRegistry: this.baselineRegistry,
+      regressionRunner: this.regressionRunner,
+      stageGateEvaluator: this.stageGateEvaluator
+    });
+    this.deliveryWorkflowRunner = new DeliveryWorkflowRunner({
+      baselineRegistry: this.baselineRegistry,
+      evidenceRoot: this.evidenceStore,
+      regressionRunner: this.regressionRunner,
+      sdkPackager: this.sdkPackager,
+      stageGateEvaluator: this.stageGateEvaluator
     });
   }
 
@@ -430,6 +494,50 @@ export class AppRuntime implements AppRuntimeServices {
 
   getEvidenceStore(): EvidenceStore {
     return this.evidenceStore;
+  }
+
+  getTaskManifestManager(): TaskManifestManager {
+    return this.taskManifestManager;
+  }
+
+  getStageGateEvaluator(): StageGateEvaluator {
+    return this.stageGateEvaluator;
+  }
+
+  getBaselineRegistry(): BaselineRegistry {
+    return this.baselineRegistry;
+  }
+
+  getRegressionRunner(): RegressionRunner {
+    return this.regressionRunner;
+  }
+
+  getRegressionDiff(): RegressionDiff {
+    return this.regressionDiff;
+  }
+
+  getSdkPackager(): SDKPackager {
+    return this.sdkPackager;
+  }
+
+  getTaskStateReportBuilder(): TaskStateReportBuilder {
+    return this.taskStateReportBuilder;
+  }
+
+  getRegressionReportBuilder(): RegressionReportBuilder {
+    return this.regressionReportBuilder;
+  }
+
+  getSdkReportBuilder(): SdkReportBuilder {
+    return this.sdkReportBuilder;
+  }
+
+  getRegressionWorkflowRunner(): RegressionWorkflowRunner {
+    return this.regressionWorkflowRunner;
+  }
+
+  getDeliveryWorkflowRunner(): DeliveryWorkflowRunner {
+    return this.deliveryWorkflowRunner;
   }
 
   getReverseWorkflowRunner(): ReverseWorkflowRunner {

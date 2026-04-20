@@ -30,30 +30,38 @@ import { exportPortReportTool } from './reverse/exportPortReport.js';
 import { exportPureReportTool } from './reverse/exportPureReport.js';
 import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
 import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
+import { exportRegressionReportTool } from './reverse/exportRegressionReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
+import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
+import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
 import { extractPythonPureTool } from './reverse/extractPythonPure.js';
 import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
+import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
+import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
+import { registerRegressionBaselineTool } from './reverse/registerRegressionBaseline.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
+import { runDeliveryWorkflowTool } from './reverse/runDeliveryWorkflow.js';
 import { runPatchIterationTool } from './reverse/runPatchIteration.js';
 import { runPortWorkflowTool } from './reverse/runPortWorkflow.js';
 import { runPureWorkflowTool } from './reverse/runPureWorkflow.js';
+import { runRegressionBaselineTool } from './reverse/runRegressionBaseline.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
@@ -64,6 +72,7 @@ import { understandCodeTool } from './reverse/understandCode.js';
 import { verifyNodePureTool } from './reverse/verifyNodePure.js';
 import { verifyPythonPureTool } from './reverse/verifyPythonPure.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
+import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
 export const coreTools = [pingTool, getServerInfoTool, listToolsSummaryTool] satisfies readonly RegisteredToolDefinition[];
@@ -120,6 +129,15 @@ export const reverseTools = [
   markAcceptanceTool,
   stabilizeFixtureTool,
   exportPatchReportTool,
+  getTaskManifestTool,
+  evaluateStageGateTool,
+  registerRegressionBaselineTool,
+  listRegressionBaselinesTool,
+  runRegressionBaselineTool,
+  exportSdkPackageTool,
+  exportTaskStateReportTool,
+  exportRegressionReportTool,
+  runDeliveryWorkflowTool,
   freezeRuntimeSampleTool,
   exportRuntimeTraceTool,
   definePureBoundaryTool,
@@ -158,13 +176,17 @@ export {
   diffEnvRequirementsTool,
   evaluateScriptTool,
   exportPatchReportTool,
+  evaluateStageGateTool,
   exportPortReportTool,
   exportPureReportTool,
   exportRebuildBundleTool,
   exportRebuildReportTool,
+  exportRegressionReportTool,
   exportReverseReportTool,
   exportRuntimeTraceTool,
+  exportSdkPackageTool,
   exportSessionReportTool,
+  exportTaskStateReportTool,
   extractNodePureTool,
   extractPythonPureTool,
   freezeRuntimeSampleTool,
@@ -173,12 +195,14 @@ export {
   getNetworkRequestTool,
   getRequestInitiatorTool,
   getServerInfoTool,
+  getTaskManifestTool,
   injectHookTool,
   listCollectedCodeTool,
   listHooksTool,
   listNetworkRequestsTool,
   listPagesTool,
   listPatchHistoryTool,
+  listRegressionBaselinesTool,
   listToolsSummaryTool,
   listXhrBreakpointsTool,
   markAcceptanceTool,
@@ -189,11 +213,14 @@ export {
   planPatchTool,
   probeReverseTargetTool,
   recordReverseEvidenceTool,
+  registerRegressionBaselineTool,
   removeXhrBreakpointTool,
   riskPanelTool,
   runPatchIterationTool,
+  runDeliveryWorkflowTool,
   runPortWorkflowTool,
   runPureWorkflowTool,
+  runRegressionBaselineTool,
   runRebuildProbeTool,
   runRebuildWorkflowTool,
   savePureFixtureTool,

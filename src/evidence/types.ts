@@ -20,4 +20,10 @@ export interface OpenTaskResult {
   descriptor: ReverseTaskDescriptor;
 }
 
-export type EvidenceLogName = 'runtime-evidence' | 'network' | 'hooks' | 'acceptance';
+export type EvidenceLogName =
+  | 'runtime-evidence'
+  | 'network'
+  | 'hooks'
+  | 'acceptance'
+  | 'regression-baselines'
+  | 'regression';

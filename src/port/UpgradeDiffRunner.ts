@@ -1,5 +1,7 @@
 import type { UpgradeDiffResult } from './types.js';
 
+type UpgradeLayer = NonNullable<UpgradeDiffResult['firstDivergence']>['layer'];
+
 function sameJson(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
@@ -9,6 +11,19 @@ function collectParts(value: unknown): string[] {
     return [];
   }
   return Object.keys(value as Record<string, unknown>).sort();
+}
+
+function stringifyForSignals(...values: unknown[]): string {
+  return values
+    .map((value) => {
+      try {
+        return typeof value === 'string' ? value : JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    })
+    .join('\n')
+    .toLowerCase();
 }
 
 export class UpgradeDiffRunner {
@@ -41,6 +56,7 @@ export class UpgradeDiffRunner {
     ])).filter((key) => !unchangedParts.includes(key));
 
     const divergence = this.firstDivergence({
+      description: options.targetDescription,
       newNode,
       newPython,
       newRuntime,
@@ -65,6 +81,7 @@ export class UpgradeDiffRunner {
   }
 
   private firstDivergence(input: {
+    description?: string;
     oldNode?: unknown;
     oldPython?: unknown;
     newRuntime?: unknown;
@@ -75,8 +92,14 @@ export class UpgradeDiffRunner {
       return {
         actual: input.newNode,
         expected: input.newRuntime,
-        layer: 'final-output',
-        message: 'New runtime output diverges from Node pure output.'
+        layer: this.inferLayer({
+          actual: input.newNode,
+          defaultLayer: 'env-state',
+          description: input.description,
+          expected: input.newRuntime,
+          relation: 'runtime-vs-node'
+        }),
+        message: 'Runtime side and Node pure side diverge; inspect the inferred boundary layer before changing Python.'
       };
     }
 
@@ -84,8 +107,14 @@ export class UpgradeDiffRunner {
       return {
         actual: input.newPython,
         expected: input.newNode,
-        layer: 'final-output',
-        message: 'Python pure output diverges from Node pure output.'
+        layer: this.inferLayer({
+          actual: input.newPython,
+          defaultLayer: 'final-output',
+          description: input.description,
+          expected: input.newNode,
+          relation: 'node-vs-python'
+        }),
+        message: 'Port side diverges from Node pure baseline; fix Python against the shared fixture before SDK wrapping.'
       };
     }
 
@@ -93,7 +122,13 @@ export class UpgradeDiffRunner {
       return {
         actual: input.newNode,
         expected: input.oldNode,
-        layer: 'final-output',
+        layer: this.inferLayer({
+          actual: input.newNode,
+          defaultLayer: 'final-output',
+          description: input.description,
+          expected: input.oldNode,
+          relation: 'node-upgrade'
+        }),
         message: 'Node pure output changed between old and new samples.'
       };
     }
@@ -102,7 +137,13 @@ export class UpgradeDiffRunner {
       return {
         actual: input.newPython,
         expected: input.oldPython,
-        layer: 'final-output',
+        layer: this.inferLayer({
+          actual: input.newPython,
+          defaultLayer: 'final-output',
+          description: input.description,
+          expected: input.oldPython,
+          relation: 'python-upgrade'
+        }),
         message: 'Python pure output changed between old and new samples.'
       };
     }
@@ -110,16 +151,63 @@ export class UpgradeDiffRunner {
     return null;
   }
 
+  private inferLayer(input: {
+    actual: unknown;
+    defaultLayer: UpgradeLayer;
+    description?: string;
+    expected: unknown;
+    relation: 'runtime-vs-node' | 'node-vs-python' | 'node-upgrade' | 'python-upgrade';
+  }): UpgradeLayer {
+    const haystack = stringifyForSignals(input.description, input.expected, input.actual);
+
+    if (/\b(token|sign|signature|nonce|vk|tail|clt|gsd?|checksum)\b/.test(haystack)) {
+      return 'token-family';
+    }
+
+    if (/\b(crypto|hmac|sha1|sha256|sha512|md5|aes|rsa|pbkdf2|subtle|digest|encrypt|decrypt)\b/.test(haystack)) {
+      return 'crypto-helper';
+    }
+
+    if (/\b(fetch|xhr|ajax|axios|request|method|url|headers|postdata|body|endpoint)\b/.test(haystack)) {
+      return 'request';
+    }
+
+    if (/\b(hook|hookid|hook-output|timeline|watchpoint|initiator)\b/.test(haystack)) {
+      return 'hook-output';
+    }
+
+    if (/\b(window|document|navigator|useragent|location|cookie|localstorage|sessionstorage|performance|timezone|screen|env)\b/.test(haystack)) {
+      return 'env-state';
+    }
+
+    if (input.relation === 'runtime-vs-node') {
+      return 'env-state';
+    }
+
+    return input.defaultLayer;
+  }
+
   private recommend(divergence: UpgradeDiffResult['firstDivergence']): string {
     if (!divergence) {
       return 'Keep the fixture and baseline; no upgrade-specific action is required from the supplied samples.';
     }
 
-    if (/runtime output diverges/i.test(divergence.message)) {
-      return 'Refine the pure boundary or Node pure implementation before changing Python.';
+    switch (divergence.layer) {
+      case 'request':
+        return 'Recheck request fixture fields first: URL pattern, method, headers, and body shape.';
+      case 'hook-output':
+        return 'Re-sample hook output or correlate the hook timeline before changing pure code.';
+      case 'token-family':
+        return 'Focus on token/sign/nonce family inputs and intermediate outputs before broad rewrites.';
+      case 'crypto-helper':
+        return 'Inspect crypto helper parity and key/material handling before patching environment state.';
+      case 'env-state':
+        return 'Refine environment-state boundary or rebuild fixture before changing Python port code.';
+      case 'final-output':
+        break;
     }
 
-    if (/Python pure output diverges/i.test(divergence.message)) {
+    if (/Python pure output diverges|Port side diverges/i.test(divergence.message)) {
       return 'Sync Python pure with the Node baseline before SDK packaging.';
     }
 

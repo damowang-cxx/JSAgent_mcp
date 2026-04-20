@@ -24,16 +24,30 @@ function stringify(value: unknown): string {
   }
 }
 
+function divergenceKindForPath(pathName: string): PythonDivergence['kind'] {
+  if (/(^|\.)input(Keys)?($|\.|\[)|explicitInputs|fixtureInput/i.test(pathName)) {
+    return 'input-mismatch';
+  }
+
+  if (/intermediate|traceRecord|probe/i.test(pathName)) {
+    return 'intermediate-mismatch';
+  }
+
+  return 'output-mismatch';
+}
+
 function compareValues(expected: unknown, actual: unknown, pathName = '$'): PythonDivergence | null {
   if (Object.is(expected, actual)) {
     return null;
   }
 
+  const kind = divergenceKindForPath(pathName);
+
   if (typeof expected !== typeof actual) {
     return {
       actual,
       expected,
-      kind: 'output-mismatch',
+      kind,
       message: `Type mismatch at ${pathName}: expected ${typeof expected}, got ${typeof actual}.`,
       path: pathName
     };
@@ -44,7 +58,7 @@ function compareValues(expected: unknown, actual: unknown, pathName = '$'): Pyth
       return {
         actual,
         expected,
-        kind: 'output-mismatch',
+        kind,
         message: `Array shape mismatch at ${pathName}.`,
         path: pathName
       };
@@ -53,7 +67,7 @@ function compareValues(expected: unknown, actual: unknown, pathName = '$'): Pyth
       return {
         actual: actual.length,
         expected: expected.length,
-        kind: 'output-mismatch',
+        kind,
         message: `Array length mismatch at ${pathName}.`,
         path: `${pathName}.length`
       };
@@ -72,7 +86,7 @@ function compareValues(expected: unknown, actual: unknown, pathName = '$'): Pyth
       return {
         actual,
         expected,
-        kind: 'output-mismatch',
+        kind,
         message: `Object shape mismatch at ${pathName}.`,
         path: pathName
       };
@@ -80,21 +94,23 @@ function compareValues(expected: unknown, actual: unknown, pathName = '$'): Pyth
     const keys = Array.from(new Set([...Object.keys(expected), ...Object.keys(actual)])).sort();
     for (const key of keys) {
       if (!(key in expected)) {
+        const childPath = `${pathName}.${key}`;
         return {
           actual: actual[key],
           expected: undefined,
-          kind: 'output-mismatch',
+          kind: divergenceKindForPath(childPath),
           message: `Unexpected key ${key} in Python output.`,
-          path: `${pathName}.${key}`
+          path: childPath
         };
       }
       if (!(key in actual)) {
+        const childPath = `${pathName}.${key}`;
         return {
           actual: undefined,
           expected: expected[key],
-          kind: 'output-mismatch',
+          kind: divergenceKindForPath(childPath),
           message: `Missing key ${key} in Python output.`,
-          path: `${pathName}.${key}`
+          path: childPath
         };
       }
       const nested = compareValues(expected[key], actual[key], `${pathName}.${key}`);
@@ -108,7 +124,7 @@ function compareValues(expected: unknown, actual: unknown, pathName = '$'): Pyth
   return {
     actual,
     expected,
-    kind: 'output-mismatch',
+    kind,
     message: `Value mismatch at ${pathName}.`,
     path: pathName
   };
