@@ -14,6 +14,12 @@ import { NetworkCollector } from '../network/NetworkCollector.js';
 import { RequestInitiatorTracker } from '../network/RequestInitiatorTracker.js';
 import { XhrWatchpointManager } from '../network/xhrWatchpoints.js';
 import { PageController } from '../page/PageController.js';
+import { AcceptanceRecorder } from '../patch/AcceptanceRecorder.js';
+import { FixtureStabilizer } from '../patch/FixtureStabilizer.js';
+import { PatchApplier } from '../patch/PatchApplier.js';
+import { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
+import { PatchPlanManager } from '../patch/PatchPlanManager.js';
+import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
@@ -23,6 +29,7 @@ import { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
 import { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
 import { RebuildRunner } from '../rebuild/RebuildRunner.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
+import { PatchWorkflowRunner } from '../workflow/PatchWorkflowRunner.js';
 import { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 import type { AppRuntimeServices } from './types.js';
@@ -45,6 +52,13 @@ export class AppRuntime implements AppRuntimeServices {
   readonly fixtureExtractor: FixtureExtractor;
   readonly divergenceComparator: DivergenceComparator;
   readonly patchAdvisor: PatchAdvisor;
+  readonly patchPlanManager: PatchPlanManager;
+  readonly patchApplier: PatchApplier;
+  readonly patchLoopRunner: PatchLoopRunner;
+  readonly acceptanceRecorder: AcceptanceRecorder;
+  readonly fixtureStabilizer: FixtureStabilizer;
+  readonly patchWorkflowRunner: PatchWorkflowRunner;
+  readonly patchReportBuilder: PatchReportBuilder;
   readonly rebuildWorkflowRunner: RebuildWorkflowRunner;
   readonly rebuildReportBuilder: RebuildReportBuilder;
   readonly hookManager: HookManager;
@@ -91,6 +105,10 @@ export class AppRuntime implements AppRuntimeServices {
     this.divergenceComparator = new DivergenceComparator();
     this.patchAdvisor = new PatchAdvisor();
     this.rebuildReportBuilder = new RebuildReportBuilder();
+    this.patchPlanManager = new PatchPlanManager(this.evidenceStore);
+    this.patchApplier = new PatchApplier();
+    this.acceptanceRecorder = new AcceptanceRecorder(this.evidenceStore);
+    this.patchReportBuilder = new PatchReportBuilder();
     this.sessionReporter = new SessionReporter({
       browserSession,
       codeCollector: this.codeCollector,
@@ -136,6 +154,30 @@ export class AppRuntime implements AppRuntimeServices {
       rebuildBundleExporter: this.rebuildBundleExporter,
       rebuildReportBuilder: this.rebuildReportBuilder,
       rebuildRunner: this.rebuildRunner
+    });
+    this.fixtureStabilizer = new FixtureStabilizer({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      fixtureExtractor: this.fixtureExtractor
+    });
+    this.patchLoopRunner = new PatchLoopRunner({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      divergenceComparator: this.divergenceComparator,
+      evidenceStore: this.evidenceStore,
+      fixtureExtractor: this.fixtureExtractor,
+      patchAdvisor: this.patchAdvisor,
+      patchApplier: this.patchApplier,
+      patchPlanManager: this.patchPlanManager,
+      rebuildRunner: this.rebuildRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner
+    });
+    this.patchWorkflowRunner = new PatchWorkflowRunner({
+      acceptanceRecorder: this.acceptanceRecorder,
+      browserSession,
+      evidenceStore: this.evidenceStore,
+      fixtureStabilizer: this.fixtureStabilizer,
+      patchLoopRunner: this.patchLoopRunner,
+      patchReportBuilder: this.patchReportBuilder,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner
     });
   }
 
@@ -209,6 +251,34 @@ export class AppRuntime implements AppRuntimeServices {
 
   getPatchAdvisor(): PatchAdvisor {
     return this.patchAdvisor;
+  }
+
+  getPatchPlanManager(): PatchPlanManager {
+    return this.patchPlanManager;
+  }
+
+  getPatchApplier(): PatchApplier {
+    return this.patchApplier;
+  }
+
+  getPatchLoopRunner(): PatchLoopRunner {
+    return this.patchLoopRunner;
+  }
+
+  getAcceptanceRecorder(): AcceptanceRecorder {
+    return this.acceptanceRecorder;
+  }
+
+  getFixtureStabilizer(): FixtureStabilizer {
+    return this.fixtureStabilizer;
+  }
+
+  getPatchWorkflowRunner(): PatchWorkflowRunner {
+    return this.patchWorkflowRunner;
+  }
+
+  getPatchReportBuilder(): PatchReportBuilder {
+    return this.patchReportBuilder;
   }
 
   getRebuildWorkflowRunner(): RebuildWorkflowRunner {

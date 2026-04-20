@@ -11,6 +11,7 @@ import { clearNetworkRequestsTool } from './network/clearNetworkRequests.js';
 import { getNetworkRequestTool } from './network/getNetworkRequest.js';
 import { listNetworkRequestsTool } from './network/listNetworkRequests.js';
 import { analyzeTargetTool } from './reverse/analyzeTarget.js';
+import { applyPatchTool } from './reverse/applyPatch.js';
 import { breakOnXhrTool } from './reverse/breakOnXhr.js';
 import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
@@ -21,6 +22,7 @@ import { createHookTool } from './reverse/createHook.js';
 import { deobfuscateCodeTool } from './reverse/deobfuscateCode.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
+import { exportPatchReportTool } from './reverse/exportPatchReport.js';
 import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
 import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
@@ -31,16 +33,21 @@ import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listHooksTool } from './reverse/listHooks.js';
+import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
+import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
+import { planPatchTool } from './reverse/planPatch.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
+import { runPatchIterationTool } from './reverse/runPatchIteration.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
+import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { understandCodeTool } from './reverse/understandCode.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
@@ -92,12 +99,20 @@ export const reverseTools = [
   savePureFixtureTool,
   runRebuildWorkflowTool,
   exportRebuildReportTool,
+  planPatchTool,
+  listPatchHistoryTool,
+  applyPatchTool,
+  runPatchIterationTool,
+  markAcceptanceTool,
+  stabilizeFixtureTool,
+  exportPatchReportTool,
   analyzeTargetTool
 ] satisfies readonly RegisteredToolDefinition[];
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
 
 export {
   analyzeTargetTool,
+  applyPatchTool,
   breakOnXhrTool,
   checkBrowserHealthTool,
   clearHookDataTool,
@@ -111,6 +126,7 @@ export {
   detectCryptoTool,
   diffEnvRequirementsTool,
   evaluateScriptTool,
+  exportPatchReportTool,
   exportRebuildBundleTool,
   exportRebuildReportTool,
   exportReverseReportTool,
@@ -125,21 +141,26 @@ export {
   listHooksTool,
   listNetworkRequestsTool,
   listPagesTool,
+  listPatchHistoryTool,
   listToolsSummaryTool,
   listXhrBreakpointsTool,
+  markAcceptanceTool,
   navigatePageTool,
   newPageTool,
   openReverseTaskTool,
   pingTool,
+  planPatchTool,
   probeReverseTargetTool,
   recordReverseEvidenceTool,
   removeXhrBreakpointTool,
   riskPanelTool,
+  runPatchIterationTool,
   runRebuildProbeTool,
   runRebuildWorkflowTool,
   savePureFixtureTool,
   searchCollectedCodeTool,
   selectPageTool,
+  stabilizeFixtureTool,
   summarizeCodeTool,
   understandCodeTool
 };

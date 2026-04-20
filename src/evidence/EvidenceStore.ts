@@ -4,7 +4,7 @@ import path from 'node:path';
 import { AppError } from '../core/errors.js';
 import type { EvidenceLogName, OpenTaskInput, OpenTaskResult, ReverseTaskDescriptor } from './types.js';
 
-const ARTIFACT_LOG_FILES: readonly EvidenceLogName[] = ['runtime-evidence', 'network', 'hooks'] as const;
+const ARTIFACT_LOG_FILES: readonly EvidenceLogName[] = ['runtime-evidence', 'network', 'hooks', 'acceptance'] as const;
 
 function nowIso(): string {
   return new Date().toISOString();

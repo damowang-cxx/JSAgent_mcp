@@ -28,6 +28,8 @@ The project currently includes:
 - rebuild bundle exporter and Node probe runner
 - fixture extraction, first-divergence comparison, and deterministic patch advisor
 - rebuild/patch workflow runner and report exporter
+- patch plan manager, single-patch applier, patch iteration runner, and acceptance recorder
+- fixture stabilization and patch workflow report exporter
 
 ## Design Principles
 
@@ -41,6 +43,8 @@ The project currently includes:
   - move from observe/capture/analyze into local probeable bundles
 - Patch around first divergence
   - patch suggestions should address the first explainable mismatch, not a broad env template
+- Re-test immediately
+  - every applied patch must be followed by a rebuild probe and divergence comparison
 - single browser session owner
   - `BrowserSessionManager` remains the only owner of browser + selected page state
 - app-scoped runtime
@@ -170,6 +174,38 @@ Phase 8 boundaries:
 - patch suggestions are deterministic hints, not automatic fixes
 - the fixture format is intentionally compact and prepares for later pure extraction
 - no Python port, service-side verifier, external AI patching, or full DOM shim is implemented
+
+## Added In Phase 9
+
+Phase 9 closes the patch loop around first divergence and acceptance evidence:
+
+- `plan_patch`
+  - turns a rebuild run result into a managed `PatchPlan`
+  - stores first-divergence-centered suggestions as patch history
+- `list_patch_history`
+  - lists cached patch plans, applied patches, and acceptance records for the current runtime
+- `apply_patch`
+  - applies exactly one minimal `PatchSuggestion` to the rebuild bundle patch region
+  - defaults to `env-shim.js`; no AST rewrite or bulk patch set is attempted
+- `run_patch_iteration`
+  - runs one patch iteration: probe, compare, plan, optional single patch apply, immediate reprobe, progress check
+  - returns `divergenceProgress` with `movedForward`, `resolved`, `worsened`, and `unchanged`
+- `mark_acceptance`
+  - records manual or external acceptance evidence in task artifacts
+  - this is a recorder, not a service-side validator platform
+- `stabilize_fixture`
+  - extracts multiple compact fixtures and reports coarse stability/mismatches
+- `export_patch_report`
+  - exports the latest patch workflow or patch iteration as JSON or Markdown
+
+Phase 9 follows these boundaries:
+
+- patches are centered on the current first divergence
+- default behavior applies at most one patch per iteration
+- each patch is immediately retested with `run_rebuild_probe`
+- fixture stabilization is a coarse consistency check, not a mathematical proof
+- acceptance is manually or externally supplied evidence, not an integrated server protocol
+- no AI patching, Python port, full DOM/browser emulation, or automatic repair system is implemented
 
 ## Code Collection Boundary
 
@@ -331,6 +367,12 @@ npm start
 - `diff_env_requirements`
 - `run_rebuild_workflow`
 - `export_rebuild_report`
+- `stabilize_fixture`
+- `plan_patch`
+- `apply_patch`
+- `run_patch_iteration`
+- `mark_acceptance`
+- `export_patch_report`
 - `export_reverse_report`
 - `export_session_report`
 - `collection_diff`
@@ -492,6 +534,39 @@ Export a rebuild report:
 }
 ```
 
+Run a patch convergence iteration:
+
+```json
+{
+  "taskId": "patch-demo",
+  "autoApplyFirstSuggestion": true,
+  "writeEvidence": true,
+  "run": {
+    "timeoutMs": 5000
+  }
+}
+```
+
+Record acceptance evidence:
+
+```json
+{
+  "taskId": "patch-demo",
+  "status": "passed",
+  "notes": ["Manual acceptance matched the observed target behavior."]
+}
+```
+
+Export a patch report:
+
+```json
+{
+  "format": "markdown",
+  "taskId": "patch-demo",
+  "writeSnapshot": true
+}
+```
+
 ## Tool Summary
 
 ### Core Tools
@@ -552,6 +627,13 @@ Export a rebuild report:
 - `save_pure_fixture`
 - `run_rebuild_workflow`
 - `export_rebuild_report`
+- `plan_patch`
+- `list_patch_history`
+- `apply_patch`
+- `run_patch_iteration`
+- `mark_acceptance`
+- `stabilize_fixture`
+- `export_patch_report`
 - `analyze_target`
 
 ## Still Not Implemented
@@ -572,4 +654,6 @@ The current stage still does not implement:
 - full browser/DOM rebuild emulation
 - Python or external-language port
 - service-side verification
+- AI automatic patching
+- bulk automatic environment repair
 - global runtime singleton patterns
