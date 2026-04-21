@@ -5,6 +5,8 @@ import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { HelperBoundaryExtractor } from '../helper/HelperBoundaryExtractor.js';
 import type { HelperBoundaryRegistry } from '../helper/HelperBoundaryRegistry.js';
 import type { HelperBoundaryResult, StoredHelperBoundary } from '../helper/types.js';
+import type { NetworkCollector } from '../network/NetworkCollector.js';
+import type { NetworkRequestRecord } from '../network/types.js';
 import type { ReplayRecipeRunner } from '../replay/ReplayRecipeRunner.js';
 import type { ReplayRecipeResult } from '../replay/types.js';
 import type { CryptoHelperLocator } from '../scenario/CryptoHelperLocator.js';
@@ -19,7 +21,15 @@ import type {
   TokenFamilyTraceResult
 } from '../scenario/types.js';
 import type { TokenScenarioAnalyzer } from '../scenario/TokenScenarioAnalyzer.js';
-import { confidence, extractUrlFields, targetMatches, uniqueStrings } from '../scenario/normalization.js';
+import {
+  confidence,
+  extractBodyFields,
+  extractHeaderFields,
+  extractUrlFields,
+  targetMatches,
+  toRecord,
+  uniqueStrings
+} from '../scenario/normalization.js';
 import type { TaskManifestManager } from '../task/TaskManifestManager.js';
 import type { PureExtractionRunner } from '../workflow/PureExtractionRunner.js';
 import type { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
@@ -51,6 +61,7 @@ interface DependencyWindowExtractorDeps {
   evidenceStore: EvidenceStore;
   helperBoundaryExtractor: HelperBoundaryExtractor;
   helperBoundaryRegistry: HelperBoundaryRegistry;
+  networkCollector: NetworkCollector;
   pureExtractionRunner: PureExtractionRunner;
   rebuildWorkflowRunner: RebuildWorkflowRunner;
   replayRecipeRunner: ReplayRecipeRunner;
@@ -66,6 +77,15 @@ interface WindowContext {
   capture: ReplayRecipeResult | null;
   scenario: ScenarioWorkflowResult | null;
   analysis: ScenarioAnalysisResult | null;
+  requestFields: RequestFieldEvidence[];
+}
+
+interface RequestFieldEvidence {
+  name: string;
+  source: 'url' | 'header' | 'body-field';
+  requestUrl?: string;
+  method?: string;
+  reason: string;
 }
 
 export class DependencyWindowExtractor {
@@ -110,6 +130,7 @@ export class DependencyWindowExtractor {
       boundary: context.boundary,
       capture: context.capture,
       analysis: context.analysis,
+      requestFields: context.requestFields,
       sinkResult,
       tokenTrace
     });
@@ -155,6 +176,7 @@ export class DependencyWindowExtractor {
       analysis: null,
       boundary: null,
       capture: null,
+      requestFields: [],
       scenario: null
     };
 
@@ -166,6 +188,7 @@ export class DependencyWindowExtractor {
       if (!context.analysis) {
         context.analysis = context.scenario?.analysis ?? context.capture?.scenarioResult ?? null;
       }
+      context.requestFields = await this.readRequestFieldEvidence(context, options, notes);
       if (context.boundary || context.capture || context.scenario || context.analysis || options.source === 'task-artifact') {
         return context;
       }
@@ -174,6 +197,7 @@ export class DependencyWindowExtractor {
 
     if (options.source === 'helper-boundary-last') {
       context.boundary = this.deps.helperBoundaryRegistry.getLast();
+      context.requestFields = await this.readRequestFieldEvidence(context, options, notes);
       notes.push('Using helper-boundary-last source: scenario and capture runtime caches are intentionally ignored.');
       return context;
     }
@@ -181,6 +205,7 @@ export class DependencyWindowExtractor {
     if (options.source === 'scenario-last') {
       context.scenario = this.deps.scenarioWorkflowRunner.getLastScenarioWorkflowResult();
       context.analysis = context.scenario?.analysis ?? null;
+      context.requestFields = await this.readRequestFieldEvidence(context, options, notes);
       notes.push('Using scenario-last source: helper boundary and capture runtime caches are intentionally ignored.');
       return context;
     }
@@ -188,6 +213,7 @@ export class DependencyWindowExtractor {
     if (options.source === 'capture-last') {
       context.capture = this.deps.replayRecipeRunner.getLastReplayRecipeResult();
       context.analysis = context.capture?.scenarioResult ?? null;
+      context.requestFields = await this.readRequestFieldEvidence(context, options, notes);
       notes.push('Using capture-last source: helper boundary and scenario workflow caches are intentionally ignored.');
       return context;
     }
@@ -196,6 +222,7 @@ export class DependencyWindowExtractor {
     context.capture = this.deps.replayRecipeRunner.getLastReplayRecipeResult();
     context.scenario = this.deps.scenarioWorkflowRunner.getLastScenarioWorkflowResult();
     context.analysis = context.scenario?.analysis ?? context.capture?.scenarioResult ?? null;
+    context.requestFields = await this.readRequestFieldEvidence(context, options, notes);
     return context;
   }
 
@@ -492,6 +519,7 @@ export class DependencyWindowExtractor {
     boundary: HelperBoundaryResult | null;
     capture: ReplayRecipeResult | null;
     analysis: ScenarioAnalysisResult | null;
+    requestFields: readonly RequestFieldEvidence[];
     sinkResult: RequestSinkResult | null;
     tokenTrace: TokenFamilyTraceResult | null;
   }): DependencyWindowResult['validationAnchors'] {
@@ -518,6 +546,14 @@ export class DependencyWindowExtractor {
         reason: `helper boundary matched fields: ${request.matchedFields.join(', ') || 'none'}`,
         type: 'request',
         value: `${request.method.toUpperCase()} ${request.url}`
+      });
+    }
+
+    for (const field of input.requestFields.filter((item) => SIGNAL_NAME_PATTERN.test(item.name)).slice(0, 12)) {
+      values.push({
+        reason: `${field.reason}${field.requestUrl ? ` on ${field.method ?? 'GET'} ${field.requestUrl}` : ''}`,
+        type: 'request',
+        value: `${field.source}:${field.name}`
       });
     }
 
@@ -603,29 +639,173 @@ export class DependencyWindowExtractor {
     ], 10);
   }
 
-  private collectRequestFields(context: WindowContext): Array<{ name: string; source: 'url' | 'header' | 'body-field' }> {
-    const values: Array<{ name: string; source: 'url' | 'header' | 'body-field' }> = [];
+  private collectRequestFields(context: WindowContext): RequestFieldEvidence[] {
+    const values: RequestFieldEvidence[] = [...context.requestFields];
     for (const request of context.analysis?.suspiciousRequests ?? []) {
-      values.push(...extractUrlFields(request.url));
+      values.push(...extractUrlFields(request.url).map((field) => ({
+        ...field,
+        method: request.method,
+        reason: 'scenario suspicious request URL field',
+        requestUrl: request.url
+      })));
       for (const indicator of request.indicators) {
         values.push({
           name: indicator,
+          reason: 'scenario suspicious request indicator',
+          requestUrl: request.url,
           source: 'url'
         });
       }
     }
     for (const request of context.capture?.observedRequests ?? []) {
-      values.push(...extractUrlFields(request.url));
+      values.push(...extractUrlFields(request.url).map((field) => ({
+        ...field,
+        method: request.method,
+        reason: 'capture observed request URL field',
+        requestUrl: request.url
+      })));
     }
     for (const request of context.boundary?.relatedRequests ?? []) {
       for (const field of request.matchedFields) {
         values.push({
+          method: request.method,
           name: field,
+          reason: 'helper boundary related request matched field',
+          requestUrl: request.url,
           source: 'url'
         });
       }
     }
-    return values.filter((field) => targetMatches(field.name, undefined));
+    const seen = new Set<string>();
+    return values.filter((field) => {
+      const key = `${field.source}:${field.name.toLowerCase()}:${field.requestUrl ?? ''}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private async readRequestFieldEvidence(
+    context: WindowContext,
+    options: { source?: WindowSource; taskId?: string; targetUrl?: string },
+    notes: string[]
+  ): Promise<RequestFieldEvidence[]> {
+    const anchors = this.collectRequestAnchorUrls(context, options.targetUrl);
+    const values: RequestFieldEvidence[] = [];
+
+    if (options.taskId && (options.source === undefined || options.source === 'task-artifact')) {
+      values.push(...await this.readTaskNetworkRequestFields(options.taskId, anchors, notes));
+      if (options.source === 'task-artifact') {
+        return this.dedupeRequestFields(values);
+      }
+    }
+
+    values.push(...await this.readRuntimeNetworkRequestFields(anchors, notes));
+    return this.dedupeRequestFields(values);
+  }
+
+  private collectRequestAnchorUrls(context: WindowContext, targetUrl: string | undefined): string[] {
+    return uniqueStrings([
+      targetUrl ?? '',
+      ...context.analysis?.suspiciousRequests.map((request) => request.url) ?? [],
+      ...context.capture?.observedRequests.map((request) => request.url) ?? [],
+      ...context.boundary?.relatedRequests.map((request) => request.url) ?? []
+    ].filter(Boolean), 40);
+  }
+
+  private async readRuntimeNetworkRequestFields(anchorUrls: readonly string[], notes: string[]): Promise<RequestFieldEvidence[]> {
+    try {
+      const snapshot = await this.deps.networkCollector.listRequests({ limit: 300 });
+      return snapshot.requests
+        .filter((request) => this.requestMatchesAnchors(request.url, anchorUrls))
+        .flatMap((request) => this.extractRequestFieldEvidence(request, 'runtime network request field'));
+    } catch (error) {
+      notes.push(`Unable to read runtime network request fields for dependency window: ${this.toMessage(error)}`);
+      return [];
+    }
+  }
+
+  private async readTaskNetworkRequestFields(
+    taskId: string,
+    anchorUrls: readonly string[],
+    notes: string[]
+  ): Promise<RequestFieldEvidence[]> {
+    try {
+      const records = await this.deps.evidenceStore.readLog(taskId, 'network');
+      return records
+        .map((record) => this.coerceNetworkRequestRecord(record))
+        .filter((request): request is NetworkRequestRecord => Boolean(request))
+        .filter((request) => this.requestMatchesAnchors(request.url, anchorUrls))
+        .flatMap((request) => this.extractRequestFieldEvidence(request, 'task network artifact field'));
+    } catch (error) {
+      notes.push(`Unable to read task network request fields for dependency window: ${this.toMessage(error)}`);
+      return [];
+    }
+  }
+
+  private extractRequestFieldEvidence(request: NetworkRequestRecord, reason: string): RequestFieldEvidence[] {
+    return [
+      ...extractUrlFields(request.url),
+      ...extractHeaderFields(request.requestHeaders),
+      ...extractBodyFields(request.postData)
+    ].map((field) => ({
+      method: request.method,
+      name: field.name,
+      reason,
+      requestUrl: request.url,
+      source: field.source
+    }));
+  }
+
+  private requestMatchesAnchors(url: string, anchorUrls: readonly string[]): boolean {
+    if (anchorUrls.length === 0) {
+      return true;
+    }
+    return anchorUrls.some((anchor) => targetMatches(url, anchor) || targetMatches(anchor, url));
+  }
+
+  private coerceNetworkRequestRecord(value: unknown): NetworkRequestRecord | null {
+    const record = toRecord(value);
+    const nested = toRecord(record?.request) ?? record;
+    if (!nested || typeof nested.url !== 'string') {
+      return null;
+    }
+
+    const headers = this.toStringRecord(nested.requestHeaders) ?? this.toStringRecord(nested.headers);
+    return {
+      id: typeof nested.id === 'string' ? nested.id : `task-network:${nested.url}`,
+      method: typeof nested.method === 'string' ? nested.method : 'GET',
+      postData: typeof nested.postData === 'string' || nested.postData === null ? nested.postData : null,
+      requestHeaders: headers,
+      resourceType: typeof nested.resourceType === 'string' ? nested.resourceType : 'unknown',
+      startedAt: typeof nested.startedAt === 'string' ? nested.startedAt : '',
+      url: nested.url
+    };
+  }
+
+  private toStringRecord(value: unknown): Record<string, string> | undefined {
+    const record = toRecord(value);
+    if (!record) {
+      return undefined;
+    }
+    return Object.fromEntries(
+      Object.entries(record)
+        .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+    );
+  }
+
+  private dedupeRequestFields(values: readonly RequestFieldEvidence[]): RequestFieldEvidence[] {
+    const seen = new Set<string>();
+    return values.filter((value) => {
+      const key = `${value.source}:${value.name.toLowerCase()}:${value.method ?? ''}:${value.requestUrl ?? ''}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   private dedupeInputs(values: readonly DependencyWindowInput[]): DependencyWindowInput[] {

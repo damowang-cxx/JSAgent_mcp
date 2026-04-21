@@ -159,6 +159,8 @@ export class TaskManifestManager {
         helperBoundary: pointer('helper-boundary/latest') ?? manifest.latestPointers.helperBoundary ?? null,
         dependencyWindow: pointer('dependency-window/latest') ?? manifest.latestPointers.dependencyWindow ?? null,
         scenarioProbe: pointer('scenario-probe/latest') ?? manifest.latestPointers.scenarioProbe ?? null,
+        boundaryFixture: pointer('boundary-fixture/latest') ?? manifest.latestPointers.boundaryFixture ?? null,
+        scenarioPatchHints: pointer('scenario-patch-hints/latest') ?? manifest.latestPointers.scenarioPatchHints ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

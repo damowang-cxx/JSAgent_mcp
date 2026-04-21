@@ -26,6 +26,7 @@ import { definePureBoundaryTool } from './reverse/definePureBoundary.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffCrossLanguageTool } from './reverse/diffCrossLanguage.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
+import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
@@ -38,6 +39,7 @@ import { exportRegressionReportTool } from './reverse/exportRegressionReport.js'
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportCaptureReportTool } from './reverse/exportCaptureReport.js';
+import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
@@ -49,12 +51,15 @@ import { extractHelperBoundaryTool } from './reverse/extractHelperBoundary.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
 import { extractPythonPureTool } from './reverse/extractPythonPure.js';
 import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
+import { generateBoundaryFixtureTool } from './reverse/generateBoundaryFixture.js';
+import { generateScenarioPatchHintsTool } from './reverse/generateScenarioPatchHints.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
 import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
+import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
 import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
@@ -63,6 +68,7 @@ import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
 import { listIntermediateBaselinesTool } from './reverse/listIntermediateBaselines.js';
 import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.js';
 import { listScenarioPresetsTool } from './reverse/listScenarioPresets.js';
+import { listScenarioPatchHintsTool } from './reverse/listScenarioPatchHints.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
 import { locateCryptoHelpersTool } from './reverse/locateCryptoHelpers.js';
 import { locateRequestSinkTool } from './reverse/locateRequestSink.js';
@@ -161,6 +167,12 @@ export const reverseTools = [
   listScenarioProbePlansTool,
   exportWindowReportTool,
   exportProbePlanReportTool,
+  generateBoundaryFixtureTool,
+  listBoundaryFixturesTool,
+  generateScenarioPatchHintsTool,
+  listScenarioPatchHintsTool,
+  exportBoundaryFixtureReportTool,
+  exportScenarioPatchHintReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -232,6 +244,7 @@ export {
   diffCrossLanguageTool,
   diffEnvRequirementsTool,
   evaluateScriptTool,
+  exportBoundaryFixtureReportTool,
   exportPatchReportTool,
   exportProbePlanReportTool,
   exportDeliveryBundleTool,
@@ -245,6 +258,7 @@ export {
   exportReverseReportTool,
   exportRuntimeTraceTool,
   exportCaptureReportTool,
+  exportScenarioPatchHintReportTool,
   exportScenarioReportTool,
   exportSdkPackageTool,
   exportSessionReportTool,
@@ -256,6 +270,8 @@ export {
   extractNodePureTool,
   extractPythonPureTool,
   freezeRuntimeSampleTool,
+  generateBoundaryFixtureTool,
+  generateScenarioPatchHintsTool,
   getCollectedCodeFileTool,
   getHookDataTool,
   getNetworkRequestTool,
@@ -264,6 +280,7 @@ export {
   getTaskManifestTool,
   injectHookTool,
   listCollectedCodeTool,
+  listBoundaryFixturesTool,
   listCapturePresetsTool,
   listDependencyWindowsTool,
   listHelperBoundariesTool,
@@ -273,6 +290,7 @@ export {
   listPagesTool,
   listPatchHistoryTool,
   listRegressionBaselinesTool,
+  listScenarioPatchHintsTool,
   listScenarioPresetsTool,
   listToolsSummaryTool,
   listXhrBreakpointsTool,

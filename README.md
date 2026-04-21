@@ -36,6 +36,7 @@ The project currently includes:
 - scenario-oriented reverse capability layer for signature chains, token families, request sinks, and crypto helpers
 - replay-oriented capture recipes and helper-boundary extraction hints
 - minimal dependency window export and scenario-guided probe planning
+- boundary-driven fixture candidates and scenario-specific patch hints
 
 ## Design Principles
 
@@ -928,6 +929,47 @@ Recommended Phase 16 validation flow:
 5. `export_window_report` with `format='json'` and `format='markdown'`.
 6. `export_probe_plan_report` with `format='json'` and `format='markdown'`.
 
+## Phase 17: Boundary-Driven Fixture Generation + Scenario-Specific Patch Hint Layer
+
+Phase 17 turns boundary, dependency-window, and probe-plan evidence into smaller fixture candidates and first explainable scenario patch hints. It prepares rebuild/patch/pure workflows without rewriting those workflows or applying patches automatically.
+
+New tools:
+
+- `generate_boundary_fixture`: generates a smallest useful fixture candidate from window, probe, helper-boundary, or task artifacts.
+- `list_boundary_fixtures`: lists runtime or task artifact-backed fixture candidates.
+- `generate_scenario_patch_hints`: generates scenario-specific patch hints without applying patches.
+- `list_scenario_patch_hints`: lists runtime or task artifact-backed patch hint sets.
+- `export_boundary_fixture_report`: exports fixture candidate JSON or markdown.
+- `export_scenario_patch_hint_report`: exports scenario patch hint JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: fixture and patch hints start from observed boundary/window/probe/capture/scenario evidence.
+- Hook-preferred: hints prefer focused helper and fetch/xhr observations before debugger workflows.
+- Target-chain-first: target helper, preserved inputs, expected outputs, request anchors, and sinks drive decisions.
+- Evidence-first: task runs write `boundary-fixture/*`, `scenario-patch-hints/*`, and `runtime-evidence` artifacts.
+- Rebuild-oriented: fixture candidates and patch hints are shaped for rebuild probe and first-divergence comparison.
+- Boundary-before-extraction: fixture candidates respect helper boundary and dependency window inputs/outputs.
+- Smallest useful fixture first: fixtures start with the minimal inputs and expected outputs needed to validate behavior.
+- First explainable patch first: patch hints prioritize the first supported patch direction, not broad repair lists.
+
+Current boundaries:
+
+- Boundary fixtures are candidate rebuild fixtures, not final pure fixtures.
+- Scenario patch hints are evidence-driven hints, not an automatic patch engine.
+- This phase does not implement automatic pure extraction, automatic patch application, full AST slicing, SSA, taint analysis, external AI, or a second browser manager.
+
+Recommended Phase 17 validation flow:
+
+1. `run_capture_recipe`.
+2. `extract_helper_boundary`.
+3. `extract_dependency_window`.
+4. `plan_scenario_probe`.
+5. `generate_boundary_fixture`.
+6. `generate_scenario_patch_hints`.
+7. `export_boundary_fixture_report` with `format='json'` and `format='markdown'`.
+8. `export_scenario_patch_hint_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -999,6 +1041,12 @@ Recommended Phase 16 validation flow:
 - `list_scenario_probe_plans`
 - `export_window_report`
 - `export_probe_plan_report`
+- `generate_boundary_fixture`
+- `list_boundary_fixtures`
+- `generate_scenario_patch_hints`
+- `list_scenario_patch_hints`
+- `export_boundary_fixture_report`
+- `export_scenario_patch_hint_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`

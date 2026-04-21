@@ -9,6 +9,8 @@ import { CodeCollector } from '../collector/CodeCollector.js';
 import { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
 import { EvidenceStore } from '../evidence/EvidenceStore.js';
+import { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
+import { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
 import { HookManager } from '../hook/HookManager.js';
 import { IntermediateAlignment } from '../intermediate/IntermediateAlignment.js';
 import { IntermediateDiff } from '../intermediate/IntermediateDiff.js';
@@ -22,6 +24,8 @@ import { FixtureStabilizer } from '../patch/FixtureStabilizer.js';
 import { PatchApplier } from '../patch/PatchApplier.js';
 import { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
 import { PatchPlanManager } from '../patch/PatchPlanManager.js';
+import { ScenarioPatchHintGenerator } from '../patch/ScenarioPatchHintGenerator.js';
+import { ScenarioPatchHintRegistry } from '../patch/ScenarioPatchHintRegistry.js';
 import { CrossLanguageDiff } from '../port/CrossLanguageDiff.js';
 import { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
 import { PythonPortExtractor } from '../port/PythonPortExtractor.js';
@@ -40,6 +44,7 @@ import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
 import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
+import { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
 import { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
 import { PortReportBuilder } from '../report/PortReportBuilder.js';
@@ -49,6 +54,7 @@ import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
+import { ScenarioPatchHintReportBuilder } from '../report/ScenarioPatchHintReportBuilder.js';
 import { SdkReportBuilder } from '../report/SdkReportBuilder.js';
 import { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
@@ -188,6 +194,12 @@ export class AppRuntime implements AppRuntimeServices {
   readonly probePlanRegistry: ProbePlanRegistry;
   readonly windowReportBuilder: WindowReportBuilder;
   readonly probePlanReportBuilder: ProbePlanReportBuilder;
+  readonly boundaryFixtureGenerator: BoundaryFixtureGenerator;
+  readonly fixtureCandidateRegistry: FixtureCandidateRegistry;
+  readonly scenarioPatchHintGenerator: ScenarioPatchHintGenerator;
+  readonly scenarioPatchHintRegistry: ScenarioPatchHintRegistry;
+  readonly fixtureCandidateReportBuilder: FixtureCandidateReportBuilder;
+  readonly scenarioPatchHintReportBuilder: ScenarioPatchHintReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -328,6 +340,8 @@ export class AppRuntime implements AppRuntimeServices {
     this.captureReportBuilder = new CaptureReportBuilder();
     this.windowReportBuilder = new WindowReportBuilder();
     this.probePlanReportBuilder = new ProbePlanReportBuilder();
+    this.fixtureCandidateReportBuilder = new FixtureCandidateReportBuilder();
+    this.scenarioPatchHintReportBuilder = new ScenarioPatchHintReportBuilder();
     this.waitConditionEvaluator = new WaitConditionEvaluator({
       networkCollector: this.networkCollector,
       pageController: this.pageController
@@ -375,6 +389,8 @@ export class AppRuntime implements AppRuntimeServices {
     this.helperBoundaryRegistry = new HelperBoundaryRegistry(this.evidenceStore);
     this.dependencyWindowRegistry = new DependencyWindowRegistry(this.evidenceStore);
     this.probePlanRegistry = new ProbePlanRegistry(this.evidenceStore);
+    this.fixtureCandidateRegistry = new FixtureCandidateRegistry(this.evidenceStore);
+    this.scenarioPatchHintRegistry = new ScenarioPatchHintRegistry(this.evidenceStore);
     this.rebuildWorkflowRunner = new RebuildWorkflowRunner({
       analyzeTargetRunner: this.analyzeTargetRunner,
       browserSession,
@@ -451,6 +467,7 @@ export class AppRuntime implements AppRuntimeServices {
       evidenceStore: this.evidenceStore,
       helperBoundaryExtractor: this.helperBoundaryExtractor,
       helperBoundaryRegistry: this.helperBoundaryRegistry,
+      networkCollector: this.networkCollector,
       pureExtractionRunner: this.pureExtractionRunner,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner,
       replayRecipeRunner: this.replayRecipeRunner,
@@ -465,6 +482,34 @@ export class AppRuntime implements AppRuntimeServices {
       dependencyWindowRegistry: this.dependencyWindowRegistry,
       evidenceStore: this.evidenceStore,
       helperBoundaryRegistry: this.helperBoundaryRegistry,
+      replayRecipeRunner: this.replayRecipeRunner,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner
+    });
+    this.boundaryFixtureGenerator = new BoundaryFixtureGenerator({
+      dependencyWindowExtractor: this.dependencyWindowExtractor,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      helperBoundaryExtractor: this.helperBoundaryExtractor,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      probePlanRegistry: this.probePlanRegistry,
+      pureExtractionRunner: this.pureExtractionRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      replayRecipeRunner: this.replayRecipeRunner,
+      requestSinkLocator: this.requestSinkLocator,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      taskManifestManager: this.taskManifestManager,
+      tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
+    });
+    this.scenarioPatchHintGenerator = new ScenarioPatchHintGenerator({
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      patchPlanManager: this.patchPlanManager,
+      patchWorkflowRunner: this.patchWorkflowRunner,
+      probePlanRegistry: this.probePlanRegistry,
+      pureExtractionRunner: this.pureExtractionRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
       replayRecipeRunner: this.replayRecipeRunner,
       scenarioWorkflowRunner: this.scenarioWorkflowRunner
     });
@@ -930,5 +975,29 @@ export class AppRuntime implements AppRuntimeServices {
 
   getProbePlanReportBuilder(): ProbePlanReportBuilder {
     return this.probePlanReportBuilder;
+  }
+
+  getBoundaryFixtureGenerator(): BoundaryFixtureGenerator {
+    return this.boundaryFixtureGenerator;
+  }
+
+  getFixtureCandidateRegistry(): FixtureCandidateRegistry {
+    return this.fixtureCandidateRegistry;
+  }
+
+  getScenarioPatchHintGenerator(): ScenarioPatchHintGenerator {
+    return this.scenarioPatchHintGenerator;
+  }
+
+  getScenarioPatchHintRegistry(): ScenarioPatchHintRegistry {
+    return this.scenarioPatchHintRegistry;
+  }
+
+  getFixtureCandidateReportBuilder(): FixtureCandidateReportBuilder {
+    return this.fixtureCandidateReportBuilder;
+  }
+
+  getScenarioPatchHintReportBuilder(): ScenarioPatchHintReportBuilder {
+    return this.scenarioPatchHintReportBuilder;
   }
 }

@@ -34,6 +34,8 @@ export interface TaskManifest {
     helperBoundary?: string | null;
     dependencyWindow?: string | null;
     scenarioProbe?: string | null;
+    boundaryFixture?: string | null;
+    scenarioPatchHints?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];
