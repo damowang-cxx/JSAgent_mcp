@@ -707,7 +707,7 @@ New capabilities:
 - `register_regression_baseline`: registers a fixture-based baseline only after the pure or port gate passes.
 - `list_regression_baselines`: lists artifact-backed baselines for a task.
 - `run_regression_baseline`: reruns Node/Python pure outputs against the registered baseline and reports first divergence.
-- `export_sdk_package`: exports a minimal Node/Python/dual SDK package only after the required verification gate passes.
+- `export_sdk_package`: exports a minimal Node/Python/dual SDK package only after the required verification gate passes and the latest regression run matches the current baseline.
 - `export_task_state_report`: exports current stage, gates, latest pointers, missing artifacts, and next actions.
 - `export_regression_report`: exports the latest regression run report.
 - `run_delivery_workflow`: chains gates, baseline, regression, and SDK packaging into a delivery readiness result.
@@ -717,12 +717,13 @@ Design rules:
 - Artifact-first: task snapshots and jsonl logs are the truth source; runtime cache is only a shortcut.
 - Stage-completion-first: Observe / Capture / Rebuild / Patch / PureExtraction / Port / Delivery have explicit gate checks.
 - Baseline-before-regression: baselines can only be registered after pure or port gate passes.
-- SDK-after-verification: Node SDK requires pure gate; Python/dual SDK requires port gate.
+- SDK-after-verification: Node SDK requires pure gate; Python/dual SDK requires port gate; every SDK export also requires a matched regression artifact.
 - Evidence-first: manifests, baselines, regression runs, reports, and SDK exports are written back into task artifacts.
 
 Boundaries:
 
 - SDK packages are minimal delivery artifacts, not npm/PyPI publishing pipelines.
+- SDK packages now include thin callable wrappers around the verified Node/Python pure implementations instead of contract-only metadata.
 - Regression is fixture-based deterministic comparison, not full CI integration.
 - Upgrade/regression mismatch reports first divergence and the smallest next action; it does not auto-fix code.
 

@@ -29,10 +29,10 @@ export class StageGateEvaluator {
   }
 
   async evaluateAll(taskId: string): Promise<Record<ReverseStage, StageGateResult>> {
-    const entries = await Promise.all(REVERSE_STAGES.map(async (stage) => [
-      stage,
-      await this.evaluate(taskId, stage)
-    ] as const));
+    const entries: Array<readonly [ReverseStage, StageGateResult]> = [];
+    for (const stage of REVERSE_STAGES) {
+      entries.push([stage, await this.evaluate(taskId, stage)] as const);
+    }
     return Object.fromEntries(entries) as Record<ReverseStage, StageGateResult>;
   }
 

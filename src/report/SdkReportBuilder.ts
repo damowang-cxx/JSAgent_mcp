@@ -28,7 +28,7 @@ export class SdkReportBuilder {
         '',
         '## Verification Gate',
         '',
-        '- SDK export is allowed only after the required pure/port gate passes.',
+        '- SDK export is allowed only after the required pure/port gate passes and the latest regression run matches baseline.',
         '',
         '## Files',
         '',

@@ -1,4 +1,5 @@
 import { AppError } from '../core/errors.js';
+import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { RegressionRunner } from '../regression/RegressionRunner.js';
 import type { RegressionBaseline, RegressionRunResult } from '../regression/types.js';
@@ -28,7 +29,7 @@ export class DeliveryWorkflowRunner {
   constructor(
     private readonly deps: {
       baselineRegistry: BaselineRegistry;
-      evidenceRoot: { getTaskDir(taskId: string): string };
+      evidenceStore: EvidenceStore;
       regressionRunner: RegressionRunner;
       sdkPackager: SDKPackager;
       stageGateEvaluator: StageGateEvaluator;
@@ -58,7 +59,7 @@ export class DeliveryWorkflowRunner {
       baselineId: baseline.baselineId,
       taskId: options.taskId,
       timeoutMs: options.timeoutMs,
-      writeEvidence: options.writeEvidence
+      writeEvidence: true
     });
     const sdk = regression.matchedBaseline
       ? await this.deps.sdkPackager.export({
@@ -87,7 +88,7 @@ export class DeliveryWorkflowRunner {
         ...(regression.matchedBaseline ? [] : ['Stop SDK export until regression matches baseline.'])
       ],
       task: {
-        taskDir: this.deps.evidenceRoot.getTaskDir(options.taskId),
+        taskDir: this.deps.evidenceStore.getTaskDir(options.taskId),
         taskId: options.taskId
       },
       whyTheseSteps: [
@@ -95,11 +96,74 @@ export class DeliveryWorkflowRunner {
         'The SDK package is generated only after regression matches the registered baseline.'
       ]
     };
+
+    if (options.writeEvidence) {
+      await this.writeEvidence(options.taskId, result);
+    }
+
     this.lastResult = result;
     return result;
   }
 
   getLastDeliveryWorkflowResult(): DeliveryWorkflowResult | null {
     return this.lastResult;
+  }
+
+  private async writeEvidence(taskId: string, result: DeliveryWorkflowResult): Promise<void> {
+    await this.deps.evidenceStore.appendLog(taskId, 'runtime-evidence', {
+      kind: 'delivery_workflow',
+      readyForDelivery: result.readyForDelivery,
+      regressionMatched: result.regression?.matchedBaseline ?? false,
+      sdkTarget: result.sdk?.target ?? null
+    });
+    await this.deps.evidenceStore.writeSnapshot(taskId, 'delivery/gates', result.gates);
+    await this.deps.evidenceStore.writeSnapshot(taskId, 'delivery/workflow-result', result);
+    await this.deps.evidenceStore.writeSnapshot(taskId, 'delivery/delivery-report-markdown', {
+      markdown: this.buildMarkdown(result)
+    });
+  }
+
+  private buildMarkdown(result: DeliveryWorkflowResult): string {
+    return `${[
+      '# JSAgent_mcp Delivery Workflow Report',
+      '',
+      '## Task',
+      '',
+      `- Task: ${result.task?.taskId ?? '(none)'}`,
+      '',
+      '## Gates',
+      '',
+      ...Object.values(result.gates).map((gate) => `- ${gate.stage}: ${gate.passed ? 'passed' : 'blocked'}`),
+      '',
+      '## Baseline',
+      '',
+      `- ${result.baseline?.baselineId ?? '(none)'}`,
+      '',
+      '## Regression',
+      '',
+      `- Matched: ${result.regression?.matchedBaseline ?? false}`,
+      `- Hint: ${result.regression?.nextActionHint ?? '(none)'}`,
+      '',
+      '## SDK',
+      '',
+      `- Exported: ${Boolean(result.sdk)}`,
+      `- Target: ${result.sdk?.target ?? '(none)'}`,
+      '',
+      '## Ready For Delivery',
+      '',
+      `- ${result.readyForDelivery}`,
+      '',
+      '## Next Actions',
+      '',
+      ...result.nextActions.map((item) => `- ${item}`),
+      '',
+      '## Why These Steps',
+      '',
+      ...result.whyTheseSteps.map((item) => `- ${item}`),
+      '',
+      '## Stop If',
+      '',
+      ...result.stopIf.map((item) => `- ${item}`)
+    ].join('\n')}\n`;
   }
 }

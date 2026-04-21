@@ -305,7 +305,7 @@ export class AppRuntime implements AppRuntimeServices {
     });
     this.deliveryWorkflowRunner = new DeliveryWorkflowRunner({
       baselineRegistry: this.baselineRegistry,
-      evidenceRoot: this.evidenceStore,
+      evidenceStore: this.evidenceStore,
       regressionRunner: this.regressionRunner,
       sdkPackager: this.sdkPackager,
       stageGateEvaluator: this.stageGateEvaluator
