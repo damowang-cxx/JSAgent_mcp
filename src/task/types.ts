@@ -28,6 +28,7 @@ export interface TaskManifest {
     upgradeWorkflow?: string | null;
     deliveryBundle?: string | null;
     deliverySmoke?: string | null;
+    scenarioAnalysis?: string | null;
     scenarioWorkflow?: string | null;
   };
   stageState: Record<string, TaskStageState>;

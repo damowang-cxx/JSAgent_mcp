@@ -48,7 +48,7 @@ export const analyzeSignatureChainTool = defineTool<AnalyzeSignatureChainParams>
         targetUrl: params.targetUrl
       });
       await context.runtime.getTaskManifestManager().updatePointers(params.taskId, {
-        scenarioWorkflow: 'scenario/analysis'
+        scenarioAnalysis: 'scenario/analysis'
       });
       evidenceWritten = true;
     }

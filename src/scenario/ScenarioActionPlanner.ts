@@ -27,6 +27,12 @@ export class ScenarioActionPlanner {
     const topHelper = input.helperResult?.helpers.find((helper) => !helper.name.startsWith('crypto:')) ?? input.helperResult?.helpers[0];
     const topBinding = input.tokenTrace?.requestBindings[0];
 
+    if (input.scenario === 'crypto-helper' && topHelper) {
+      nextActions.push(`Start with helper ${topHelper.name}; review/deobfuscate it and map its output to request parameters before expanding request capture.`);
+      whyTheseSteps.push(`The crypto-helper preset is helper-first, and ${topHelper.name} is classified as ${topHelper.kind} with confidence ${topHelper.confidence}.`);
+      stopIf.push('Stop helper-first analysis if the helper output cannot be bound to a request parameter, hook return, or token family member.');
+    }
+
     if (topRequest) {
       nextActions.push(`Prioritize ${topRequest.method} ${topRequest.url}; inspect fields ${topRequest.indicators.slice(0, 6).join(', ') || '(no named indicators)'}.`);
       whyTheseSteps.push(`The top request has scenario score ${topRequest.score} from URL/body/header/method/hook evidence.`);
@@ -49,7 +55,7 @@ export class ScenarioActionPlanner {
       stopIf.push('Stop function expansion if the candidate does not feed the target request or related helper.');
     }
 
-    if (topHelper) {
+    if (topHelper && input.scenario !== 'crypto-helper') {
       nextActions.push(`Run focused review or deobfuscate_code on helper ${topHelper.name}; capture one input/output sample if it feeds a request parameter.`);
       whyTheseSteps.push(`Crypto helper ${topHelper.name} was classified as ${topHelper.kind} with confidence ${topHelper.confidence}.`);
       stopIf.push('Stop helper extraction if no request parameter consumes the helper output.');
@@ -69,6 +75,12 @@ export class ScenarioActionPlanner {
     if (input.scenario === 'token-family' && (!input.tokenTrace || input.tokenTrace.members.length === 0)) {
       nextActions.push('Replay login/refresh/auth action with fetch/xhr hooks, then rerun trace_token_family.');
       whyTheseSteps.push('Token-family trace has no members yet, so runtime sampling should precede deeper static guesses.');
+    }
+
+    if (input.scenario === 'anti-bot') {
+      nextActions.push('For anti-bot, compare challenge/verify/captcha/fingerprint fields across two captures before moving to rebuild.');
+      whyTheseSteps.push('Anti-bot parameters often change per challenge, so repeated hook-backed samples are needed before extraction.');
+      stopIf.push('Stop anti-bot capture once the challenge parameter source and request binding are both stable across two samples.');
     }
 
     return {

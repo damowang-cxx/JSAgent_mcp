@@ -47,14 +47,24 @@ export class CryptoHelperLocator {
     }
 
     const mergedCode = files.map((file) => `/* ${file.url} */\n${file.content}`).join('\n');
-    const [crypto, understanding] = await Promise.all([
+    const deobfuscatedCode = await this.deobfuscateMergedCode(mergedCode, notes);
+    const [crypto, understanding, deobfuscatedCrypto, deobfuscatedUnderstanding] = await Promise.all([
       this.deps.cryptoDetector.detect({ code: mergedCode }),
-      this.deps.staticAnalyzer.understand({ code: mergedCode, focus: 'all' })
+      this.deps.staticAnalyzer.understand({ code: mergedCode, focus: 'all' }),
+      deobfuscatedCode ? this.deps.cryptoDetector.detect({ code: deobfuscatedCode }) : Promise.resolve(null),
+      deobfuscatedCode ? this.deps.staticAnalyzer.understand({ code: deobfuscatedCode, focus: 'all' }) : Promise.resolve(null)
     ]);
 
     const helpers: HelperEntry[] = [];
     for (const file of files) {
       helpers.push(...this.extractHelpersFromFile(file.url, file.content));
+    }
+    if (deobfuscatedCode) {
+      helpers.push(...this.extractHelpersFromFile('deobfuscated:top-priority', deobfuscatedCode).map((helper) => ({
+        ...helper,
+        confidence: confidence(helper.confidence + 0.08),
+        reasons: ['deobfuscation output helper candidate', ...helper.reasons]
+      })));
     }
 
     for (const name of understanding.structure.candidateFunctions.filter((item) => CANDIDATE_FUNCTION_NAME_PATTERN.test(item))) {
@@ -65,8 +75,17 @@ export class CryptoHelperLocator {
         reasons: ['static analyzer candidate function name matches crypto/signature keywords']
       });
     }
+    for (const name of (deobfuscatedUnderstanding?.structure.candidateFunctions ?? []).filter((item) => CANDIDATE_FUNCTION_NAME_PATTERN.test(item))) {
+      helpers.push({
+        confidence: 0.7,
+        file: 'deobfuscated:top-priority',
+        kind: classifyCryptoHelperKind(name),
+        name,
+        reasons: ['deobfuscated static analyzer candidate function name matches crypto/signature keywords']
+      });
+    }
 
-    for (const algorithm of crypto.algorithms) {
+    for (const algorithm of [...crypto.algorithms, ...(deobfuscatedCrypto?.algorithms ?? [])]) {
       const kind = this.kindFromAlgorithm(algorithm.name);
       helpers.push({
         confidence: confidence(algorithm.confidence),
@@ -82,10 +101,8 @@ export class CryptoHelperLocator {
     const lastAnalyze = this.deps.analyzeTargetRunner.getLastAnalyzeTargetResult();
     if (lastAnalyze?.deobfuscation) {
       notes.push(
-        `Last analyze_target deobfuscation summary is available: confidence=${lastAnalyze.deobfuscation.confidence}, readability=${lastAnalyze.deobfuscation.readabilityScore}.`
+        `Last analyze_target deobfuscation summary is available as auxiliary evidence: confidence=${lastAnalyze.deobfuscation.confidence}, readability=${lastAnalyze.deobfuscation.readabilityScore}.`
       );
-    } else {
-      notes.push('Deobfuscation is not run automatically by locate_crypto_helpers; run deobfuscate_code on a priority helper if code remains opaque.');
     }
 
     const merged = this.mergeHelpers(helpers)
@@ -98,9 +115,36 @@ export class CryptoHelperLocator {
 
     return {
       helpers: merged,
-      libraries: uniqueStrings(crypto.libraries, 20),
+      libraries: uniqueStrings([...crypto.libraries, ...(deobfuscatedCrypto?.libraries ?? [])], 20),
       notes
     };
+  }
+
+  private async deobfuscateMergedCode(code: string, notes: string[]): Promise<string | null> {
+    const source = code.slice(0, 160_000);
+    if (source.trim().length === 0) {
+      return null;
+    }
+
+    try {
+      const result = await this.deps.deobfuscator.deobfuscate({
+        aggressive: true,
+        code: source,
+        explain: false,
+        renameVariables: true
+      });
+      const changed = result.code !== source;
+      const changedSteps = result.transformations.filter((step) => step.changed).length;
+      notes.push(
+        changed
+          ? `Consumed deobfuscation output for helper ranking: changedSteps=${changedSteps}, confidence=${result.confidence}.`
+          : `Deobfuscation ran for helper ranking but did not materially change top-priority code; confidence=${result.confidence}.`
+      );
+      return changed ? result.code : null;
+    } catch (error) {
+      notes.push(`Deobfuscation could not be consumed for helper ranking: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
   }
 
   private extractHelpersFromFile(file: string, code: string): HelperEntry[] {

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { AppError } from '../../core/errors.js';
-import type { ScenarioWorkflowResult } from '../../scenario/types.js';
+import type { ScenarioAnalysisResult, ScenarioWorkflowResult } from '../../scenario/types.js';
 import { ToolCategory } from '../categories.js';
 import { defineTool, type ToolContext } from '../ToolDefinition.js';
 
@@ -16,7 +16,7 @@ type ExportScenarioReportParams = z.infer<typeof schema>;
 
 export const exportScenarioReportTool = defineTool<ExportScenarioReportParams>({
   name: 'export_scenario_report',
-  description: 'Export a scenario workflow report from task artifacts or the latest run_scenario_recipe result.',
+  description: 'Export a scenario workflow or analysis report from task artifacts or the latest run_scenario_recipe result.',
   annotations: {
     category: ToolCategory.REVERSE_ENGINEERING,
     readOnlyHint: false
@@ -30,7 +30,7 @@ export const exportScenarioReportTool = defineTool<ExportScenarioReportParams>({
     if (!result) {
       throw new AppError(
         'SCENARIO_RESULT_NOT_FOUND',
-        'No scenario workflow result is available. Run run_scenario_recipe first or provide a taskId with scenario/workflow artifact.'
+        'No scenario workflow or scenario analysis result is available. Run run_scenario_recipe, run analyze_signature_chain, or provide a taskId with scenario artifacts.'
       );
     }
 
@@ -55,11 +55,20 @@ export const exportScenarioReportTool = defineTool<ExportScenarioReportParams>({
 async function readScenarioResult(
   taskId: string | undefined,
   context: ToolContext
-): Promise<ScenarioWorkflowResult | null> {
+): Promise<ScenarioWorkflowResult | ScenarioAnalysisResult | null> {
   if (taskId) {
     try {
       const snapshot = await context.runtime.getEvidenceStore().readSnapshot(taskId, 'scenario/workflow');
       if (isScenarioWorkflowResult(snapshot)) {
+        return snapshot;
+      }
+    } catch {
+      // Fall back to scenario/analysis or runtime cache when workflow is not available.
+    }
+
+    try {
+      const snapshot = await context.runtime.getEvidenceStore().readSnapshot(taskId, 'scenario/analysis');
+      if (isScenarioAnalysisResult(snapshot)) {
         return snapshot;
       }
     } catch {
@@ -68,6 +77,17 @@ async function readScenarioResult(
   }
 
   return context.runtime.getScenarioWorkflowRunner().getLastScenarioWorkflowResult();
+}
+
+function isScenarioAnalysisResult(value: unknown): value is ScenarioAnalysisResult {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'scenario' in value &&
+      'indicators' in value &&
+      'priorityTargets' in value &&
+      'nextActions' in value
+  );
 }
 
 function isScenarioWorkflowResult(value: unknown): value is ScenarioWorkflowResult {

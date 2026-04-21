@@ -147,18 +147,25 @@ export function scoreNetworkRequest(
     correlatedIndicators?: readonly string[];
     fingerprintScore?: number;
     matchedInitiators?: number;
+    hookIndicatorCount?: number;
+    sinkDistanceScore?: number;
+    scenarioBonus?: number;
+    scenarioIndicators?: readonly string[];
   } = {}
 ): RequestScore {
   const indicatorHits = indicatorsFromRequest(request);
   const indicatorNames = uniqueStrings([
     ...indicatorHits.map((item) => item.value),
-    ...(input.correlatedIndicators ?? [])
+    ...(input.correlatedIndicators ?? []),
+    ...(input.scenarioIndicators ?? [])
   ], 20);
   const method = request.method.toUpperCase();
   const hasWriteMethod = /^(POST|PUT|PATCH|DELETE)$/i.test(method);
   const hasBody = Boolean(request.postData);
   const targetBonus = input.targetUrl && targetMatches(request.url, input.targetUrl) ? 12 : 0;
   const apiPathBonus = /\/api\/|\/v\d+\/|graphql|rpc/i.test(request.url) ? 10 : 0;
+  const hookBonus = Math.min(18, (input.hookIndicatorCount ?? 0) * 6);
+  const sinkBonus = Math.min(16, input.sinkDistanceScore ?? 0);
   const score = clampScore(
     indicatorNames.length * 12 +
       (hasWriteMethod ? 18 : 0) +
@@ -166,7 +173,10 @@ export function scoreNetworkRequest(
       targetBonus +
       apiPathBonus +
       Math.min(20, input.fingerprintScore ?? 0) +
-      Math.min(10, (input.matchedInitiators ?? 0) * 4)
+      Math.min(10, (input.matchedInitiators ?? 0) * 4) +
+      hookBonus +
+      sinkBonus +
+      (input.scenarioBonus ?? 0)
   );
   const reasons = [
     indicatorNames.length > 0 ? `matched indicators: ${indicatorNames.join(', ')}` : '',
@@ -175,7 +185,10 @@ export function scoreNetworkRequest(
     targetBonus > 0 ? 'matches targetUrl filter' : '',
     apiPathBonus > 0 ? 'API-like request path' : '',
     input.fingerprintScore ? `correlation fingerprint score ${input.fingerprintScore}` : '',
-    input.matchedInitiators ? `matched initiators ${input.matchedInitiators}` : ''
+    input.matchedInitiators ? `matched initiators ${input.matchedInitiators}` : '',
+    hookBonus > 0 ? `hook timeline indicator bonus ${hookBonus}` : '',
+    sinkBonus > 0 ? `request sink proximity bonus ${sinkBonus}` : '',
+    input.scenarioBonus ? `scenario-specific bonus ${input.scenarioBonus}` : ''
   ].filter(Boolean);
 
   return {

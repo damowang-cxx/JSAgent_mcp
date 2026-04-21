@@ -18,13 +18,13 @@ import {
   indicatorsFromRequest,
   indicatorsFromText,
   indicatorsToStrings,
-  requestPatternLabel,
   scoreNetworkRequest
 } from './heuristics.js';
 import {
   clampScore,
   dedupeBy,
   normalizeUrlPattern,
+  requestText,
   targetMatches,
   uniqueStrings
 } from './normalization.js';
@@ -65,11 +65,23 @@ interface SignatureAnalyzeOptions {
 
 const DEFAULT_TOP_N = 8;
 
+interface ScenarioProfile {
+  scenario: ScenarioType;
+  label: string;
+  keywordPattern: RegExp;
+  keywordFamilies: string[];
+  helperFirst: boolean;
+  requestFirst: boolean;
+  notes: string[];
+  actionNoun: string;
+}
+
 export class SignatureScenarioAnalyzer {
   constructor(private readonly deps: SignatureScenarioAnalyzerDeps) {}
 
   async analyze(options: SignatureAnalyzeOptions = {}): Promise<ScenarioAnalysisResult> {
     const scenario = options.scenario ?? 'api-signature';
+    const profile = this.getScenarioProfile(scenario);
     const topN = Math.max(1, options.topN ?? DEFAULT_TOP_N);
     const notes: string[] = [];
 
@@ -92,13 +104,13 @@ export class SignatureScenarioAnalyzer {
     ]);
 
     const lastAnalyze = this.deps.analyzeTargetRunner.getLastAnalyzeTargetResult();
-    const candidateFunctions = uniqueStrings([
+    const candidateFunctions = this.rankByScenarioProfile(uniqueStrings([
       ...extractCandidateFunctionNames(mergedCode, 80),
       ...understanding.structure.candidateFunctions,
       ...(lastAnalyze?.understanding.structure.candidateFunctions ?? []),
       ...(lastAnalyze?.priorityTargets.filter((target) => target.type === 'function').map((target) => target.label) ?? []),
       ...helperResult.helpers.map((helper) => helper.name).filter((name) => !name.startsWith('crypto:'))
-    ], 60);
+    ], 60), profile);
 
     const requestSinks = uniqueStrings([
       ...sinkResult.sinks.map((sink) => sink.sink),
@@ -110,19 +122,23 @@ export class SignatureScenarioAnalyzer {
       cryptoAlgorithms: crypto.algorithms.map((algorithm) => algorithm.name),
       helperResult,
       hookIndicators,
+      profile,
       requests,
       requestSinks
     });
     const suspiciousRequests = this.buildSuspiciousRequests({
       correlation,
       hookIndicators,
+      profile,
       requests,
+      sinkResult,
       targetUrl: options.targetUrl
     });
     const priorityTargets = this.buildPriorityTargets({
       candidateFunctions,
       helperNames: helperResult.helpers.map((helper) => helper.name),
       indicators,
+      profile,
       requestSinks,
       suspiciousRequests
     });
@@ -131,6 +147,7 @@ export class SignatureScenarioAnalyzer {
       helperNames: helperResult.helpers.map((helper) => helper.name),
       hookIndicatorCount: hookIndicators.length,
       priorityTargets,
+      profile,
       requestSinks,
       suspiciousRequests
     });
@@ -143,6 +160,8 @@ export class SignatureScenarioAnalyzer {
 
     notes.push(...sinkResult.notes.map((note) => `request sink locator: ${note}`));
     notes.push(...helperResult.notes.map((note) => `crypto helper locator: ${note}`));
+    notes.push(`Scenario profile applied: ${profile.label}.`);
+    notes.push(...profile.notes);
     if (lastAnalyze) {
       notes.push('Last analyze_target result was used as auxiliary scenario evidence.');
     }
@@ -228,6 +247,7 @@ export class SignatureScenarioAnalyzer {
     cryptoAlgorithms: readonly string[];
     helperResult: Awaited<ReturnType<CryptoHelperLocator['locate']>>;
     hookIndicators: readonly ScenarioIndicator[];
+    profile: ScenarioProfile;
     requests: Awaited<ReturnType<SignatureScenarioAnalyzer['readRequests']>>;
     requestSinks: readonly string[];
   }): ScenarioIndicator[] {
@@ -236,6 +256,10 @@ export class SignatureScenarioAnalyzer {
     indicators.push(...input.requests.flatMap((request) => indicatorsFromRequest(request)));
     indicators.push(...input.hookIndicators);
     indicators.push(...indicatorsFromText(input.code, { reasonPrefix: 'top-priority code' }));
+    indicators.push(...this.scenarioIndicatorsFromText(input.code, input.profile, 'top-priority code'));
+    indicators.push(...input.requests.flatMap((request) =>
+      this.scenarioIndicatorsFromText(requestText(request), input.profile, `request ${request.method.toUpperCase()} ${normalizeUrlPattern(request.url)}`)
+    ));
     indicators.push(...input.cryptoAlgorithms.map((algorithm) => ({
       confidence: 0.78,
       reason: 'crypto detector matched algorithm in top-priority code',
@@ -261,10 +285,13 @@ export class SignatureScenarioAnalyzer {
   private buildSuspiciousRequests(input: {
     correlation: CorrelationResult | null;
     hookIndicators: readonly ScenarioIndicator[];
+    profile: ScenarioProfile;
     requests: Awaited<ReturnType<SignatureScenarioAnalyzer['readRequests']>>;
+    sinkResult: Awaited<ReturnType<RequestSinkLocator['locate']>>;
     targetUrl?: string;
   }): SuspiciousRequest[] {
     const fingerprintScores = new Map<string, { score: number; indicators: string[]; matchedInitiators: number }>();
+    const hookScores = new Map<string, { count: number; indicators: string[] }>();
 
     for (const fingerprint of input.correlation?.requestFingerprints ?? []) {
       for (const sampleUrl of fingerprint.sampleUrls) {
@@ -276,12 +303,36 @@ export class SignatureScenarioAnalyzer {
       }
     }
 
+    for (const item of input.correlation?.timeline ?? []) {
+      if (!item.url || item.source !== 'hook') {
+        continue;
+      }
+      const pattern = normalizeUrlPattern(item.url);
+      const existing = hookScores.get(pattern) ?? { count: 0, indicators: [] };
+      const scenarioIndicators = this.scenarioIndicatorNames(`${item.url}\n${JSON.stringify(item.raw ?? {})}`, input.profile);
+      existing.count += item.signatureIndicators.length + scenarioIndicators.length;
+      existing.indicators = uniqueStrings([...existing.indicators, ...item.signatureIndicators, ...scenarioIndicators], 20);
+      hookScores.set(pattern, existing);
+    }
+
+    const globalHookScenarioIndicators = uniqueStrings([
+      ...input.hookIndicators.map((indicator) => indicator.value),
+      ...input.hookIndicators.flatMap((indicator) => this.scenarioIndicatorNames(indicator.value, input.profile))
+    ], 20);
+
     const requests = input.requests.map((request) => {
       const correlation = fingerprintScores.get(normalizeUrlPattern(request.url));
+      const hookEvidence = hookScores.get(normalizeUrlPattern(request.url));
+      const scenarioIndicators = this.scenarioIndicatorNames(requestText(request), input.profile);
+      const sinkDistanceScore = this.scoreSinkProximity(request.url, input.sinkResult);
       const scored = scoreNetworkRequest(request, {
         correlatedIndicators: correlation?.indicators,
         fingerprintScore: correlation?.score,
+        hookIndicatorCount: (hookEvidence?.count ?? 0) + (globalHookScenarioIndicators.length > 0 ? 1 : 0),
         matchedInitiators: correlation?.matchedInitiators,
+        scenarioBonus: scenarioIndicators.length * 6,
+        scenarioIndicators: [...scenarioIndicators, ...(hookEvidence?.indicators ?? [])],
+        sinkDistanceScore,
         targetUrl: input.targetUrl
       });
       return {
@@ -295,9 +346,15 @@ export class SignatureScenarioAnalyzer {
     const correlatedOnly = (input.correlation?.suspiciousFlows ?? [])
       .filter((flow) => targetMatches(flow.url, input.targetUrl))
       .map((flow) => ({
-        indicators: uniqueStrings(flow.signatureIndicators, 20),
+        indicators: uniqueStrings([...flow.signatureIndicators, ...this.scenarioIndicatorNames(`${flow.url}\n${flow.events.join('\n')}`, input.profile)], 20),
         method: flow.method,
-        score: clampScore(55 + flow.signatureIndicators.length * 8 + flow.matchedInitiators * 4),
+        score: clampScore(
+          55 +
+            flow.signatureIndicators.length * 8 +
+            flow.matchedInitiators * 4 +
+            this.scenarioIndicatorNames(`${flow.url}\n${flow.events.join('\n')}`, input.profile).length * 6 +
+            this.scoreSinkProximity(flow.url, input.sinkResult)
+        ),
         url: flow.url
       }));
 
@@ -311,20 +368,23 @@ export class SignatureScenarioAnalyzer {
     candidateFunctions: readonly string[];
     helperNames: readonly string[];
     indicators: readonly ScenarioIndicator[];
+    profile: ScenarioProfile;
     requestSinks: readonly string[];
     suspiciousRequests: readonly SuspiciousRequest[];
   }): PriorityTarget[] {
     const targets: PriorityTarget[] = [];
 
     for (const request of input.suspiciousRequests.slice(0, 8)) {
+      const scenarioHits = this.scenarioIndicatorNames(`${request.url}\n${request.indicators.join('\n')}`, input.profile);
       targets.push({
         kind: 'request',
         reasons: [
           `request score ${request.score}`,
           request.indicators.length > 0 ? `matched indicators: ${request.indicators.join(', ')}` : '',
+          scenarioHits.length > 0 ? `${input.profile.label} indicators: ${scenarioHits.join(', ')}` : '',
           /^(POST|PUT|PATCH|DELETE)$/i.test(request.method) ? `write-like method ${request.method}` : ''
         ].filter(Boolean),
-        score: request.score,
+        score: clampScore(request.score + (input.profile.requestFirst ? 8 : 0) + scenarioHits.length * 3),
         target: `${request.method} ${normalizeUrlPattern(request.url)}`
       });
     }
@@ -339,37 +399,55 @@ export class SignatureScenarioAnalyzer {
     }
 
     for (const name of input.candidateFunctions.slice(0, 10)) {
+      const scenarioMatches = input.profile.keywordPattern.test(name);
+      input.profile.keywordPattern.lastIndex = 0;
       targets.push({
         kind: 'function',
         reasons: [
           'function name matches sign/token/auth/nonce/crypto scenario keywords',
+          scenarioMatches ? `prioritized by ${input.profile.label} profile` : '',
           input.suspiciousRequests.length > 0 ? `paired with top request ${requestPatternLabelFromSuspicious(input.suspiciousRequests[0]!)}` : ''
         ].filter(Boolean),
-        score: 64,
+        score: clampScore(64 + (scenarioMatches ? 14 : 0)),
         target: name
       });
     }
 
     for (const helper of input.helperNames.slice(0, 8)) {
+      const scenarioMatches = input.profile.keywordPattern.test(helper);
+      input.profile.keywordPattern.lastIndex = 0;
       targets.push({
         kind: 'helper',
-        reasons: ['crypto helper locator marked this helper for audit'],
-        score: helper.startsWith('crypto:') ? 48 : 62,
+        reasons: [
+          'crypto helper locator marked this helper for audit',
+          input.profile.helperFirst ? 'helper-first scenario boosts helper priority' : '',
+          scenarioMatches ? `helper matches ${input.profile.label} keywords` : ''
+        ].filter(Boolean),
+        score: clampScore((helper.startsWith('crypto:') ? 48 : 62) + (input.profile.helperFirst ? 26 : 0) + (scenarioMatches ? 8 : 0)),
         target: helper
       });
     }
 
     for (const value of indicatorsToStrings(input.indicators).slice(0, 8)) {
+      const scenarioMatches = input.profile.keywordPattern.test(value);
+      input.profile.keywordPattern.lastIndex = 0;
       targets.push({
         kind: 'param',
-        reasons: ['indicator appears in request/code/hook evidence'],
-        score: 46,
+        reasons: [
+          'indicator appears in request/code/hook evidence',
+          scenarioMatches ? `indicator matches ${input.profile.label} profile` : ''
+        ].filter(Boolean),
+        score: clampScore(46 + (scenarioMatches ? 12 : 0)),
         target: value
       });
     }
 
     return dedupeBy(
-      targets.sort((left, right) => right.score - left.score || left.target.localeCompare(right.target)),
+      targets.sort((left, right) =>
+        this.priorityKindBoost(right.kind, input.profile) - this.priorityKindBoost(left.kind, input.profile) ||
+        right.score - left.score ||
+        left.target.localeCompare(right.target)
+      ),
       (target) => `${target.kind}:${target.target}`
     ).slice(0, 25);
   }
@@ -379,6 +457,7 @@ export class SignatureScenarioAnalyzer {
     helperNames: readonly string[];
     hookIndicatorCount: number;
     priorityTargets: readonly PriorityTarget[];
+    profile: ScenarioProfile;
     requestSinks: readonly string[];
     suspiciousRequests: readonly SuspiciousRequest[];
   }): ScenarioAction[] {
@@ -391,7 +470,7 @@ export class SignatureScenarioAnalyzer {
     if (topRequest) {
       actions.push({
         purpose: 'Confirm the target-chain anchor before expanding capture.',
-        step: `Prioritize ${topRequest.method} ${normalizeUrlPattern(topRequest.url)} and compare its query/body/header indicators: ${topRequest.indicators.slice(0, 6).join(', ') || 'none'}.`,
+        step: `Prioritize ${topRequest.method} ${normalizeUrlPattern(topRequest.url)} and compare ${input.profile.actionNoun} indicators: ${topRequest.indicators.slice(0, 6).join(', ') || 'none'}.`,
         stopIf: 'Stop broad request capture once this request is reproducible and its sink is stable.'
       });
     } else {
@@ -413,16 +492,30 @@ export class SignatureScenarioAnalyzer {
     if (topFunction) {
       actions.push({
         purpose: 'Audit the most likely parameter builder.',
-        step: `Search collected code for ${topFunction}, then inspect callers and arguments around sign/token/nonce fields.`,
+        step: `Search collected code for ${topFunction}, then inspect callers and arguments around ${input.profile.actionNoun} fields.`,
         stopIf: 'Stop static expansion if the function is not on the target request path.'
       });
     }
 
-    if (topHelper) {
+    if (input.profile.helperFirst && topHelper) {
+      actions.unshift({
+        purpose: 'Start from the helper boundary because this preset is helper-first.',
+        step: `Review helper ${topHelper}, then map its output to any request parameter or hook return value.`,
+        stopIf: 'Stop helper-first analysis if no request-bound parameter consumes this helper output.'
+      });
+    } else if (topHelper) {
       actions.push({
         purpose: 'Prepare helper-boundary extraction for rebuild or pure extraction.',
         step: `Run deobfuscate_code or focused review around helper ${topHelper}, then capture one input/output sample with a function hook if possible.`,
         stopIf: 'Stop helper extraction if no request-bound parameter consumes its output.'
+      });
+    }
+
+    if (input.profile.scenario === 'anti-bot') {
+      actions.push({
+        purpose: 'Keep anti-bot capture focused on challenge material.',
+        step: 'Compare challenge/verify/captcha/fingerprint fields before and after the protected action; avoid broad storage snapshots unless the field source is unknown.',
+        stopIf: 'Stop anti-bot expansion once challenge parameters are bound to one request and one generating helper or hook record.'
       });
     }
 
@@ -471,6 +564,126 @@ export class SignatureScenarioAnalyzer {
     }
 
     return targets.slice(0, 8).map((target) => `${target.kind} ${target.target}: ${target.reasons.join('; ') || `score ${target.score}`}`);
+  }
+
+  private getScenarioProfile(scenario: ScenarioType): ScenarioProfile {
+    switch (scenario) {
+      case 'anti-bot':
+        return {
+          actionNoun: 'challenge/verify/captcha/fingerprint',
+          helperFirst: false,
+          keywordFamilies: ['challenge', 'verify', 'captcha', 'fingerprint', 'fp', 'risk', 'device', 'webdriver', 'slider', 'nonce'],
+          keywordPattern: /\b(challenge|verify|verification|captcha|fingerprint|fp|risk|device|webdriver|slider|validate|nonce|anti[-_]?bot)\b/i,
+          label: 'anti-bot challenge',
+          notes: ['Anti-bot profile boosts challenge, verify, captcha, fingerprint, risk, device, and nonce evidence.'],
+          requestFirst: true,
+          scenario
+        };
+      case 'crypto-helper':
+        return {
+          actionNoun: 'crypto/hash/encode helper',
+          helperFirst: true,
+          keywordFamilies: ['hmac', 'hash', 'md5', 'sha', 'aes', 'rsa', 'base64', 'encrypt', 'decrypt', 'cipher', 'digest', 'encode', 'decode'],
+          keywordPattern: /\b(hmac|hash|md5|sha-?1|sha-?256|sha-?512|aes|rsa|base64|encrypt|decrypt|cipher|digest|encode|decode|CryptoJS|crypto\.subtle)\b/i,
+          label: 'crypto-helper',
+          notes: ['Crypto-helper profile is helper-first: helper/function targets are promoted ahead of request-only targets.'],
+          requestFirst: false,
+          scenario
+        };
+      case 'token-family':
+        return {
+          actionNoun: 'token/auth/refresh/nonce',
+          helperFirst: false,
+          keywordFamilies: ['token', 'access_token', 'refresh_token', 'auth', 'authorization', 'bearer', 'nonce', 'verify', 'sign'],
+          keywordPattern: /\b(access[_-]?token|refresh[_-]?token|token|auth|authorization|bearer|nonce|verify|sign(?:ature)?)\b/i,
+          label: 'token-family',
+          notes: ['Token-family profile boosts token/auth/refresh/nonce request bindings and transformations.'],
+          requestFirst: true,
+          scenario
+        };
+      case 'api-signature':
+      default:
+        return {
+          actionNoun: 'sign/token/auth/nonce',
+          helperFirst: false,
+          keywordFamilies: ['sign', 'signature', 'x-sign', 'token', 'auth', 'nonce', 'timestamp', 'hmac', 'hash'],
+          keywordPattern: /\b(x-?sign|sign(?:ature)?|token|auth|authorization|nonce|timestamp|ts|hmac|hash|md5|sha)\b/i,
+          label: 'api-signature',
+          notes: ['API-signature profile boosts sign, token, auth, nonce, timestamp, hash, and HMAC evidence.'],
+          requestFirst: true,
+          scenario
+        };
+    }
+  }
+
+  private rankByScenarioProfile(values: readonly string[], profile: ScenarioProfile): string[] {
+    return [...values].sort((left, right) => {
+      const leftMatches = profile.keywordPattern.test(left);
+      profile.keywordPattern.lastIndex = 0;
+      const rightMatches = profile.keywordPattern.test(right);
+      profile.keywordPattern.lastIndex = 0;
+      return Number(rightMatches) - Number(leftMatches) || left.localeCompare(right);
+    });
+  }
+
+  private scenarioIndicatorsFromText(text: string, profile: ScenarioProfile, reasonPrefix: string): ScenarioIndicator[] {
+    return this.scenarioIndicatorNames(text, profile).map((value) => ({
+      confidence: 0.82,
+      reason: `${reasonPrefix}: matched ${profile.label} keyword family`,
+      type: profile.helperFirst ? ('crypto' as const) : ('param' as const),
+      value
+    }));
+  }
+
+  private scenarioIndicatorNames(text: string, profile: ScenarioProfile): string[] {
+    const lower = text.toLowerCase();
+    return profile.keywordFamilies.filter((family) => lower.includes(family.toLowerCase()));
+  }
+
+  private scoreSinkProximity(url: string, sinkResult: Awaited<ReturnType<RequestSinkLocator['locate']>>): number {
+    const requestPattern = normalizeUrlPattern(url);
+    let bestScore = 0;
+
+    for (const sink of sinkResult.sinks) {
+      const relatedMatch = sink.relatedUrls.some((relatedUrl) =>
+        relatedUrl === url || normalizeUrlPattern(relatedUrl) === requestPattern || url.includes(relatedUrl) || relatedUrl.includes(url)
+      );
+      if (relatedMatch) {
+        bestScore = Math.max(bestScore, sink.source === 'code' ? 16 : 12);
+        continue;
+      }
+
+      if (sink.relatedUrls.length === 0 && sink.source === 'code') {
+        bestScore = Math.max(bestScore, 4);
+      }
+    }
+
+    return bestScore;
+  }
+
+  private priorityKindBoost(kind: PriorityTarget['kind'], profile: ScenarioProfile): number {
+    if (profile.helperFirst) {
+      if (kind === 'helper') {
+        return 40;
+      }
+      if (kind === 'function') {
+        return 24;
+      }
+      if (kind === 'request') {
+        return 8;
+      }
+    }
+
+    if (profile.scenario === 'anti-bot') {
+      if (kind === 'param') {
+        return 28;
+      }
+      if (kind === 'request') {
+        return 24;
+      }
+    }
+
+    return kind === 'request' ? 16 : 0;
   }
 
   private toMessage(error: unknown): string {

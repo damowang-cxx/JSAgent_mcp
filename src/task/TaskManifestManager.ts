@@ -152,7 +152,9 @@ export class TaskManifestManager {
         pureWorkflow: pointer('run/pure-extraction') ?? manifest.latestPointers.pureWorkflow ?? null,
         regressionRun: pointer('run/regression-run') ?? manifest.latestPointers.regressionRun ?? null,
         rebuildWorkflow: pointer('rebuild-run') ?? pointer('rebuild-bundle') ?? manifest.latestPointers.rebuildWorkflow ?? null,
-        scenarioWorkflow: pointer('scenario/workflow') ?? pointer('scenario/analysis') ?? manifest.latestPointers.scenarioWorkflow ?? null,
+        scenarioAnalysis: pointer('scenario/analysis') ?? manifest.latestPointers.scenarioAnalysis ?? null,
+        scenarioWorkflow: pointer('scenario/workflow') ??
+          (manifest.latestPointers.scenarioWorkflow === 'scenario/analysis' ? null : manifest.latestPointers.scenarioWorkflow ?? null),
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }
