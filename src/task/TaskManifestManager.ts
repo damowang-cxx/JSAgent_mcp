@@ -153,8 +153,10 @@ export class TaskManifestManager {
         regressionRun: pointer('run/regression-run') ?? manifest.latestPointers.regressionRun ?? null,
         rebuildWorkflow: pointer('rebuild-run') ?? pointer('rebuild-bundle') ?? manifest.latestPointers.rebuildWorkflow ?? null,
         scenarioAnalysis: pointer('scenario/analysis') ?? manifest.latestPointers.scenarioAnalysis ?? null,
+        scenarioCapture: pointer('scenario/capture/result') ?? manifest.latestPointers.scenarioCapture ?? null,
         scenarioWorkflow: pointer('scenario/workflow') ??
           (manifest.latestPointers.scenarioWorkflow === 'scenario/analysis' ? null : manifest.latestPointers.scenarioWorkflow ?? null),
+        helperBoundary: pointer('helper-boundary/latest') ?? manifest.latestPointers.helperBoundary ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

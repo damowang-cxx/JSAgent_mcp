@@ -29,7 +29,9 @@ export interface TaskManifest {
     deliveryBundle?: string | null;
     deliverySmoke?: string | null;
     scenarioAnalysis?: string | null;
+    scenarioCapture?: string | null;
     scenarioWorkflow?: string | null;
+    helperBoundary?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

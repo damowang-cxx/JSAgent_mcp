@@ -34,6 +34,7 @@ The project currently includes:
 - Python pure scaffold exporter, cross-language verifier/diff, port workflow, and upgrade-diff runner
 - canonical task manifest, stage gates, regression baseline registry, regression runner, SDK packager, and delivery workflow
 - scenario-oriented reverse capability layer for signature chains, token families, request sinks, and crypto helpers
+- replay-oriented capture recipes and helper-boundary extraction hints
 
 ## Design Principles
 
@@ -849,6 +850,44 @@ Recommended Phase 14 validation flow:
 6. `trace_token_family`.
 7. `export_scenario_report` with `format='json'` and `format='markdown'`.
 
+## Phase 15: Replay-Oriented Capture Recipes + Helper-Boundary Extraction Layer
+
+Phase 15 connects scenario findings to action-level replay and helper-boundary evidence. It keeps the JSReverser-MCP design direction while staying task-type oriented rather than site-template oriented.
+
+New tools:
+
+- `list_capture_presets`: lists generic capture presets for API signature, token refresh, anti-bot challenge, and crypto-helper probing.
+- `replay_target_action`: runs one replay action through the capture pipeline using the built-in single-action preset.
+- `run_capture_recipe`: runs a capture preset with supplied actions, records replay-window evidence, and refreshes scenario analysis.
+- `extract_helper_boundary`: turns a helper candidate into boundary-level inputs, outputs, related requests, hooks, rebuild hints, and pure hints.
+- `list_helper_boundaries`: lists the latest runtime boundary or task artifact-backed helper boundaries.
+- `export_capture_report`: exports the latest or artifact-backed replay capture result as JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: replay is used to create cleaner runtime evidence before extraction.
+- Hook-preferred: capture presets install fetch/xhr hooks before escalating to heavier techniques.
+- Replay-oriented: actions reproduce target requests and parameter chains instead of automating a whole site.
+- Evidence-first: task runs write `scenario/capture/*`, `helper-boundary/*`, and `runtime-evidence` artifacts.
+- Rebuild-oriented: boundary results produce `rebuildHints` for later local probes.
+- Boundary-before-extraction: helper extraction starts by defining likely inputs, outputs, and request bindings.
+
+Current boundaries:
+
+- Replay actions are generic action-level primitives, not site-specific automation scripts.
+- Helper-boundary extraction is heuristic; it is not a complete data-flow, SSA, or taint engine.
+- `rebuildHints` and `pureHints` are pre-extraction guidance, not automatic PureExtraction output.
+- No external AI provider, full debugger, second browser manager, or global runtime singleton is introduced.
+
+Recommended Phase 15 validation flow:
+
+1. `list_capture_presets`.
+2. `run_capture_recipe` with `{ "presetId": "api-signature-replay-basic", "actions": [...] }`.
+3. `analyze_signature_chain`.
+4. `extract_helper_boundary`.
+5. `list_helper_boundaries`.
+6. `export_capture_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -908,6 +947,12 @@ Recommended Phase 14 validation flow:
 - `locate_request_sink`
 - `locate_crypto_helpers`
 - `export_scenario_report`
+- `list_capture_presets`
+- `run_capture_recipe`
+- `replay_target_action`
+- `extract_helper_boundary`
+- `list_helper_boundaries`
+- `export_capture_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`

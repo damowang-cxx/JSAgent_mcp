@@ -39,6 +39,7 @@ import { UpgradeRegressionRunner } from '../regression/UpgradeRegressionRunner.j
 import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
+import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
 import { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
 import { PortReportBuilder } from '../report/PortReportBuilder.js';
@@ -60,6 +61,13 @@ import { DeliveryAssembler } from '../sdk/DeliveryAssembler.js';
 import { DeliverySmokeTester } from '../sdk/DeliverySmokeTester.js';
 import { ProvenanceWriter } from '../sdk/ProvenanceWriter.js';
 import { SDKPackager } from '../sdk/SDKPackager.js';
+import { HelperBoundaryExtractor } from '../helper/HelperBoundaryExtractor.js';
+import { HelperBoundaryRegistry } from '../helper/HelperBoundaryRegistry.js';
+import { CapturePresetRegistry } from '../replay/CapturePresetRegistry.js';
+import { ReplayActionRunner } from '../replay/ReplayActionRunner.js';
+import { ReplayEvidenceWindow } from '../replay/ReplayEvidenceWindow.js';
+import { ReplayRecipeRunner } from '../replay/ReplayRecipeRunner.js';
+import { WaitConditionEvaluator } from '../replay/WaitConditionEvaluator.js';
 import { CryptoHelperLocator } from '../scenario/CryptoHelperLocator.js';
 import { RequestSinkLocator } from '../scenario/RequestSinkLocator.js';
 import { ScenarioActionPlanner } from '../scenario/ScenarioActionPlanner.js';
@@ -162,6 +170,14 @@ export class AppRuntime implements AppRuntimeServices {
   readonly scenarioActionPlanner: ScenarioActionPlanner;
   readonly scenarioWorkflowRunner: ScenarioWorkflowRunner;
   readonly scenarioReportBuilder: ScenarioReportBuilder;
+  readonly capturePresetRegistry: CapturePresetRegistry;
+  readonly replayActionRunner: ReplayActionRunner;
+  readonly replayRecipeRunner: ReplayRecipeRunner;
+  readonly helperBoundaryExtractor: HelperBoundaryExtractor;
+  readonly helperBoundaryRegistry: HelperBoundaryRegistry;
+  readonly captureReportBuilder: CaptureReportBuilder;
+  private readonly waitConditionEvaluator: WaitConditionEvaluator;
+  private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
   constructor(readonly browserSession: BrowserSessionManager) {
     this.pageController = new PageController(browserSession);
@@ -296,6 +312,22 @@ export class AppRuntime implements AppRuntimeServices {
     this.scenarioPresetRegistry = new ScenarioPresetRegistry();
     this.scenarioActionPlanner = new ScenarioActionPlanner();
     this.scenarioReportBuilder = new ScenarioReportBuilder();
+    this.capturePresetRegistry = new CapturePresetRegistry();
+    this.captureReportBuilder = new CaptureReportBuilder();
+    this.waitConditionEvaluator = new WaitConditionEvaluator({
+      networkCollector: this.networkCollector,
+      pageController: this.pageController
+    });
+    this.replayActionRunner = new ReplayActionRunner({
+      browserSession,
+      pageController: this.pageController,
+      waitConditionEvaluator: this.waitConditionEvaluator
+    });
+    this.replayEvidenceWindow = new ReplayEvidenceWindow({
+      browserSession,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector
+    });
     this.scenarioWorkflowRunner = new ScenarioWorkflowRunner({
       browserSession,
       codeCollector: this.codeCollector,
@@ -312,6 +344,21 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager,
       tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
     });
+    this.replayRecipeRunner = new ReplayRecipeRunner({
+      browserSession,
+      capturePresetRegistry: this.capturePresetRegistry,
+      captureReportBuilder: this.captureReportBuilder,
+      codeCollector: this.codeCollector,
+      evidenceStore: this.evidenceStore,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector,
+      replayActionRunner: this.replayActionRunner,
+      replayEvidenceWindow: this.replayEvidenceWindow,
+      requestInitiatorTracker: this.requestInitiatorTracker,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.helperBoundaryRegistry = new HelperBoundaryRegistry(this.evidenceStore);
     this.rebuildWorkflowRunner = new RebuildWorkflowRunner({
       analyzeTargetRunner: this.analyzeTargetRunner,
       browserSession,
@@ -366,6 +413,21 @@ export class AppRuntime implements AppRuntimeServices {
       pureVerifier: this.pureVerifier,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner,
       runtimeTraceSampler: this.runtimeTraceSampler
+    });
+    this.helperBoundaryExtractor = new HelperBoundaryExtractor({
+      browserSession,
+      codeCollector: this.codeCollector,
+      cryptoHelperLocator: this.cryptoHelperLocator,
+      evidenceStore: this.evidenceStore,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector,
+      pureExtractionRunner: this.pureExtractionRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      replayRecipeRunner: this.replayRecipeRunner,
+      requestSinkLocator: this.requestSinkLocator,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
     });
     this.portWorkflowRunner = new PortWorkflowRunner({
       crossLanguageDiff: this.crossLanguageDiff,
@@ -781,5 +843,29 @@ export class AppRuntime implements AppRuntimeServices {
 
   getScenarioReportBuilder(): ScenarioReportBuilder {
     return this.scenarioReportBuilder;
+  }
+
+  getCapturePresetRegistry(): CapturePresetRegistry {
+    return this.capturePresetRegistry;
+  }
+
+  getReplayActionRunner(): ReplayActionRunner {
+    return this.replayActionRunner;
+  }
+
+  getReplayRecipeRunner(): ReplayRecipeRunner {
+    return this.replayRecipeRunner;
+  }
+
+  getHelperBoundaryExtractor(): HelperBoundaryExtractor {
+    return this.helperBoundaryExtractor;
+  }
+
+  getHelperBoundaryRegistry(): HelperBoundaryRegistry {
+    return this.helperBoundaryRegistry;
+  }
+
+  getCaptureReportBuilder(): CaptureReportBuilder {
+    return this.captureReportBuilder;
   }
 }

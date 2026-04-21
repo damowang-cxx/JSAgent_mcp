@@ -36,11 +36,13 @@ import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
 import { exportRegressionReportTool } from './reverse/exportRegressionReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
+import { exportCaptureReportTool } from './reverse/exportCaptureReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
 import { exportUpgradeReportTool } from './reverse/exportUpgradeReport.js';
+import { extractHelperBoundaryTool } from './reverse/extractHelperBoundary.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
 import { extractPythonPureTool } from './reverse/extractPythonPure.js';
 import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
@@ -50,6 +52,8 @@ import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
 import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
+import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
+import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
 import { listIntermediateBaselinesTool } from './reverse/listIntermediateBaselines.js';
@@ -68,6 +72,8 @@ import { registerIntermediateBaselineTool } from './reverse/registerIntermediate
 import { registerUpgradeBaselineTool } from './reverse/registerUpgradeBaseline.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
+import { replayTargetActionTool } from './reverse/replayTargetAction.js';
+import { runCaptureRecipeTool } from './reverse/runCaptureRecipe.js';
 import { runScenarioRecipeTool } from './reverse/runScenarioRecipe.js';
 import { runDeliveryWorkflowTool } from './reverse/runDeliveryWorkflow.js';
 import { runIntermediateRegressionTool } from './reverse/runIntermediateRegression.js';
@@ -137,6 +143,12 @@ export const reverseTools = [
   locateRequestSinkTool,
   locateCryptoHelpersTool,
   exportScenarioReportTool,
+  listCapturePresetsTool,
+  runCaptureRecipeTool,
+  replayTargetActionTool,
+  extractHelperBoundaryTool,
+  listHelperBoundariesTool,
+  exportCaptureReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -219,11 +231,13 @@ export {
   exportRegressionReportTool,
   exportReverseReportTool,
   exportRuntimeTraceTool,
+  exportCaptureReportTool,
   exportScenarioReportTool,
   exportSdkPackageTool,
   exportSessionReportTool,
   exportTaskStateReportTool,
   exportUpgradeReportTool,
+  extractHelperBoundaryTool,
   extractNodePureTool,
   extractPythonPureTool,
   freezeRuntimeSampleTool,
@@ -235,6 +249,8 @@ export {
   getTaskManifestTool,
   injectHookTool,
   listCollectedCodeTool,
+  listCapturePresetsTool,
+  listHelperBoundariesTool,
   listHooksTool,
   listIntermediateBaselinesTool,
   listNetworkRequestsTool,
@@ -259,6 +275,8 @@ export {
   registerUpgradeBaselineTool,
   removeXhrBreakpointTool,
   riskPanelTool,
+  replayTargetActionTool,
+  runCaptureRecipeTool,
   runPatchIterationTool,
   runDeliveryWorkflowTool,
   runIntermediateRegressionTool,
