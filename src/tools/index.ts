@@ -39,6 +39,7 @@ import { exportRegressionReportTool } from './reverse/exportRegressionReport.js'
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportCaptureReportTool } from './reverse/exportCaptureReport.js';
+import { exportCompareAnchorReportTool } from './reverse/exportCompareAnchorReport.js';
 import { exportDebuggerReportTool } from './reverse/exportDebuggerReport.js';
 import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
@@ -66,6 +67,7 @@ import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
 import { listBreakpointsTool } from './reverse/listBreakpoints.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
+import { listCompareAnchorsTool } from './reverse/listCompareAnchors.js';
 import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
@@ -105,6 +107,7 @@ import { runUpgradeWorkflowTool } from './reverse/runUpgradeWorkflow.js';
 import { listScenarioProbePlansTool } from './reverse/listScenarioProbePlans.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
+import { selectCompareAnchorTool } from './reverse/selectCompareAnchor.js';
 import { setBreakpointTool } from './reverse/setBreakpoint.js';
 import { setBreakpointOnTextTool } from './reverse/setBreakpointOnText.js';
 import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
@@ -201,6 +204,9 @@ export const reverseTools = [
   getScopeVariablesTool,
   evaluateOnCallFrameTool,
   exportDebuggerReportTool,
+  selectCompareAnchorTool,
+  listCompareAnchorsTool,
+  exportCompareAnchorReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -274,6 +280,7 @@ export {
   evaluateScriptTool,
   evaluateOnCallFrameTool,
   exportBoundaryFixtureReportTool,
+  exportCompareAnchorReportTool,
   exportDebuggerReportTool,
   exportPatchReportTool,
   exportProbePlanReportTool,
@@ -316,6 +323,7 @@ export {
   listBoundaryFixturesTool,
   listBreakpointsTool,
   listCapturePresetsTool,
+  listCompareAnchorsTool,
   listDependencyWindowsTool,
   listHelperBoundariesTool,
   listHooksTool,
@@ -362,6 +370,7 @@ export {
   listScenarioProbePlansTool,
   savePureFixtureTool,
   searchCollectedCodeTool,
+  selectCompareAnchorTool,
   selectPageTool,
   setBreakpointTool,
   setBreakpointOnTextTool,

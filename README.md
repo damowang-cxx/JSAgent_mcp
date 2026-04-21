@@ -39,6 +39,7 @@ The project currently includes:
 - boundary-driven fixture candidates and scenario-specific patch hints
 - debugger foundation for breakpoint-last selected-page debugging
 - debugger inspection layer for stepping, paused frame inspection, bounded scope summaries, and debugger reports
+- compare anchor integration for first explainable divergence selection
 
 ## Design Principles
 
@@ -1042,7 +1043,7 @@ Current boundaries:
 - No watch expression platform is implemented.
 - No worker or service-worker debugger is implemented.
 - No multi-page concurrent debugger orchestration is implemented.
-- No compare-anchor, patch-preflight, AST/data-flow/SSA/taint integration is implemented in this phase.
+- No patch-preflight, AST/data-flow/SSA/taint integration is implemented in this phase.
 
 Recommended Phase 19 validation flow:
 
@@ -1057,6 +1058,44 @@ Recommended Phase 19 validation flow:
 9. `step_over`, `step_into`, or `step_out`.
 10. `resume`.
 11. `export_debugger_report` with `format='json'` and `format='markdown'`.
+
+## Phase 20: Compare Anchor Integration
+
+Phase 20 introduces a focused compare anchor layer that answers what should be compared first. It consumes scenario, capture, helper-boundary, dependency-window, probe-plan, boundary-fixture, patch-hint, debugger, and rebuild evidence to choose the smallest explainable anchor before whole-request or whole-object comparison.
+
+New tools:
+
+- `select_compare_anchor`: selects the current first useful compare anchor and candidate set.
+- `list_compare_anchors`: lists the latest runtime or task artifact-backed anchor selection.
+- `export_compare_anchor_report`: exports compare anchor selection JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: anchor selection is based on existing reverse evidence instead of speculative full diffs.
+- Hook-preferred: scenario, capture, helper-boundary, window, probe, and fixture evidence outrank debugger-only hints.
+- Breakpoint-last: debugger inspection/correlation can strengthen an anchor but should not be the default source.
+- Evidence-first: task runs can write `compare-anchor/latest` and `runtime-evidence` entries.
+- Rebuild-oriented: selected anchors are shaped for future `compare_rebuild_result`, rebuild workflow, and patch iteration consumption.
+- First explainable divergence first: prefer helper return, sign/token/challenge/fingerprint field, header, or body-field before broad request/object comparison.
+
+Current boundaries:
+
+- Compare anchor is a first-divergence preflight layer, not a full diff engine.
+- It does not implement semantic full-response diffing or automatic multi-anchor orchestration.
+- It does not implement patch preflight integration or rebuild integration in this phase.
+- It does not add AST/data-flow/SSA/taint analysis.
+
+Recommended Phase 20 validation flow:
+
+1. `run_capture_recipe`.
+2. `extract_helper_boundary`.
+3. `extract_dependency_window`.
+4. `plan_scenario_probe`.
+5. `generate_boundary_fixture`.
+6. `generate_scenario_patch_hints`.
+7. Optionally use `set_breakpoint_on_text`, `get_call_frames`, or `evaluate_on_call_frame` for paused evidence.
+8. `select_compare_anchor`.
+9. `export_compare_anchor_report` with `format='json'` and `format='markdown'`.
 
 ## Tool Summary
 
@@ -1149,6 +1188,9 @@ Recommended Phase 19 validation flow:
 - `get_scope_variables`
 - `evaluate_on_call_frame`
 - `export_debugger_report`
+- `select_compare_anchor`
+- `list_compare_anchors`
+- `export_compare_anchor_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
@@ -1202,8 +1244,11 @@ Recommended Phase 19 validation flow:
 
 The current stage still does not implement:
 
-- full debugger workflows
-- pause / resume / stepInto / callframe tools
+- full DevTools-style debugger workflows
+- exception breakpoint family, watch expressions, worker debugger, and multi-page debugger orchestration
+- full diff engine and semantic full-response diff platform
+- patch preflight integration
+- rebuild integration consuming selected compare anchors
 - AI provider platform
 - AI analyzer augmentation
 - complete VM-level deobfuscation

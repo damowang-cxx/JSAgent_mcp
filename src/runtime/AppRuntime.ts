@@ -6,6 +6,8 @@ import { SessionReporter } from '../analysis/SessionReporter.js';
 import { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
 import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { CodeCollector } from '../collector/CodeCollector.js';
+import { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
+import { CompareAnchorSelector } from '../compare/CompareAnchorSelector.js';
 import { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
 import { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
@@ -49,6 +51,7 @@ import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
 import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
+import { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBuilder.js';
 import { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
 import { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
@@ -210,6 +213,9 @@ export class AppRuntime implements AppRuntimeServices {
   readonly pausedInspector: PausedInspector;
   readonly debuggerEvidenceCorrelator: DebuggerEvidenceCorrelator;
   readonly debuggerReportBuilder: DebuggerReportBuilder;
+  readonly compareAnchorSelector: CompareAnchorSelector;
+  readonly compareAnchorRegistry: CompareAnchorRegistry;
+  readonly compareAnchorReportBuilder: CompareAnchorReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -227,6 +233,7 @@ export class AppRuntime implements AppRuntimeServices {
     });
     this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
     this.pausedInspector = new PausedInspector(this.debuggerSessionManager);
+    this.compareAnchorRegistry = new CompareAnchorRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -358,6 +365,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.fixtureCandidateReportBuilder = new FixtureCandidateReportBuilder();
     this.scenarioPatchHintReportBuilder = new ScenarioPatchHintReportBuilder();
     this.debuggerReportBuilder = new DebuggerReportBuilder();
+    this.compareAnchorReportBuilder = new CompareAnchorReportBuilder();
     this.waitConditionEvaluator = new WaitConditionEvaluator({
       networkCollector: this.networkCollector,
       pageController: this.pageController
@@ -628,6 +636,21 @@ export class AppRuntime implements AppRuntimeServices {
       deliverySmokeTester: this.deliverySmokeTester,
       evidenceStore: this.evidenceStore,
       stageGateEvaluator: this.stageGateEvaluator
+    });
+    this.compareAnchorSelector = new CompareAnchorSelector({
+      debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
+      debuggerSessionManager: this.debuggerSessionManager,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      fixtureCandidateRegistry: this.fixtureCandidateRegistry,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      probePlanRegistry: this.probePlanRegistry,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      replayRecipeRunner: this.replayRecipeRunner,
+      scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      taskManifestManager: this.taskManifestManager
     });
   }
 
@@ -1045,5 +1068,17 @@ export class AppRuntime implements AppRuntimeServices {
 
   getDebuggerReportBuilder(): DebuggerReportBuilder {
     return this.debuggerReportBuilder;
+  }
+
+  getCompareAnchorSelector(): CompareAnchorSelector {
+    return this.compareAnchorSelector;
+  }
+
+  getCompareAnchorRegistry(): CompareAnchorRegistry {
+    return this.compareAnchorRegistry;
+  }
+
+  getCompareAnchorReportBuilder(): CompareAnchorReportBuilder {
+    return this.compareAnchorReportBuilder;
   }
 }

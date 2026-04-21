@@ -164,6 +164,7 @@ export class TaskManifestManager {
         debuggerBreakpoints: pointer('debugger/breakpoints-latest') ?? manifest.latestPointers.debuggerBreakpoints ?? null,
         debuggerPaused: pointer('debugger/paused-last') ?? manifest.latestPointers.debuggerPaused ?? null,
         debuggerInspection: pointer('debugger/inspection-last') ?? manifest.latestPointers.debuggerInspection ?? null,
+        compareAnchor: pointer('compare-anchor/latest') ?? manifest.latestPointers.compareAnchor ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

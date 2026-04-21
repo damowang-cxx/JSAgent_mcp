@@ -39,6 +39,7 @@ export interface TaskManifest {
     debuggerBreakpoints?: string | null;
     debuggerPaused?: string | null;
     debuggerInspection?: string | null;
+    compareAnchor?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

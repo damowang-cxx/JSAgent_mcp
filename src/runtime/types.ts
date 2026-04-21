@@ -6,6 +6,8 @@ import type { SessionReporter } from '../analysis/SessionReporter.js';
 import type { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
+import type { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
+import type { CompareAnchorSelector } from '../compare/CompareAnchorSelector.js';
 import type { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import type { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
 import type { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
@@ -49,6 +51,7 @@ import type { UpgradeRegressionRunner } from '../regression/UpgradeRegressionRun
 import type { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import type { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
 import type { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
+import type { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBuilder.js';
 import type { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
 import type { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import type { PatchReportBuilder } from '../report/PatchReportBuilder.js';
@@ -208,4 +211,7 @@ export interface AppRuntimeServices {
   pausedInspector: PausedInspector;
   debuggerEvidenceCorrelator: DebuggerEvidenceCorrelator;
   debuggerReportBuilder: DebuggerReportBuilder;
+  compareAnchorSelector: CompareAnchorSelector;
+  compareAnchorRegistry: CompareAnchorRegistry;
+  compareAnchorReportBuilder: CompareAnchorReportBuilder;
 }
