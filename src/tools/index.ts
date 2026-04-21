@@ -29,6 +29,7 @@ import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
+import { exportProbePlanReportTool } from './reverse/exportProbePlanReport.js';
 import { exportPortReportTool } from './reverse/exportPortReport.js';
 import { exportPureReportTool } from './reverse/exportPureReport.js';
 import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
@@ -42,6 +43,8 @@ import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
 import { exportUpgradeReportTool } from './reverse/exportUpgradeReport.js';
+import { exportWindowReportTool } from './reverse/exportWindowReport.js';
+import { extractDependencyWindowTool } from './reverse/extractDependencyWindow.js';
 import { extractHelperBoundaryTool } from './reverse/extractHelperBoundary.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
 import { extractPythonPureTool } from './reverse/extractPythonPure.js';
@@ -53,6 +56,7 @@ import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
+import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
@@ -65,6 +69,7 @@ import { locateRequestSinkTool } from './reverse/locateRequestSink.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
+import { planScenarioProbeTool } from './reverse/planScenarioProbe.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { registerRegressionBaselineTool } from './reverse/registerRegressionBaseline.js';
@@ -84,6 +89,7 @@ import { runRegressionBaselineTool } from './reverse/runRegressionBaseline.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
 import { runUpgradeWorkflowTool } from './reverse/runUpgradeWorkflow.js';
+import { listScenarioProbePlansTool } from './reverse/listScenarioProbePlans.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
 import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
@@ -149,6 +155,12 @@ export const reverseTools = [
   extractHelperBoundaryTool,
   listHelperBoundariesTool,
   exportCaptureReportTool,
+  extractDependencyWindowTool,
+  listDependencyWindowsTool,
+  planScenarioProbeTool,
+  listScenarioProbePlansTool,
+  exportWindowReportTool,
+  exportProbePlanReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -221,6 +233,7 @@ export {
   diffEnvRequirementsTool,
   evaluateScriptTool,
   exportPatchReportTool,
+  exportProbePlanReportTool,
   exportDeliveryBundleTool,
   exportDeliveryReportTool,
   evaluateStageGateTool,
@@ -237,6 +250,8 @@ export {
   exportSessionReportTool,
   exportTaskStateReportTool,
   exportUpgradeReportTool,
+  exportWindowReportTool,
+  extractDependencyWindowTool,
   extractHelperBoundaryTool,
   extractNodePureTool,
   extractPythonPureTool,
@@ -250,6 +265,7 @@ export {
   injectHookTool,
   listCollectedCodeTool,
   listCapturePresetsTool,
+  listDependencyWindowsTool,
   listHelperBoundariesTool,
   listHooksTool,
   listIntermediateBaselinesTool,
@@ -268,6 +284,7 @@ export {
   openReverseTaskTool,
   pingTool,
   planPatchTool,
+  planScenarioProbeTool,
   probeReverseTargetTool,
   recordReverseEvidenceTool,
   registerIntermediateBaselineTool,
@@ -287,6 +304,7 @@ export {
   runRebuildWorkflowTool,
   runScenarioRecipeTool,
   runUpgradeWorkflowTool,
+  listScenarioProbePlansTool,
   savePureFixtureTool,
   searchCollectedCodeTool,
   selectPageTool,

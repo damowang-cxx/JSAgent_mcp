@@ -1,5 +1,6 @@
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
+import { AppError } from '../core/errors.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { HookManager } from '../hook/HookManager.js';
 import type { NetworkCollector } from '../network/NetworkCollector.js';
@@ -116,6 +117,13 @@ export class HelperBoundaryExtractor {
     scenario: ScenarioWorkflowResult | null;
     analysis: ScenarioAnalysisResult | null;
   }> {
+    if (options.source === 'task-artifact' && !options.taskId) {
+      throw new AppError(
+        'TASK_ID_REQUIRED',
+        'extract_helper_boundary with source=task-artifact requires taskId.'
+      );
+    }
+
     const context = {
       analysis: null as ScenarioAnalysisResult | null,
       capture: null as ReplayRecipeResult | null,
@@ -132,9 +140,23 @@ export class HelperBoundaryExtractor {
       notes.push('task artifacts were requested implicitly by taskId, but no scenario/capture snapshots were found; falling back to runtime cache');
     }
 
+    if (options.source === 'capture-last') {
+      context.capture = this.deps.replayRecipeRunner.getLastReplayRecipeResult();
+      context.analysis = context.capture?.scenarioResult ?? null;
+      notes.push('Using capture-last source: scenario workflow cache is intentionally ignored.');
+      return context;
+    }
+
+    if (options.source === 'scenario-last') {
+      context.scenario = this.deps.scenarioWorkflowRunner.getLastScenarioWorkflowResult();
+      context.analysis = context.scenario?.analysis ?? null;
+      notes.push('Using scenario-last source: replay capture cache is intentionally ignored.');
+      return context;
+    }
+
     context.capture = this.deps.replayRecipeRunner.getLastReplayRecipeResult();
     context.scenario = this.deps.scenarioWorkflowRunner.getLastScenarioWorkflowResult();
-    context.analysis = context.scenario?.analysis ?? null;
+    context.analysis = context.scenario?.analysis ?? context.capture?.scenarioResult ?? null;
     return context;
   }
 

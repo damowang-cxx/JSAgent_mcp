@@ -157,6 +157,8 @@ export class TaskManifestManager {
         scenarioWorkflow: pointer('scenario/workflow') ??
           (manifest.latestPointers.scenarioWorkflow === 'scenario/analysis' ? null : manifest.latestPointers.scenarioWorkflow ?? null),
         helperBoundary: pointer('helper-boundary/latest') ?? manifest.latestPointers.helperBoundary ?? null,
+        dependencyWindow: pointer('dependency-window/latest') ?? manifest.latestPointers.dependencyWindow ?? null,
+        scenarioProbe: pointer('scenario-probe/latest') ?? manifest.latestPointers.scenarioProbe ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

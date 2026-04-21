@@ -43,6 +43,7 @@ import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
 import { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
 import { PortReportBuilder } from '../report/PortReportBuilder.js';
+import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
@@ -51,6 +52,7 @@ import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import { SdkReportBuilder } from '../report/SdkReportBuilder.js';
 import { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
+import { WindowReportBuilder } from '../report/WindowReportBuilder.js';
 import { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
 import { EnvAccessLogger } from '../rebuild/EnvAccessLogger.js';
 import { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
@@ -68,6 +70,8 @@ import { ReplayActionRunner } from '../replay/ReplayActionRunner.js';
 import { ReplayEvidenceWindow } from '../replay/ReplayEvidenceWindow.js';
 import { ReplayRecipeRunner } from '../replay/ReplayRecipeRunner.js';
 import { WaitConditionEvaluator } from '../replay/WaitConditionEvaluator.js';
+import { ProbePlanRegistry } from '../probe/ProbePlanRegistry.js';
+import { ScenarioProbePlanner } from '../probe/ScenarioProbePlanner.js';
 import { CryptoHelperLocator } from '../scenario/CryptoHelperLocator.js';
 import { RequestSinkLocator } from '../scenario/RequestSinkLocator.js';
 import { ScenarioActionPlanner } from '../scenario/ScenarioActionPlanner.js';
@@ -87,6 +91,8 @@ import { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js';
 import { RegressionWorkflowRunner } from '../workflow/RegressionWorkflowRunner.js';
 import { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 import { UpgradeWorkflowRunner } from '../workflow/UpgradeWorkflowRunner.js';
+import { DependencyWindowExtractor } from '../window/DependencyWindowExtractor.js';
+import { DependencyWindowRegistry } from '../window/DependencyWindowRegistry.js';
 import type { AppRuntimeServices } from './types.js';
 
 export class AppRuntime implements AppRuntimeServices {
@@ -176,6 +182,12 @@ export class AppRuntime implements AppRuntimeServices {
   readonly helperBoundaryExtractor: HelperBoundaryExtractor;
   readonly helperBoundaryRegistry: HelperBoundaryRegistry;
   readonly captureReportBuilder: CaptureReportBuilder;
+  readonly dependencyWindowExtractor: DependencyWindowExtractor;
+  readonly dependencyWindowRegistry: DependencyWindowRegistry;
+  readonly scenarioProbePlanner: ScenarioProbePlanner;
+  readonly probePlanRegistry: ProbePlanRegistry;
+  readonly windowReportBuilder: WindowReportBuilder;
+  readonly probePlanReportBuilder: ProbePlanReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -314,6 +326,8 @@ export class AppRuntime implements AppRuntimeServices {
     this.scenarioReportBuilder = new ScenarioReportBuilder();
     this.capturePresetRegistry = new CapturePresetRegistry();
     this.captureReportBuilder = new CaptureReportBuilder();
+    this.windowReportBuilder = new WindowReportBuilder();
+    this.probePlanReportBuilder = new ProbePlanReportBuilder();
     this.waitConditionEvaluator = new WaitConditionEvaluator({
       networkCollector: this.networkCollector,
       pageController: this.pageController
@@ -359,6 +373,8 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager
     });
     this.helperBoundaryRegistry = new HelperBoundaryRegistry(this.evidenceStore);
+    this.dependencyWindowRegistry = new DependencyWindowRegistry(this.evidenceStore);
+    this.probePlanRegistry = new ProbePlanRegistry(this.evidenceStore);
     this.rebuildWorkflowRunner = new RebuildWorkflowRunner({
       analyzeTargetRunner: this.analyzeTargetRunner,
       browserSession,
@@ -428,6 +444,29 @@ export class AppRuntime implements AppRuntimeServices {
       scenarioWorkflowRunner: this.scenarioWorkflowRunner,
       signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
       tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
+    });
+    this.dependencyWindowExtractor = new DependencyWindowExtractor({
+      codeCollector: this.codeCollector,
+      cryptoHelperLocator: this.cryptoHelperLocator,
+      evidenceStore: this.evidenceStore,
+      helperBoundaryExtractor: this.helperBoundaryExtractor,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      pureExtractionRunner: this.pureExtractionRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      replayRecipeRunner: this.replayRecipeRunner,
+      requestSinkLocator: this.requestSinkLocator,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      taskManifestManager: this.taskManifestManager,
+      tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
+    });
+    this.scenarioProbePlanner = new ScenarioProbePlanner({
+      dependencyWindowExtractor: this.dependencyWindowExtractor,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      replayRecipeRunner: this.replayRecipeRunner,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner
     });
     this.portWorkflowRunner = new PortWorkflowRunner({
       crossLanguageDiff: this.crossLanguageDiff,
@@ -867,5 +906,29 @@ export class AppRuntime implements AppRuntimeServices {
 
   getCaptureReportBuilder(): CaptureReportBuilder {
     return this.captureReportBuilder;
+  }
+
+  getDependencyWindowExtractor(): DependencyWindowExtractor {
+    return this.dependencyWindowExtractor;
+  }
+
+  getDependencyWindowRegistry(): DependencyWindowRegistry {
+    return this.dependencyWindowRegistry;
+  }
+
+  getScenarioProbePlanner(): ScenarioProbePlanner {
+    return this.scenarioProbePlanner;
+  }
+
+  getProbePlanRegistry(): ProbePlanRegistry {
+    return this.probePlanRegistry;
+  }
+
+  getWindowReportBuilder(): WindowReportBuilder {
+    return this.windowReportBuilder;
+  }
+
+  getProbePlanReportBuilder(): ProbePlanReportBuilder {
+    return this.probePlanReportBuilder;
   }
 }

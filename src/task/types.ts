@@ -32,6 +32,8 @@ export interface TaskManifest {
     scenarioCapture?: string | null;
     scenarioWorkflow?: string | null;
     helperBoundary?: string | null;
+    dependencyWindow?: string | null;
+    scenarioProbe?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

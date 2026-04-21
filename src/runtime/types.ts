@@ -43,6 +43,7 @@ import type { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
 import type { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import type { PatchReportBuilder } from '../report/PatchReportBuilder.js';
 import type { PortReportBuilder } from '../report/PortReportBuilder.js';
+import type { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import type { PureReportBuilder } from '../report/PureReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
@@ -51,6 +52,7 @@ import type { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import type { SdkReportBuilder } from '../report/SdkReportBuilder.js';
 import type { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import type { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
+import type { WindowReportBuilder } from '../report/WindowReportBuilder.js';
 import type { DivergenceComparator } from '../rebuild/DivergenceComparator.js';
 import type { EnvAccessLogger } from '../rebuild/EnvAccessLogger.js';
 import type { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
@@ -66,6 +68,8 @@ import type { HelperBoundaryRegistry } from '../helper/HelperBoundaryRegistry.js
 import type { CapturePresetRegistry } from '../replay/CapturePresetRegistry.js';
 import type { ReplayActionRunner } from '../replay/ReplayActionRunner.js';
 import type { ReplayRecipeRunner } from '../replay/ReplayRecipeRunner.js';
+import type { ProbePlanRegistry } from '../probe/ProbePlanRegistry.js';
+import type { ScenarioProbePlanner } from '../probe/ScenarioProbePlanner.js';
 import type { CryptoHelperLocator } from '../scenario/CryptoHelperLocator.js';
 import type { RequestSinkLocator } from '../scenario/RequestSinkLocator.js';
 import type { ScenarioActionPlanner } from '../scenario/ScenarioActionPlanner.js';
@@ -85,6 +89,8 @@ import type { RebuildWorkflowRunner } from '../workflow/RebuildWorkflowRunner.js
 import type { RegressionWorkflowRunner } from '../workflow/RegressionWorkflowRunner.js';
 import type { ReverseWorkflowRunner } from '../workflow/ReverseWorkflowRunner.js';
 import type { UpgradeWorkflowRunner } from '../workflow/UpgradeWorkflowRunner.js';
+import type { DependencyWindowExtractor } from '../window/DependencyWindowExtractor.js';
+import type { DependencyWindowRegistry } from '../window/DependencyWindowRegistry.js';
 
 export interface AppRuntimeServices {
   browserSession: BrowserSessionManager;
@@ -174,4 +180,10 @@ export interface AppRuntimeServices {
   helperBoundaryExtractor: HelperBoundaryExtractor;
   helperBoundaryRegistry: HelperBoundaryRegistry;
   captureReportBuilder: CaptureReportBuilder;
+  dependencyWindowExtractor: DependencyWindowExtractor;
+  dependencyWindowRegistry: DependencyWindowRegistry;
+  scenarioProbePlanner: ScenarioProbePlanner;
+  probePlanRegistry: ProbePlanRegistry;
+  windowReportBuilder: WindowReportBuilder;
+  probePlanReportBuilder: ProbePlanReportBuilder;
 }

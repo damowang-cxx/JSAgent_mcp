@@ -35,6 +35,7 @@ The project currently includes:
 - canonical task manifest, stage gates, regression baseline registry, regression runner, SDK packager, and delivery workflow
 - scenario-oriented reverse capability layer for signature chains, token families, request sinks, and crypto helpers
 - replay-oriented capture recipes and helper-boundary extraction hints
+- minimal dependency window export and scenario-guided probe planning
 
 ## Design Principles
 
@@ -888,6 +889,45 @@ Recommended Phase 15 validation flow:
 5. `list_helper_boundaries`.
 6. `export_capture_report` with `format='json'` and `format='markdown'`.
 
+## Phase 16: Minimal Dependency Window Export + Scenario-Guided Probe Planning Layer
+
+Phase 16 narrows scenario and replay evidence into a smallest useful helper/function window and a probe plan that can feed rebuild and later pure extraction work. It is scenario-guided and evidence-backed, not a generic slicing compiler.
+
+New tools:
+
+- `extract_dependency_window`: exports a minimal, probe-ready dependency window around a target helper/function.
+- `list_dependency_windows`: lists the latest runtime window or task artifact-backed dependency windows.
+- `plan_scenario_probe`: creates a scenario-guided probe plan from dependency window, helper boundary, scenario, capture, or task artifacts.
+- `list_scenario_probe_plans`: lists runtime or task artifact-backed probe plans.
+- `export_window_report`: exports dependency window JSON or markdown.
+- `export_probe_plan_report`: exports scenario probe plan JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: window and probe planning start from observed scenario/capture/helper evidence.
+- Hook-preferred: plans prefer function and fetch/xhr hooks before debugger workflows.
+- Target-chain-first: the selected helper/function, request anchor, sink, and token binding drive the plan.
+- Evidence-first: task runs write `dependency-window/*`, `scenario-probe/*`, and `runtime-evidence` artifacts.
+- Rebuild-oriented: outputs include `rebuildPreflightHints` for the next probe.
+- Boundary-before-extraction: helper boundaries inform window inputs and outputs before pure extraction.
+- Smallest useful window first: export only the first probeable dependency window, then expand after evidence fails.
+
+Current boundaries:
+
+- Dependency windows are heuristic minimal windows, not an AST slicing, SSA, or taint engine.
+- Scenario probe plans are evidence-driven plans, not an automatic execution platform.
+- `rebuildPreflightHints` and `purePreflightHints` are preflight guidance, not automatic pure implementation export.
+- No site adapter, external AI provider, full debugger, second browser manager, or global runtime singleton is introduced.
+
+Recommended Phase 16 validation flow:
+
+1. `run_capture_recipe`.
+2. `extract_helper_boundary`.
+3. `extract_dependency_window`.
+4. `plan_scenario_probe`.
+5. `export_window_report` with `format='json'` and `format='markdown'`.
+6. `export_probe_plan_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -953,6 +993,12 @@ Recommended Phase 15 validation flow:
 - `extract_helper_boundary`
 - `list_helper_boundaries`
 - `export_capture_report`
+- `extract_dependency_window`
+- `list_dependency_windows`
+- `plan_scenario_probe`
+- `list_scenario_probe_plans`
+- `export_window_report`
+- `export_probe_plan_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
