@@ -40,6 +40,7 @@ export interface TaskManifest {
     debuggerPaused?: string | null;
     debuggerInspection?: string | null;
     compareAnchor?: string | null;
+    patchPreflight?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

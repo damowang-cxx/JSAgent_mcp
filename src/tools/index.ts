@@ -30,6 +30,7 @@ import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixture
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
+import { exportPatchPreflightReportTool } from './reverse/exportPatchPreflightReport.js';
 import { exportProbePlanReportTool } from './reverse/exportProbePlanReport.js';
 import { exportPortReportTool } from './reverse/exportPortReport.js';
 import { exportPureReportTool } from './reverse/exportPureReport.js';
@@ -72,6 +73,7 @@ import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
+import { listPatchPreflightsTool } from './reverse/listPatchPreflights.js';
 import { listIntermediateBaselinesTool } from './reverse/listIntermediateBaselines.js';
 import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.js';
 import { listScenarioPresetsTool } from './reverse/listScenarioPresets.js';
@@ -82,6 +84,7 @@ import { locateRequestSinkTool } from './reverse/locateRequestSink.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
+import { planPatchPreflightTool } from './reverse/planPatchPreflight.js';
 import { planScenarioProbeTool } from './reverse/planScenarioProbe.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
@@ -207,6 +210,9 @@ export const reverseTools = [
   selectCompareAnchorTool,
   listCompareAnchorsTool,
   exportCompareAnchorReportTool,
+  planPatchPreflightTool,
+  listPatchPreflightsTool,
+  exportPatchPreflightReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -283,6 +289,7 @@ export {
   exportCompareAnchorReportTool,
   exportDebuggerReportTool,
   exportPatchReportTool,
+  exportPatchPreflightReportTool,
   exportProbePlanReportTool,
   exportDeliveryBundleTool,
   exportDeliveryReportTool,
@@ -331,6 +338,7 @@ export {
   listNetworkRequestsTool,
   listPagesTool,
   listPatchHistoryTool,
+  listPatchPreflightsTool,
   listRegressionBaselinesTool,
   listScenarioPatchHintsTool,
   listScenarioPresetsTool,
@@ -344,6 +352,7 @@ export {
   openReverseTaskTool,
   pingTool,
   planPatchTool,
+  planPatchPreflightTool,
   pauseExecutionTool,
   planScenarioProbeTool,
   probeReverseTargetTool,

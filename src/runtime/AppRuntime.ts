@@ -33,6 +33,8 @@ import { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
 import { PatchPlanManager } from '../patch/PatchPlanManager.js';
 import { ScenarioPatchHintGenerator } from '../patch/ScenarioPatchHintGenerator.js';
 import { ScenarioPatchHintRegistry } from '../patch/ScenarioPatchHintRegistry.js';
+import { PatchPreflightPlanner } from '../patch-preflight/PatchPreflightPlanner.js';
+import { PatchPreflightRegistry } from '../patch-preflight/PatchPreflightRegistry.js';
 import { CrossLanguageDiff } from '../port/CrossLanguageDiff.js';
 import { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
 import { PythonPortExtractor } from '../port/PythonPortExtractor.js';
@@ -55,6 +57,7 @@ import { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBuilder
 import { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
 import { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import { PatchReportBuilder } from '../report/PatchReportBuilder.js';
+import { PatchPreflightReportBuilder } from '../report/PatchPreflightReportBuilder.js';
 import { PortReportBuilder } from '../report/PortReportBuilder.js';
 import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
@@ -216,6 +219,9 @@ export class AppRuntime implements AppRuntimeServices {
   readonly compareAnchorSelector: CompareAnchorSelector;
   readonly compareAnchorRegistry: CompareAnchorRegistry;
   readonly compareAnchorReportBuilder: CompareAnchorReportBuilder;
+  readonly patchPreflightPlanner: PatchPreflightPlanner;
+  readonly patchPreflightRegistry: PatchPreflightRegistry;
+  readonly patchPreflightReportBuilder: PatchPreflightReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -234,6 +240,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
     this.pausedInspector = new PausedInspector(this.debuggerSessionManager);
     this.compareAnchorRegistry = new CompareAnchorRegistry(this.evidenceStore);
+    this.patchPreflightRegistry = new PatchPreflightRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -273,6 +280,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.patchApplier = new PatchApplier();
     this.acceptanceRecorder = new AcceptanceRecorder(this.evidenceStore);
     this.patchReportBuilder = new PatchReportBuilder();
+    this.patchPreflightReportBuilder = new PatchPreflightReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -650,6 +658,24 @@ export class AppRuntime implements AppRuntimeServices {
       scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
       scenarioWorkflowRunner: this.scenarioWorkflowRunner,
       signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.patchPreflightPlanner = new PatchPreflightPlanner({
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      compareAnchorSelector: this.compareAnchorSelector,
+      debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
+      debuggerSessionManager: this.debuggerSessionManager,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      fixtureCandidateRegistry: this.fixtureCandidateRegistry,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      patchPlanManager: this.patchPlanManager,
+      patchWorkflowRunner: this.patchWorkflowRunner,
+      probePlanRegistry: this.probePlanRegistry,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      replayRecipeRunner: this.replayRecipeRunner,
+      scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
       taskManifestManager: this.taskManifestManager
     });
   }
@@ -1080,5 +1106,17 @@ export class AppRuntime implements AppRuntimeServices {
 
   getCompareAnchorReportBuilder(): CompareAnchorReportBuilder {
     return this.compareAnchorReportBuilder;
+  }
+
+  getPatchPreflightPlanner(): PatchPreflightPlanner {
+    return this.patchPreflightPlanner;
+  }
+
+  getPatchPreflightRegistry(): PatchPreflightRegistry {
+    return this.patchPreflightRegistry;
+  }
+
+  getPatchPreflightReportBuilder(): PatchPreflightReportBuilder {
+    return this.patchPreflightReportBuilder;
   }
 }

@@ -40,6 +40,7 @@ The project currently includes:
 - debugger foundation for breakpoint-last selected-page debugging
 - debugger inspection layer for stepping, paused frame inspection, bounded scope summaries, and debugger reports
 - compare anchor integration for first explainable divergence selection
+- patch preflight integration for first explainable patch focus selection
 
 ## Design Principles
 
@@ -1082,7 +1083,7 @@ Current boundaries:
 
 - Compare anchor is a first-divergence preflight layer, not a full diff engine.
 - It does not implement semantic full-response diffing or automatic multi-anchor orchestration.
-- It does not implement patch preflight integration or rebuild integration in this phase.
+- It does not implement rebuild integration in this phase.
 - It does not add AST/data-flow/SSA/taint analysis.
 
 Recommended Phase 20 validation flow:
@@ -1096,6 +1097,44 @@ Recommended Phase 20 validation flow:
 7. Optionally use `set_breakpoint_on_text`, `get_call_frames`, or `evaluate_on_call_frame` for paused evidence.
 8. `select_compare_anchor`.
 9. `export_compare_anchor_report` with `format='json'` and `format='markdown'`.
+
+## Phase 21: Patch Preflight Integration
+
+Phase 21 adds a patch-preflight layer that decides where the first patch attempt should focus before entering the generic patch loop. It consumes compare anchors, scenario patch hints, boundary fixtures, dependency windows, probe plans, helper boundaries, replay/scenario evidence, debugger hints, rebuild divergence, and patch history to choose the smallest explainable patchable surface.
+
+New tools:
+
+- `plan_patch_preflight`: selects the current first patch focus and patchable-surface candidates.
+- `list_patch_preflights`: lists the latest runtime or task artifact-backed patch preflight result.
+- `export_patch_preflight_report`: exports patch preflight JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: patch focus is selected from existing reverse/rebuild evidence.
+- Hook-preferred: replay, scenario, boundary, window, fixture, and compare-anchor evidence outrank debugger-only hints.
+- Breakpoint-last: debugger inspection can refine the focus but should not become the only truth source.
+- Evidence-first: task runs can write `patch-preflight/latest` and `runtime-evidence` entries.
+- Rebuild-oriented: preflight output is shaped for future patch workflow and rebuild integration.
+- First explainable divergence first: prefer compare-anchor, fixture-input, request-validation, or helper-window before broad env-shim patching.
+
+Current boundaries:
+
+- Patch preflight is a patch-before-planning layer, not a patch engine.
+- It does not apply patches, synthesize AST patches, or manage a patch search tree.
+- It does not implement rebuild integration in this phase.
+- It does not add full AST/data-flow/SSA/taint analysis.
+
+Recommended Phase 21 validation flow:
+
+1. `run_capture_recipe`.
+2. `extract_helper_boundary`.
+3. `extract_dependency_window`.
+4. `plan_scenario_probe`.
+5. `generate_boundary_fixture`.
+6. `generate_scenario_patch_hints`.
+7. `select_compare_anchor`.
+8. `plan_patch_preflight`.
+9. `export_patch_preflight_report` with `format='json'` and `format='markdown'`.
 
 ## Tool Summary
 
@@ -1191,6 +1230,9 @@ Recommended Phase 20 validation flow:
 - `select_compare_anchor`
 - `list_compare_anchors`
 - `export_compare_anchor_report`
+- `plan_patch_preflight`
+- `list_patch_preflights`
+- `export_patch_preflight_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
@@ -1247,8 +1289,8 @@ The current stage still does not implement:
 - full DevTools-style debugger workflows
 - exception breakpoint family, watch expressions, worker debugger, and multi-page debugger orchestration
 - full diff engine and semantic full-response diff platform
-- patch preflight integration
-- rebuild integration consuming selected compare anchors
+- rebuild integration consuming selected compare anchors and patch preflight context
+- automatic patch apply strategy tree and AST patch synthesis
 - AI provider platform
 - AI analyzer augmentation
 - complete VM-level deobfuscation

@@ -33,6 +33,8 @@ import type { PatchLoopRunner } from '../patch/PatchLoopRunner.js';
 import type { PatchPlanManager } from '../patch/PatchPlanManager.js';
 import type { ScenarioPatchHintGenerator } from '../patch/ScenarioPatchHintGenerator.js';
 import type { ScenarioPatchHintRegistry } from '../patch/ScenarioPatchHintRegistry.js';
+import type { PatchPreflightPlanner } from '../patch-preflight/PatchPreflightPlanner.js';
+import type { PatchPreflightRegistry } from '../patch-preflight/PatchPreflightRegistry.js';
 import type { CrossLanguageDiff } from '../port/CrossLanguageDiff.js';
 import type { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
 import type { PythonPortExtractor } from '../port/PythonPortExtractor.js';
@@ -55,6 +57,7 @@ import type { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBu
 import type { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
 import type { IntermediateRegressionReportBuilder } from '../report/IntermediateRegressionReportBuilder.js';
 import type { PatchReportBuilder } from '../report/PatchReportBuilder.js';
+import type { PatchPreflightReportBuilder } from '../report/PatchPreflightReportBuilder.js';
 import type { PortReportBuilder } from '../report/PortReportBuilder.js';
 import type { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import type { PureReportBuilder } from '../report/PureReportBuilder.js';
@@ -214,4 +217,7 @@ export interface AppRuntimeServices {
   compareAnchorSelector: CompareAnchorSelector;
   compareAnchorRegistry: CompareAnchorRegistry;
   compareAnchorReportBuilder: CompareAnchorReportBuilder;
+  patchPreflightPlanner: PatchPreflightPlanner;
+  patchPreflightRegistry: PatchPreflightRegistry;
+  patchPreflightReportBuilder: PatchPreflightReportBuilder;
 }
