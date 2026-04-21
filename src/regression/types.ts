@@ -1,3 +1,5 @@
+import type { UpgradeDiffResult } from '../port/types.js';
+
 export interface RegressionBaseline {
   baselineId: string;
   taskId?: string | null;
@@ -12,6 +14,20 @@ export interface RegressionBaseline {
     explicitInputs: string[];
     outputs: string[];
   };
+  notes: string[];
+}
+
+export interface IntermediateBaseline {
+  baselineId: string;
+  taskId?: string | null;
+  createdAt: string;
+  source: 'pure' | 'port';
+  fixtureFile: string;
+  explicitInputs: string[];
+  outputKeys: string[];
+  intermediateKeys: string[];
+  expectedNodeIntermediates?: Record<string, unknown>;
+  expectedPythonIntermediates?: Record<string, unknown>;
   notes: string[];
 }
 
@@ -39,4 +55,44 @@ export interface RegressionRunResult {
   } | null;
   notes: string[];
   nextActionHint: string;
+}
+
+export interface IntermediateRegressionResult {
+  runId: string;
+  baselineId: string;
+  executedAt: string;
+  matched: boolean;
+  divergence?: {
+    layer: 'node-intermediate' | 'python-intermediate' | 'cross-language-intermediate' | 'final-output';
+    path: string;
+    message: string;
+    expected?: unknown;
+    actual?: unknown;
+  } | null;
+  nodeIntermediates?: Record<string, unknown>;
+  pythonIntermediates?: Record<string, unknown>;
+  notes: string[];
+  nextActionHint: string;
+}
+
+export interface VersionedBaseline {
+  versionId: string;
+  taskId?: string | null;
+  createdAt: string;
+  label: string;
+  basedOnBaselineId?: string | null;
+  nodeOutput?: unknown;
+  pythonOutput?: unknown;
+  intermediates?: Record<string, unknown>;
+  notes: string[];
+}
+
+export interface UpgradeWorkflowResult {
+  baseline: VersionedBaseline;
+  currentRegression: RegressionRunResult | null;
+  intermediateRegression?: IntermediateRegressionResult | null;
+  upgradeDiff: UpgradeDiffResult;
+  nextActions: string[];
+  whyTheseSteps: string[];
+  stopIf: string[];
 }

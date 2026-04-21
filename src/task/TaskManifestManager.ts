@@ -145,11 +145,15 @@ export class TaskManifestManager {
         analyzeTarget: pointer('analyze-target-summary') ?? manifest.latestPointers.analyzeTarget ?? null,
         acceptance: pointer('latest-acceptance') ?? manifest.latestPointers.acceptance ?? null,
         baseline: pointer('latest-baseline') ?? manifest.latestPointers.baseline ?? null,
+        deliveryBundle: pointer('delivery/bundle') ?? manifest.latestPointers.deliveryBundle ?? null,
+        deliverySmoke: pointer('delivery/smoke') ?? manifest.latestPointers.deliverySmoke ?? null,
         patchWorkflow: pointer('patch-workflow') ?? manifest.latestPointers.patchWorkflow ?? null,
         portWorkflow: pointer('run/port-workflow') ?? manifest.latestPointers.portWorkflow ?? null,
         pureWorkflow: pointer('run/pure-extraction') ?? manifest.latestPointers.pureWorkflow ?? null,
+        regressionRun: pointer('run/regression-run') ?? manifest.latestPointers.regressionRun ?? null,
         rebuildWorkflow: pointer('rebuild-run') ?? pointer('rebuild-bundle') ?? manifest.latestPointers.rebuildWorkflow ?? null,
-        sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null
+        sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
+        upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }
     };
   }

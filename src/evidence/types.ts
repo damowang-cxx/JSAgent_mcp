@@ -26,4 +26,7 @@ export type EvidenceLogName =
   | 'hooks'
   | 'acceptance'
   | 'regression-baselines'
-  | 'regression';
+  | 'regression'
+  | 'intermediate-probes'
+  | 'intermediate-baselines'
+  | 'versioned-baselines';

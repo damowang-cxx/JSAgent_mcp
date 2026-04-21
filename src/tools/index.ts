@@ -25,6 +25,8 @@ import { definePureBoundaryTool } from './reverse/definePureBoundary.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffCrossLanguageTool } from './reverse/diffCrossLanguage.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
+import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
+import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
 import { exportPortReportTool } from './reverse/exportPortReport.js';
 import { exportPureReportTool } from './reverse/exportPureReport.js';
@@ -36,6 +38,7 @@ import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
+import { exportUpgradeReportTool } from './reverse/exportUpgradeReport.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
 import { extractPythonPureTool } from './reverse/extractPythonPure.js';
 import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
@@ -47,6 +50,7 @@ import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
+import { listIntermediateBaselinesTool } from './reverse/listIntermediateBaselines.js';
 import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
@@ -55,17 +59,22 @@ import { planPatchTool } from './reverse/planPatch.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { registerRegressionBaselineTool } from './reverse/registerRegressionBaseline.js';
+import { registerIntermediateBaselineTool } from './reverse/registerIntermediateBaseline.js';
+import { registerUpgradeBaselineTool } from './reverse/registerUpgradeBaseline.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
 import { runDeliveryWorkflowTool } from './reverse/runDeliveryWorkflow.js';
+import { runIntermediateRegressionTool } from './reverse/runIntermediateRegression.js';
 import { runPatchIterationTool } from './reverse/runPatchIteration.js';
 import { runPortWorkflowTool } from './reverse/runPortWorkflow.js';
 import { runPureWorkflowTool } from './reverse/runPureWorkflow.js';
 import { runRegressionBaselineTool } from './reverse/runRegressionBaseline.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
+import { runUpgradeWorkflowTool } from './reverse/runUpgradeWorkflow.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
+import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
 import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { understandCodeTool } from './reverse/understandCode.js';
@@ -138,6 +147,15 @@ export const reverseTools = [
   exportTaskStateReportTool,
   exportRegressionReportTool,
   runDeliveryWorkflowTool,
+  registerIntermediateBaselineTool,
+  listIntermediateBaselinesTool,
+  runIntermediateRegressionTool,
+  registerUpgradeBaselineTool,
+  runUpgradeWorkflowTool,
+  exportUpgradeReportTool,
+  exportDeliveryBundleTool,
+  smokeTestDeliveryBundleTool,
+  exportDeliveryReportTool,
   freezeRuntimeSampleTool,
   exportRuntimeTraceTool,
   definePureBoundaryTool,
@@ -176,6 +194,8 @@ export {
   diffEnvRequirementsTool,
   evaluateScriptTool,
   exportPatchReportTool,
+  exportDeliveryBundleTool,
+  exportDeliveryReportTool,
   evaluateStageGateTool,
   exportPortReportTool,
   exportPureReportTool,
@@ -187,6 +207,7 @@ export {
   exportSdkPackageTool,
   exportSessionReportTool,
   exportTaskStateReportTool,
+  exportUpgradeReportTool,
   extractNodePureTool,
   extractPythonPureTool,
   freezeRuntimeSampleTool,
@@ -199,6 +220,7 @@ export {
   injectHookTool,
   listCollectedCodeTool,
   listHooksTool,
+  listIntermediateBaselinesTool,
   listNetworkRequestsTool,
   listPagesTool,
   listPatchHistoryTool,
@@ -213,19 +235,24 @@ export {
   planPatchTool,
   probeReverseTargetTool,
   recordReverseEvidenceTool,
+  registerIntermediateBaselineTool,
   registerRegressionBaselineTool,
+  registerUpgradeBaselineTool,
   removeXhrBreakpointTool,
   riskPanelTool,
   runPatchIterationTool,
   runDeliveryWorkflowTool,
+  runIntermediateRegressionTool,
   runPortWorkflowTool,
   runPureWorkflowTool,
   runRegressionBaselineTool,
   runRebuildProbeTool,
   runRebuildWorkflowTool,
+  runUpgradeWorkflowTool,
   savePureFixtureTool,
   searchCollectedCodeTool,
   selectPageTool,
+  smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,
   summarizeCodeTool,
   understandCodeTool,

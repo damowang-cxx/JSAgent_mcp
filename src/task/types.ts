@@ -24,6 +24,10 @@ export interface TaskManifest {
     acceptance?: string | null;
     baseline?: string | null;
     sdkPackage?: string | null;
+    regressionRun?: string | null;
+    upgradeWorkflow?: string | null;
+    deliveryBundle?: string | null;
+    deliverySmoke?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

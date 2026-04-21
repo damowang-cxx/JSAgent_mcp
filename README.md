@@ -767,6 +767,48 @@ Export a dual SDK package:
 }
 ```
 
+## Phase 13: Intermediate Alignment / Upgrade Regression / SDK Hardening
+
+Phase 13 strengthens long-term maintenance after a delivery baseline exists. The focus is not more discovery; it is intermediate-first regression, versioned upgrade baselines, and delivery bundles that contain verified implementation files plus smoke tests.
+
+New capabilities:
+
+- `register_intermediate_baseline`: freezes available fixture intermediates and registered probes as an artifact-backed intermediate baseline.
+- `list_intermediate_baselines`: lists intermediate baselines and probes for a task.
+- `run_intermediate_regression`: compares intermediate data before falling back to final-output divergence, and reports honest notes when no intermediate data exists.
+- `register_upgrade_baseline`: registers a versioned upgrade baseline only after regression or delivery gate evidence exists.
+- `run_upgrade_workflow`: runs artifact-backed upgrade regression with final and intermediate divergence signals.
+- `export_upgrade_report`: exports JSON or markdown for the latest upgrade workflow.
+- `export_delivery_bundle`: assembles a stronger delivery bundle with verified implementation files, contract, fixtures, provenance, and smoke entries.
+- `smoke_test_delivery_bundle`: runs the minimal Node/Python smoke test for the delivery bundle.
+- `export_delivery_report`: exports JSON or markdown for the latest delivery hardening result.
+
+Design rules:
+
+- First divergence before final-output-only compare: intermediate probes are preferred; missing intermediate data is reported explicitly.
+- Artifact-first: baselines, probes, upgrade workflow results, delivery bundles, and smoke results are task artifacts.
+- Baseline-before-upgrade: upgrade workflow starts from a registered regression/versioned baseline.
+- Delivery-after-regression: stronger delivery bundles require matched regression and verified implementation artifacts.
+
+Boundaries:
+
+- No npm/PyPI publishing is performed.
+- Intermediate alignment depends on available probes or fixture intermediates; it does not invent missing values.
+- Delivery bundle is a stronger artifact for distribution review, not a full SDK platform.
+
+Recommended Phase 13 validation flow:
+
+1. `evaluate_stage_gate` with `{ "all": true }`.
+2. `register_regression_baseline`.
+3. `run_regression_baseline`.
+4. `register_intermediate_baseline`.
+5. `run_intermediate_regression`.
+6. `register_upgrade_baseline`.
+7. `run_upgrade_workflow`.
+8. `export_delivery_bundle`.
+9. `smoke_test_delivery_bundle`.
+10. `export_delivery_report`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -857,6 +899,15 @@ Export a dual SDK package:
 - `export_task_state_report`
 - `export_regression_report`
 - `run_delivery_workflow`
+- `register_intermediate_baseline`
+- `list_intermediate_baselines`
+- `run_intermediate_regression`
+- `register_upgrade_baseline`
+- `run_upgrade_workflow`
+- `export_upgrade_report`
+- `export_delivery_bundle`
+- `smoke_test_delivery_bundle`
+- `export_delivery_report`
 - `analyze_target`
 
 ## Still Not Implemented
