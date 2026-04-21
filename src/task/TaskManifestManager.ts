@@ -161,6 +161,8 @@ export class TaskManifestManager {
         scenarioProbe: pointer('scenario-probe/latest') ?? manifest.latestPointers.scenarioProbe ?? null,
         boundaryFixture: pointer('boundary-fixture/latest') ?? manifest.latestPointers.boundaryFixture ?? null,
         scenarioPatchHints: pointer('scenario-patch-hints/latest') ?? manifest.latestPointers.scenarioPatchHints ?? null,
+        debuggerBreakpoints: pointer('debugger/breakpoints-latest') ?? manifest.latestPointers.debuggerBreakpoints ?? null,
+        debuggerPaused: pointer('debugger/paused-last') ?? manifest.latestPointers.debuggerPaused ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

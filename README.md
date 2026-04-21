@@ -37,6 +37,7 @@ The project currently includes:
 - replay-oriented capture recipes and helper-boundary extraction hints
 - minimal dependency window export and scenario-guided probe planning
 - boundary-driven fixture candidates and scenario-specific patch hints
+- debugger foundation for breakpoint-last selected-page debugging
 
 ## Design Principles
 
@@ -970,6 +971,47 @@ Recommended Phase 17 validation flow:
 7. `export_boundary_fixture_report` with `format='json'` and `format='markdown'`.
 8. `export_scenario_patch_hint_report` with `format='json'` and `format='markdown'`.
 
+## Phase 18: Debugger Foundation
+
+Phase 18 adds a minimal CDP Debugger foundation for the currently selected page. It is a breakpoint-last fallback for cases where hooks, replay, scenario analysis, helper boundaries, and dependency windows are not enough to inspect helper or request-sink local state.
+
+New tools:
+
+- `set_breakpoint`: attaches lazily to the selected page and sets a URL + 1-based line breakpoint.
+- `set_breakpoint_on_text`: searches live CDP script sources and sets a breakpoint on matching text.
+- `list_breakpoints`: lists runtime or task artifact-backed debugger breakpoints.
+- `remove_breakpoint`: removes a managed debugger breakpoint.
+- `pause`: requests `Debugger.pause` and returns only minimal paused state if the page actually pauses.
+- `resume`: resumes execution when the selected page is paused.
+- `get_paused_info`: returns minimal paused information without scopes or call-frame evaluation.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: use collected hook/network/scenario evidence before debugger breakpoints.
+- Hook-preferred: `create_hook`, `inject_hook`, `break_on_xhr`, `run_capture_recipe`, and boundary tools remain the default path.
+- Breakpoint-last: set breakpoints only when local helper/sink state must be inspected.
+- Evidence-first: task runs write `debugger/breakpoints-latest`, `debugger/paused-last`, and `runtime-evidence` entries.
+- Rebuild-oriented: debugger evidence should refine boundary/window/fixture inputs for rebuild probes, not replace them.
+
+Current boundaries:
+
+- This is debugger foundation, not a full DevTools replacement.
+- No scope variable explorer is implemented.
+- No `evaluate_on_call_frame` is implemented.
+- No `step_over`, `step_into`, or `step_out` tools are implemented.
+- No exception breakpoint family, watch expressions, worker debugger, or multi-page debugger orchestration is implemented.
+
+Recommended Phase 18 validation flow:
+
+1. `list_pages`.
+2. `select_page`.
+3. `set_breakpoint_on_text`.
+4. Reproduce the target action in the page.
+5. `get_paused_info`.
+6. `resume`.
+7. `list_breakpoints`.
+8. `remove_breakpoint`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1047,6 +1089,13 @@ Recommended Phase 17 validation flow:
 - `list_scenario_patch_hints`
 - `export_boundary_fixture_report`
 - `export_scenario_patch_hint_report`
+- `set_breakpoint`
+- `set_breakpoint_on_text`
+- `list_breakpoints`
+- `remove_breakpoint`
+- `pause`
+- `resume`
+- `get_paused_info`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`

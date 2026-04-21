@@ -36,6 +36,8 @@ export interface TaskManifest {
     scenarioProbe?: string | null;
     boundaryFixture?: string | null;
     scenarioPatchHints?: string | null;
+    debuggerBreakpoints?: string | null;
+    debuggerPaused?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

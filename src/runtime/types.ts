@@ -8,6 +8,8 @@ import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js'
 import type { CodeCollector } from '../collector/CodeCollector.js';
 import type { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import type { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
+import type { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
+import type { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import type { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
@@ -198,4 +200,6 @@ export interface AppRuntimeServices {
   scenarioPatchHintRegistry: ScenarioPatchHintRegistry;
   fixtureCandidateReportBuilder: FixtureCandidateReportBuilder;
   scenarioPatchHintReportBuilder: ScenarioPatchHintReportBuilder;
+  debuggerSessionManager: DebuggerSessionManager;
+  breakpointRegistry: BreakpointRegistry;
 }

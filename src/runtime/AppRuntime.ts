@@ -8,6 +8,8 @@ import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { CodeCollector } from '../collector/CodeCollector.js';
 import { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
+import { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
+import { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
 import { EvidenceStore } from '../evidence/EvidenceStore.js';
 import { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
@@ -200,6 +202,8 @@ export class AppRuntime implements AppRuntimeServices {
   readonly scenarioPatchHintRegistry: ScenarioPatchHintRegistry;
   readonly fixtureCandidateReportBuilder: FixtureCandidateReportBuilder;
   readonly scenarioPatchHintReportBuilder: ScenarioPatchHintReportBuilder;
+  readonly debuggerSessionManager: DebuggerSessionManager;
+  readonly breakpointRegistry: BreakpointRegistry;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -212,6 +216,10 @@ export class AppRuntime implements AppRuntimeServices {
     this.xhrWatchpointManager = new XhrWatchpointManager(browserSession, this.requestInitiatorTracker);
     this.evidenceStore = new EvidenceStore();
     this.taskManifestManager = new TaskManifestManager(this.evidenceStore);
+    this.debuggerSessionManager = new DebuggerSessionManager({
+      browserSession
+    });
+    this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -999,5 +1007,13 @@ export class AppRuntime implements AppRuntimeServices {
 
   getScenarioPatchHintReportBuilder(): ScenarioPatchHintReportBuilder {
     return this.scenarioPatchHintReportBuilder;
+  }
+
+  getDebuggerSessionManager(): DebuggerSessionManager {
+    return this.debuggerSessionManager;
+  }
+
+  getBreakpointRegistry(): BreakpointRegistry {
+    return this.breakpointRegistry;
   }
 }

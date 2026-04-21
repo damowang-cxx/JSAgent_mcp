@@ -56,10 +56,12 @@ import { generateScenarioPatchHintsTool } from './reverse/generateScenarioPatchH
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
+import { getPausedInfoTool } from './reverse/getPausedInfo.js';
 import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
+import { listBreakpointsTool } from './reverse/listBreakpoints.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
 import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
@@ -81,7 +83,9 @@ import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { registerRegressionBaselineTool } from './reverse/registerRegressionBaseline.js';
 import { registerIntermediateBaselineTool } from './reverse/registerIntermediateBaseline.js';
 import { registerUpgradeBaselineTool } from './reverse/registerUpgradeBaseline.js';
+import { removeBreakpointTool } from './reverse/removeBreakpoint.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
+import { resumeExecutionTool } from './reverse/resumeExecution.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
 import { replayTargetActionTool } from './reverse/replayTargetAction.js';
 import { runCaptureRecipeTool } from './reverse/runCaptureRecipe.js';
@@ -98,6 +102,8 @@ import { runUpgradeWorkflowTool } from './reverse/runUpgradeWorkflow.js';
 import { listScenarioProbePlansTool } from './reverse/listScenarioProbePlans.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
+import { setBreakpointTool } from './reverse/setBreakpoint.js';
+import { setBreakpointOnTextTool } from './reverse/setBreakpointOnText.js';
 import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
 import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
@@ -107,6 +113,7 @@ import { verifyNodePureTool } from './reverse/verifyNodePure.js';
 import { verifyPythonPureTool } from './reverse/verifyPythonPure.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
+import { pauseExecutionTool } from './reverse/pauseExecution.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
 export const coreTools = [pingTool, getServerInfoTool, listToolsSummaryTool] satisfies readonly RegisteredToolDefinition[];
@@ -173,6 +180,13 @@ export const reverseTools = [
   listScenarioPatchHintsTool,
   exportBoundaryFixtureReportTool,
   exportScenarioPatchHintReportTool,
+  setBreakpointTool,
+  setBreakpointOnTextTool,
+  listBreakpointsTool,
+  removeBreakpointTool,
+  pauseExecutionTool,
+  resumeExecutionTool,
+  getPausedInfoTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -276,11 +290,13 @@ export {
   getHookDataTool,
   getNetworkRequestTool,
   getRequestInitiatorTool,
+  getPausedInfoTool,
   getServerInfoTool,
   getTaskManifestTool,
   injectHookTool,
   listCollectedCodeTool,
   listBoundaryFixturesTool,
+  listBreakpointsTool,
   listCapturePresetsTool,
   listDependencyWindowsTool,
   listHelperBoundariesTool,
@@ -302,13 +318,16 @@ export {
   openReverseTaskTool,
   pingTool,
   planPatchTool,
+  pauseExecutionTool,
   planScenarioProbeTool,
   probeReverseTargetTool,
   recordReverseEvidenceTool,
   registerIntermediateBaselineTool,
   registerRegressionBaselineTool,
   registerUpgradeBaselineTool,
+  removeBreakpointTool,
   removeXhrBreakpointTool,
+  resumeExecutionTool,
   riskPanelTool,
   replayTargetActionTool,
   runCaptureRecipeTool,
@@ -326,6 +345,8 @@ export {
   savePureFixtureTool,
   searchCollectedCodeTool,
   selectPageTool,
+  setBreakpointTool,
+  setBreakpointOnTextTool,
   smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,
   summarizeCodeTool,
