@@ -9,7 +9,10 @@ import { CodeCollector } from '../collector/CodeCollector.js';
 import { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
 import { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
+import { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
+import { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js';
 import { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
+import { PausedInspector } from '../debugger/PausedInspector.js';
 import { EvidenceStore } from '../evidence/EvidenceStore.js';
 import { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
@@ -204,6 +207,9 @@ export class AppRuntime implements AppRuntimeServices {
   readonly scenarioPatchHintReportBuilder: ScenarioPatchHintReportBuilder;
   readonly debuggerSessionManager: DebuggerSessionManager;
   readonly breakpointRegistry: BreakpointRegistry;
+  readonly pausedInspector: PausedInspector;
+  readonly debuggerEvidenceCorrelator: DebuggerEvidenceCorrelator;
+  readonly debuggerReportBuilder: DebuggerReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -220,6 +226,7 @@ export class AppRuntime implements AppRuntimeServices {
       browserSession
     });
     this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
+    this.pausedInspector = new PausedInspector(this.debuggerSessionManager);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -350,6 +357,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.probePlanReportBuilder = new ProbePlanReportBuilder();
     this.fixtureCandidateReportBuilder = new FixtureCandidateReportBuilder();
     this.scenarioPatchHintReportBuilder = new ScenarioPatchHintReportBuilder();
+    this.debuggerReportBuilder = new DebuggerReportBuilder();
     this.waitConditionEvaluator = new WaitConditionEvaluator({
       networkCollector: this.networkCollector,
       pageController: this.pageController
@@ -393,6 +401,16 @@ export class AppRuntime implements AppRuntimeServices {
       requestInitiatorTracker: this.requestInitiatorTracker,
       signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
       taskManifestManager: this.taskManifestManager
+    });
+    this.debuggerEvidenceCorrelator = new DebuggerEvidenceCorrelator({
+      browserSession,
+      debuggerSessionManager: this.debuggerSessionManager,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector,
+      replayRecipeRunner: this.replayRecipeRunner,
+      requestInitiatorTracker: this.requestInitiatorTracker,
+      requestSinkLocator: this.requestSinkLocator,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer
     });
     this.helperBoundaryRegistry = new HelperBoundaryRegistry(this.evidenceStore);
     this.dependencyWindowRegistry = new DependencyWindowRegistry(this.evidenceStore);
@@ -1015,5 +1033,17 @@ export class AppRuntime implements AppRuntimeServices {
 
   getBreakpointRegistry(): BreakpointRegistry {
     return this.breakpointRegistry;
+  }
+
+  getPausedInspector(): PausedInspector {
+    return this.pausedInspector;
+  }
+
+  getDebuggerEvidenceCorrelator(): DebuggerEvidenceCorrelator {
+    return this.debuggerEvidenceCorrelator;
+  }
+
+  getDebuggerReportBuilder(): DebuggerReportBuilder {
+    return this.debuggerReportBuilder;
   }
 }

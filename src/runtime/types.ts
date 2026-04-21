@@ -9,7 +9,10 @@ import type { CodeCollector } from '../collector/CodeCollector.js';
 import type { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import type { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
 import type { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
+import type { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
+import type { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js';
 import type { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
+import type { PausedInspector } from '../debugger/PausedInspector.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import type { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
@@ -202,4 +205,7 @@ export interface AppRuntimeServices {
   scenarioPatchHintReportBuilder: ScenarioPatchHintReportBuilder;
   debuggerSessionManager: DebuggerSessionManager;
   breakpointRegistry: BreakpointRegistry;
+  pausedInspector: PausedInspector;
+  debuggerEvidenceCorrelator: DebuggerEvidenceCorrelator;
+  debuggerReportBuilder: DebuggerReportBuilder;
 }

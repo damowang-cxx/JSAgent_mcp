@@ -38,6 +38,7 @@ The project currently includes:
 - minimal dependency window export and scenario-guided probe planning
 - boundary-driven fixture candidates and scenario-specific patch hints
 - debugger foundation for breakpoint-last selected-page debugging
+- debugger inspection layer for stepping, paused frame inspection, bounded scope summaries, and debugger reports
 
 ## Design Principles
 
@@ -1012,6 +1013,51 @@ Recommended Phase 18 validation flow:
 7. `list_breakpoints`.
 8. `remove_breakpoint`.
 
+## Phase 19: Debugger Inspection Layer
+
+Phase 19 extends the Phase 18 debugger foundation with a bounded inspection layer for paused helper/sink context. It remains a breakpoint-last fallback: use hook, replay, scenario, helper-boundary, dependency-window, and probe-plan evidence first, then inspect paused call frames only when local runtime state is needed.
+
+New tools:
+
+- `step_over`: steps over from the current paused frame and updates paused evidence when execution pauses again.
+- `step_into`: steps into from the current paused frame.
+- `step_out`: steps out from the current paused frame.
+- `get_call_frames`: returns structured paused call frame details and minimal correlation hints.
+- `get_scope_variables`: reads bounded non-global scope variable summaries for a paused frame.
+- `evaluate_on_call_frame`: evaluates one expression on a paused call frame and returns a safe serialized result.
+- `export_debugger_report`: exports debugger breakpoints, paused state, call frames, scope summaries, and correlation hints as JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: debugger inspection consumes existing hook/network/scenario/replay evidence before adding new claims.
+- Hook-preferred: `create_hook`, `inject_hook`, `break_on_xhr`, `run_capture_recipe`, `extract_helper_boundary`, `extract_dependency_window`, and `plan_scenario_probe` remain the default path.
+- Breakpoint-last: inspect paused call frames only when hook/capture evidence is not enough to explain helper or request-sink state.
+- Evidence-first: task runs can write `debugger/inspection-last`, `debugger/paused-last`, and `runtime-evidence` entries.
+- Rebuild-oriented: paused variables and evaluation output are meant to refine fixtures, compare anchors, patch preflight, and rebuild probes.
+
+Current boundaries:
+
+- This is an inspection layer, not a full debugger platform.
+- No exception breakpoint family is implemented.
+- No watch expression platform is implemented.
+- No worker or service-worker debugger is implemented.
+- No multi-page concurrent debugger orchestration is implemented.
+- No compare-anchor, patch-preflight, AST/data-flow/SSA/taint integration is implemented in this phase.
+
+Recommended Phase 19 validation flow:
+
+1. `list_pages`.
+2. `select_page`.
+3. `set_breakpoint_on_text`.
+4. Reproduce the target action in the page.
+5. `get_paused_info`.
+6. `get_call_frames`.
+7. `get_scope_variables`.
+8. `evaluate_on_call_frame`.
+9. `step_over`, `step_into`, or `step_out`.
+10. `resume`.
+11. `export_debugger_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1096,6 +1142,13 @@ Recommended Phase 18 validation flow:
 - `pause`
 - `resume`
 - `get_paused_info`
+- `step_over`
+- `step_into`
+- `step_out`
+- `get_call_frames`
+- `get_scope_variables`
+- `evaluate_on_call_frame`
+- `export_debugger_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`

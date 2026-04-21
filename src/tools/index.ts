@@ -39,6 +39,7 @@ import { exportRegressionReportTool } from './reverse/exportRegressionReport.js'
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportCaptureReportTool } from './reverse/exportCaptureReport.js';
+import { exportDebuggerReportTool } from './reverse/exportDebuggerReport.js';
 import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
@@ -53,10 +54,12 @@ import { extractPythonPureTool } from './reverse/extractPythonPure.js';
 import { freezeRuntimeSampleTool } from './reverse/freezeRuntimeSample.js';
 import { generateBoundaryFixtureTool } from './reverse/generateBoundaryFixture.js';
 import { generateScenarioPatchHintsTool } from './reverse/generateScenarioPatchHints.js';
+import { getCallFramesTool } from './reverse/getCallFrames.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
 import { getPausedInfoTool } from './reverse/getPausedInfo.js';
+import { getScopeVariablesTool } from './reverse/getScopeVariables.js';
 import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
@@ -106,6 +109,9 @@ import { setBreakpointTool } from './reverse/setBreakpoint.js';
 import { setBreakpointOnTextTool } from './reverse/setBreakpointOnText.js';
 import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
 import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
+import { stepIntoTool } from './reverse/stepInto.js';
+import { stepOutTool } from './reverse/stepOut.js';
+import { stepOverTool } from './reverse/stepOver.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { traceTokenFamilyTool } from './reverse/traceTokenFamily.js';
 import { understandCodeTool } from './reverse/understandCode.js';
@@ -113,6 +119,7 @@ import { verifyNodePureTool } from './reverse/verifyNodePure.js';
 import { verifyPythonPureTool } from './reverse/verifyPythonPure.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
+import { evaluateOnCallFrameTool } from './reverse/evaluateOnCallFrame.js';
 import { pauseExecutionTool } from './reverse/pauseExecution.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
@@ -187,6 +194,13 @@ export const reverseTools = [
   pauseExecutionTool,
   resumeExecutionTool,
   getPausedInfoTool,
+  stepOverTool,
+  stepIntoTool,
+  stepOutTool,
+  getCallFramesTool,
+  getScopeVariablesTool,
+  evaluateOnCallFrameTool,
+  exportDebuggerReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -258,7 +272,9 @@ export {
   diffCrossLanguageTool,
   diffEnvRequirementsTool,
   evaluateScriptTool,
+  evaluateOnCallFrameTool,
   exportBoundaryFixtureReportTool,
+  exportDebuggerReportTool,
   exportPatchReportTool,
   exportProbePlanReportTool,
   exportDeliveryBundleTool,
@@ -286,11 +302,13 @@ export {
   freezeRuntimeSampleTool,
   generateBoundaryFixtureTool,
   generateScenarioPatchHintsTool,
+  getCallFramesTool,
   getCollectedCodeFileTool,
   getHookDataTool,
   getNetworkRequestTool,
   getRequestInitiatorTool,
   getPausedInfoTool,
+  getScopeVariablesTool,
   getServerInfoTool,
   getTaskManifestTool,
   injectHookTool,
@@ -349,6 +367,9 @@ export {
   setBreakpointOnTextTool,
   smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,
+  stepIntoTool,
+  stepOutTool,
+  stepOverTool,
   summarizeCodeTool,
   traceTokenFamilyTool,
   understandCodeTool,

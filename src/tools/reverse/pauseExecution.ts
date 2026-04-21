@@ -46,7 +46,8 @@ export const pauseExecutionTool = defineTool<PauseExecutionParams>({
 export async function writePausedEvidence(
   context: ToolContext,
   input: {
-    kind: 'debugger_pause' | 'debugger_resume';
+    kind: 'debugger_pause' | 'debugger_resume' | 'debugger_step';
+    stepType?: 'over' | 'into' | 'out';
     state?: PausedStateSummary;
     targetUrl?: string;
     taskId?: string;
@@ -64,6 +65,7 @@ export async function writePausedEvidence(
   });
   await evidenceStore.appendLog(input.taskId, 'runtime-evidence', {
     kind: input.kind,
+    ...(input.stepType ? { stepType: input.stepType } : {}),
     state: input.state ?? null
   });
 

@@ -17,7 +17,7 @@ import { allTools } from './tools/index.js';
 import type { RegisteredToolDefinition, ToolContext, ToolResult } from './tools/ToolDefinition.js';
 
 const serverName = 'JSAgent_mcp';
-const serverVersion = '0.18.0';
+const serverVersion = '0.19.0';
 
 function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (value === undefined) {

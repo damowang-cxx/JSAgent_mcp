@@ -50,3 +50,60 @@ export interface StoredPausedSnapshot {
   taskId?: string;
   state: PausedStateSummary;
 }
+
+export interface DebuggerScopeVariable {
+  name: string;
+  valueType: string;
+  preview: string;
+  value?: unknown;
+  truncated?: boolean;
+}
+
+export interface DebuggerScopeSummary {
+  type: string;
+  name?: string;
+  variables: DebuggerScopeVariable[];
+}
+
+export interface DebuggerCallFrameDetail {
+  callFrameId: string;
+  functionName: string;
+  url?: string;
+  scriptId?: string;
+  lineNumber: number;
+  columnNumber: number;
+  scopes?: DebuggerScopeSummary[];
+}
+
+export interface CallFrameEvaluationResult {
+  ok: boolean;
+  resultType?: string;
+  preview?: string;
+  value?: unknown;
+  error?: string;
+  evaluatedAt: string;
+}
+
+export interface DebuggerCorrelationHint {
+  kind: 'request' | 'hook' | 'scenario-target' | 'sink';
+  value: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface StoredDebuggerInspectionSnapshot {
+  createdAt: string;
+  taskId?: string;
+  callFrames: DebuggerCallFrameDetail[];
+  correlations?: DebuggerCorrelationHint[];
+  evaluations?: CallFrameEvaluationResult[];
+  notes?: string[];
+}
+
+export interface DebuggerReportInput {
+  breakpoints: ManagedBreakpoint[];
+  pausedState: PausedStateSummary;
+  callFrames: DebuggerCallFrameDetail[];
+  correlations: DebuggerCorrelationHint[];
+  notes: string[];
+}

@@ -4,8 +4,12 @@ import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js'
 import { AppError } from '../core/errors.js';
 import type {
   BreakpointLocation,
+  CallFrameEvaluationResult,
+  DebuggerCallFrameDetail,
   DebuggerCallFrameSummary,
   DebuggerScriptSummary,
+  DebuggerScopeSummary,
+  DebuggerScopeVariable,
   ManagedBreakpoint,
   PausedStateSummary
 } from './types.js';
@@ -21,8 +25,49 @@ interface CdpLocation {
 }
 
 interface CdpCallFrame {
+  callFrameId?: string;
   functionName?: string;
   location?: CdpLocation;
+  scopeChain?: CdpScope[];
+}
+
+interface CdpScope {
+  type?: string;
+  name?: string;
+  object?: CdpRemoteObject;
+}
+
+interface CdpRemoteObject {
+  type?: string;
+  subtype?: string;
+  className?: string;
+  value?: unknown;
+  unserializableValue?: string;
+  description?: string;
+  objectId?: string;
+  preview?: {
+    description?: string;
+    properties?: Array<{
+      name?: string;
+      type?: string;
+      value?: string;
+      subtype?: string;
+    }>;
+  };
+}
+
+interface CdpPropertyDescriptor {
+  name?: string;
+  enumerable?: boolean;
+  value?: CdpRemoteObject;
+}
+
+interface CdpEvaluationResponse {
+  result?: CdpRemoteObject;
+  exceptionDetails?: {
+    text?: string;
+    exception?: CdpRemoteObject;
+  };
 }
 
 interface CdpPausedEvent {
@@ -40,6 +85,11 @@ interface TextSearchMatch {
 }
 
 const DEFAULT_PAUSE_WAIT_MS = 1_000;
+const DEFAULT_STEP_WAIT_MS = 1_200;
+const DEFAULT_MAX_SCOPE_VARIABLES = 80;
+const DEFAULT_MAX_VALUE_DEPTH = 1;
+const MAX_PREVIEW_LENGTH = 500;
+const MAX_OBJECT_PROPERTIES = 12;
 
 export class DebuggerSessionManager {
   private session: CDPSession | null = null;
@@ -47,6 +97,7 @@ export class DebuggerSessionManager {
   private scripts = new Map<string, DebuggerScriptInternal>();
   private breakpoints = new Map<string, ManagedBreakpoint>();
   private pausedState: PausedStateSummary = emptyPausedState();
+  private pausedCallFrames: CdpCallFrame[] = [];
 
   constructor(private readonly deps: { browserSession: BrowserSessionManager }) {}
 
@@ -226,9 +277,141 @@ export class DebuggerSessionManager {
     return clonePausedState(this.pausedState);
   }
 
+  async stepOver(): Promise<void> {
+    await this.step('Debugger.stepOver');
+  }
+
+  async stepInto(): Promise<void> {
+    await this.step('Debugger.stepInto');
+  }
+
+  async stepOut(): Promise<void> {
+    await this.step('Debugger.stepOut');
+  }
+
+  getCallFrames(): DebuggerCallFrameDetail[] {
+    this.requirePaused();
+    return this.pausedCallFrames.map((frame) => this.toCallFrameDetail(frame));
+  }
+
+  async getScopeVariables(options: {
+    frameIndex?: number;
+    maxVariables?: number;
+    maxDepth?: number;
+  } = {}): Promise<DebuggerScopeSummary[]> {
+    await this.ensureAttached();
+    const frame = this.getPausedFrame(options.frameIndex ?? 0);
+    const session = this.requireSession();
+    const maxVariables = Math.max(1, Math.min(500, Math.floor(options.maxVariables ?? DEFAULT_MAX_SCOPE_VARIABLES)));
+    const maxDepth = Math.max(0, Math.min(3, Math.floor(options.maxDepth ?? DEFAULT_MAX_VALUE_DEPTH)));
+    const summaries: DebuggerScopeSummary[] = [];
+    let remaining = maxVariables;
+
+    for (const scope of frame.scopeChain ?? []) {
+      if (remaining <= 0) {
+        break;
+      }
+      if (!scope.type || scope.type === 'global' || !scope.object?.objectId) {
+        continue;
+      }
+
+      const response = await session.send('Runtime.getProperties', {
+        accessorPropertiesOnly: false,
+        generatePreview: true,
+        objectId: scope.object.objectId,
+        ownProperties: true
+      }) as { result?: CdpPropertyDescriptor[] };
+
+      const variables: DebuggerScopeVariable[] = [];
+      for (const property of response.result ?? []) {
+        if (remaining <= 0) {
+          break;
+        }
+        if (!property.name || !property.value) {
+          continue;
+        }
+
+        const serialized = await this.serializeRemoteObject(property.value, {
+          depth: 0,
+          maxDepth,
+          seen: new Set<string>()
+        });
+        variables.push({
+          name: property.name,
+          ...serialized
+        });
+        remaining -= 1;
+      }
+
+      summaries.push({
+        ...(scope.name ? { name: scope.name } : {}),
+        type: scope.type,
+        variables
+      });
+    }
+
+    return summaries;
+  }
+
+  async evaluateOnCallFrame(options: {
+    expression: string;
+    frameIndex?: number;
+  }): Promise<CallFrameEvaluationResult> {
+    await this.ensureAttached();
+    const expression = options.expression.trim();
+    if (!expression) {
+      throw new AppError('DEBUGGER_EXPRESSION_REQUIRED', 'evaluate_on_call_frame requires a non-empty expression.');
+    }
+
+    const frame = this.getPausedFrame(options.frameIndex ?? 0);
+    if (!frame.callFrameId) {
+      throw new AppError('DEBUGGER_CALL_FRAME_ID_MISSING', 'The selected paused call frame does not expose a callFrameId.');
+    }
+
+    try {
+      const response = await this.requireSession().send('Debugger.evaluateOnCallFrame', {
+        callFrameId: frame.callFrameId,
+        expression,
+        generatePreview: true,
+        includeCommandLineAPI: false,
+        objectGroup: 'jsagent-debugger-eval',
+        returnByValue: false,
+        silent: true
+      }) as CdpEvaluationResponse;
+
+      if (response.exceptionDetails) {
+        return {
+          error: this.evaluationErrorMessage(response.exceptionDetails),
+          evaluatedAt: new Date().toISOString(),
+          ok: false
+        };
+      }
+
+      const serialized = await this.serializeRemoteObject(response.result ?? { type: 'undefined' }, {
+        depth: 0,
+        maxDepth: 1,
+        seen: new Set<string>()
+      });
+      return {
+        evaluatedAt: new Date().toISOString(),
+        ok: true,
+        preview: serialized.preview,
+        resultType: serialized.valueType,
+        ...(serialized.value !== undefined ? { value: serialized.value } : {})
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error),
+        evaluatedAt: new Date().toISOString(),
+        ok: false
+      };
+    }
+  }
+
   clearStateForPageChange(): void {
     this.scripts.clear();
     this.breakpoints.clear();
+    this.pausedCallFrames = [];
     this.pausedState = emptyPausedState();
   }
 
@@ -250,13 +433,17 @@ export class DebuggerSessionManager {
       });
     });
     session.on('Debugger.paused', (event: unknown) => {
-      this.pausedState = this.toPausedState(event as CdpPausedEvent);
+      const paused = event as CdpPausedEvent;
+      this.pausedCallFrames = paused.callFrames ?? [];
+      this.pausedState = this.toPausedState(paused);
     });
     session.on('Debugger.resumed', () => {
+      this.pausedCallFrames = [];
       this.pausedState = emptyPausedState();
     });
 
     await session.send('Debugger.enable');
+    await session.send('Runtime.enable');
   }
 
   private async detachCurrent(): Promise<void> {
@@ -282,6 +469,33 @@ export class DebuggerSessionManager {
       throw new AppError('DEBUGGER_NOT_ATTACHED', 'Debugger is not attached to the selected page.');
     }
     return this.session;
+  }
+
+  private requirePaused(): void {
+    if (!this.pausedState.isPaused) {
+      throw new AppError('DEBUGGER_NOT_PAUSED', 'Debugger inspection requires the selected page to be paused.');
+    }
+  }
+
+  private getPausedFrame(frameIndex: number): CdpCallFrame {
+    this.requirePaused();
+    const normalizedIndex = Math.max(0, Math.floor(frameIndex));
+    const frame = this.pausedCallFrames[normalizedIndex];
+    if (!frame) {
+      throw new AppError('DEBUGGER_CALL_FRAME_NOT_FOUND', `Paused call frame not found at index ${normalizedIndex}.`, {
+        frameIndex: normalizedIndex,
+        frameCount: this.pausedCallFrames.length
+      });
+    }
+    return frame;
+  }
+
+  private async step(method: 'Debugger.stepOver' | 'Debugger.stepInto' | 'Debugger.stepOut'): Promise<void> {
+    await this.ensureAttached();
+    this.requirePaused();
+    const previousPausedAt = this.pausedState.pausedAt;
+    await this.requireSession().send(method);
+    await this.waitForStepResult(previousPausedAt, DEFAULT_STEP_WAIT_MS);
   }
 
   private resolveScriptUrl(inputUrl: string): string | null {
@@ -384,11 +598,151 @@ export class DebuggerSessionManager {
     };
   }
 
+  private toCallFrameDetail(frame: CdpCallFrame): DebuggerCallFrameDetail {
+    const location = frame.location ?? {};
+    const script = location.scriptId ? this.scripts.get(location.scriptId) : undefined;
+    return {
+      callFrameId: frame.callFrameId ?? '',
+      columnNumber: Math.max(0, location.columnNumber ?? 0),
+      functionName: frame.functionName || '(anonymous)',
+      lineNumber: Math.max(1, (location.lineNumber ?? 0) + 1),
+      ...(location.scriptId ? { scriptId: location.scriptId } : {}),
+      ...(script?.url ? { url: script.url } : {})
+    };
+  }
+
   private async waitForPaused(timeoutMs: number): Promise<void> {
     const started = Date.now();
     while (!this.pausedState.isPaused && Date.now() - started < timeoutMs) {
       await new Promise((resolve) => setTimeout(resolve, 25));
     }
+  }
+
+  private async waitForStepResult(previousPausedAt: string | undefined, timeoutMs: number): Promise<void> {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      if (!this.pausedState.isPaused || this.pausedState.pausedAt !== previousPausedAt) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+
+  private async serializeRemoteObject(
+    remote: CdpRemoteObject,
+    options: { depth: number; maxDepth: number; seen: Set<string> }
+  ): Promise<Omit<DebuggerScopeVariable, 'name'>> {
+    const valueType = this.remoteObjectType(remote);
+    const preview = truncatePreview(this.remoteObjectPreview(remote));
+
+    if (remote.type === 'undefined') {
+      return { preview: 'undefined', valueType };
+    }
+    if (remote.type === 'string') {
+      const value = typeof remote.value === 'string' ? remote.value : '';
+      return {
+        preview: truncatePreview(value),
+        value: value.length > MAX_PREVIEW_LENGTH ? `${value.slice(0, MAX_PREVIEW_LENGTH)}...[truncated]` : value,
+        valueType,
+        truncated: value.length > MAX_PREVIEW_LENGTH
+      };
+    }
+    if (remote.type === 'number' || remote.type === 'boolean') {
+      return {
+        preview,
+        value: remote.value,
+        valueType
+      };
+    }
+    if (remote.type === 'bigint') {
+      return {
+        preview,
+        value: remote.unserializableValue ?? String(remote.value),
+        valueType
+      };
+    }
+    if (remote.type === 'object' && remote.subtype === 'null') {
+      return {
+        preview: 'null',
+        value: null,
+        valueType
+      };
+    }
+
+    if (!remote.objectId || options.depth >= options.maxDepth || options.seen.has(remote.objectId)) {
+      return {
+        preview,
+        valueType,
+        truncated: Boolean(remote.objectId)
+      };
+    }
+
+    options.seen.add(remote.objectId);
+    try {
+      const response = await this.requireSession().send('Runtime.getProperties', {
+        accessorPropertiesOnly: false,
+        generatePreview: true,
+        objectId: remote.objectId,
+        ownProperties: true
+      }) as { result?: CdpPropertyDescriptor[] };
+      const output: Record<string, unknown> = {};
+      const properties = (response.result ?? []).filter((property) => property.name && property.value).slice(0, MAX_OBJECT_PROPERTIES);
+
+      for (const property of properties) {
+        const child = await this.serializeRemoteObject(property.value as CdpRemoteObject, {
+          depth: options.depth + 1,
+          maxDepth: options.maxDepth,
+          seen: options.seen
+        });
+        output[property.name as string] = child.value !== undefined ? child.value : child.preview;
+      }
+
+      return {
+        preview,
+        value: output,
+        valueType,
+        truncated: (response.result ?? []).length > properties.length
+      };
+    } catch {
+      return {
+        preview,
+        valueType,
+        truncated: true
+      };
+    } finally {
+      options.seen.delete(remote.objectId);
+    }
+  }
+
+  private remoteObjectType(remote: CdpRemoteObject): string {
+    if (remote.subtype) {
+      return `${remote.type ?? 'unknown'}:${remote.subtype}`;
+    }
+    return remote.type ?? 'unknown';
+  }
+
+  private remoteObjectPreview(remote: CdpRemoteObject): string {
+    if (remote.unserializableValue) {
+      return remote.unserializableValue;
+    }
+    if (remote.description) {
+      return remote.description;
+    }
+    if (remote.preview?.description) {
+      return remote.preview.description;
+    }
+    if (remote.value !== undefined) {
+      try {
+        return JSON.stringify(remote.value);
+      } catch {
+        return String(remote.value);
+      }
+    }
+    return remote.type ?? 'unknown';
+  }
+
+  private evaluationErrorMessage(details: NonNullable<CdpEvaluationResponse['exceptionDetails']>): string {
+    return details.exception?.description ?? details.exception?.unserializableValue ?? details.text ?? 'Evaluation failed.';
   }
 }
 
@@ -426,4 +780,8 @@ function linePreviewAt(source: string, index: number): string {
   const end = nextNewline < 0 ? source.length : nextNewline;
   const line = source.slice(start, end).trim();
   return line.length > 240 ? `${line.slice(0, 240)}...[truncated]` : line;
+}
+
+function truncatePreview(value: string): string {
+  return value.length > MAX_PREVIEW_LENGTH ? `${value.slice(0, MAX_PREVIEW_LENGTH)}...[truncated]` : value;
 }
