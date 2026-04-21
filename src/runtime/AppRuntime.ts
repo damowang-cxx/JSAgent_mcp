@@ -46,6 +46,7 @@ import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
+import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import { SdkReportBuilder } from '../report/SdkReportBuilder.js';
 import { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
@@ -59,6 +60,13 @@ import { DeliveryAssembler } from '../sdk/DeliveryAssembler.js';
 import { DeliverySmokeTester } from '../sdk/DeliverySmokeTester.js';
 import { ProvenanceWriter } from '../sdk/ProvenanceWriter.js';
 import { SDKPackager } from '../sdk/SDKPackager.js';
+import { CryptoHelperLocator } from '../scenario/CryptoHelperLocator.js';
+import { RequestSinkLocator } from '../scenario/RequestSinkLocator.js';
+import { ScenarioActionPlanner } from '../scenario/ScenarioActionPlanner.js';
+import { ScenarioPresetRegistry } from '../scenario/ScenarioPresetRegistry.js';
+import { ScenarioWorkflowRunner } from '../scenario/ScenarioWorkflowRunner.js';
+import { SignatureScenarioAnalyzer } from '../scenario/SignatureScenarioAnalyzer.js';
+import { TokenScenarioAnalyzer } from '../scenario/TokenScenarioAnalyzer.js';
 import { StageGateEvaluator } from '../task/StageGateEvaluator.js';
 import { TaskManifestManager } from '../task/TaskManifestManager.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
@@ -146,6 +154,14 @@ export class AppRuntime implements AppRuntimeServices {
   readonly deliveryHardeningRunner: DeliveryHardeningRunner;
   readonly reverseWorkflowRunner: ReverseWorkflowRunner;
   readonly analyzeTargetRunner: AnalyzeTargetRunner;
+  readonly signatureScenarioAnalyzer: SignatureScenarioAnalyzer;
+  readonly tokenScenarioAnalyzer: TokenScenarioAnalyzer;
+  readonly requestSinkLocator: RequestSinkLocator;
+  readonly cryptoHelperLocator: CryptoHelperLocator;
+  readonly scenarioPresetRegistry: ScenarioPresetRegistry;
+  readonly scenarioActionPlanner: ScenarioActionPlanner;
+  readonly scenarioWorkflowRunner: ScenarioWorkflowRunner;
+  readonly scenarioReportBuilder: ScenarioReportBuilder;
 
   constructor(readonly browserSession: BrowserSessionManager) {
     this.pageController = new PageController(browserSession);
@@ -240,6 +256,61 @@ export class AppRuntime implements AppRuntimeServices {
       requestInitiatorTracker: this.requestInitiatorTracker,
       riskScorer: this.riskScorer,
       staticAnalyzer: this.staticAnalyzer
+    });
+    this.requestSinkLocator = new RequestSinkLocator({
+      browserSession,
+      codeCollector: this.codeCollector,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector,
+      requestChainCorrelator: this.requestChainCorrelator
+    });
+    this.cryptoHelperLocator = new CryptoHelperLocator({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      codeCollector: this.codeCollector,
+      cryptoDetector: this.cryptoDetector,
+      deobfuscator: this.deobfuscator,
+      staticAnalyzer: this.staticAnalyzer
+    });
+    this.tokenScenarioAnalyzer = new TokenScenarioAnalyzer({
+      browserSession,
+      codeCollector: this.codeCollector,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector
+    });
+    this.signatureScenarioAnalyzer = new SignatureScenarioAnalyzer({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      browserSession,
+      codeCollector: this.codeCollector,
+      cryptoDetector: this.cryptoDetector,
+      cryptoHelperLocator: this.cryptoHelperLocator,
+      deobfuscator: this.deobfuscator,
+      evidenceStore: this.evidenceStore,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector,
+      requestChainCorrelator: this.requestChainCorrelator,
+      requestInitiatorTracker: this.requestInitiatorTracker,
+      requestSinkLocator: this.requestSinkLocator,
+      staticAnalyzer: this.staticAnalyzer,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.scenarioPresetRegistry = new ScenarioPresetRegistry();
+    this.scenarioActionPlanner = new ScenarioActionPlanner();
+    this.scenarioReportBuilder = new ScenarioReportBuilder();
+    this.scenarioWorkflowRunner = new ScenarioWorkflowRunner({
+      browserSession,
+      codeCollector: this.codeCollector,
+      cryptoHelperLocator: this.cryptoHelperLocator,
+      evidenceStore: this.evidenceStore,
+      hookManager: this.hookManager,
+      networkCollector: this.networkCollector,
+      requestInitiatorTracker: this.requestInitiatorTracker,
+      requestSinkLocator: this.requestSinkLocator,
+      scenarioActionPlanner: this.scenarioActionPlanner,
+      scenarioPresetRegistry: this.scenarioPresetRegistry,
+      scenarioReportBuilder: this.scenarioReportBuilder,
+      signatureScenarioAnalyzer: this.signatureScenarioAnalyzer,
+      taskManifestManager: this.taskManifestManager,
+      tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
     });
     this.rebuildWorkflowRunner = new RebuildWorkflowRunner({
       analyzeTargetRunner: this.analyzeTargetRunner,
@@ -678,5 +749,37 @@ export class AppRuntime implements AppRuntimeServices {
 
   getAnalyzeTargetRunner(): AnalyzeTargetRunner {
     return this.analyzeTargetRunner;
+  }
+
+  getSignatureScenarioAnalyzer(): SignatureScenarioAnalyzer {
+    return this.signatureScenarioAnalyzer;
+  }
+
+  getTokenScenarioAnalyzer(): TokenScenarioAnalyzer {
+    return this.tokenScenarioAnalyzer;
+  }
+
+  getRequestSinkLocator(): RequestSinkLocator {
+    return this.requestSinkLocator;
+  }
+
+  getCryptoHelperLocator(): CryptoHelperLocator {
+    return this.cryptoHelperLocator;
+  }
+
+  getScenarioPresetRegistry(): ScenarioPresetRegistry {
+    return this.scenarioPresetRegistry;
+  }
+
+  getScenarioActionPlanner(): ScenarioActionPlanner {
+    return this.scenarioActionPlanner;
+  }
+
+  getScenarioWorkflowRunner(): ScenarioWorkflowRunner {
+    return this.scenarioWorkflowRunner;
+  }
+
+  getScenarioReportBuilder(): ScenarioReportBuilder {
+    return this.scenarioReportBuilder;
   }
 }

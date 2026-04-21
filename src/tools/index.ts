@@ -11,6 +11,7 @@ import { clearNetworkRequestsTool } from './network/clearNetworkRequests.js';
 import { getNetworkRequestTool } from './network/getNetworkRequest.js';
 import { listNetworkRequestsTool } from './network/listNetworkRequests.js';
 import { analyzeTargetTool } from './reverse/analyzeTarget.js';
+import { analyzeSignatureChainTool } from './reverse/analyzeSignatureChain.js';
 import { analyzeUpgradeDiffTool } from './reverse/analyzeUpgradeDiff.js';
 import { applyPatchTool } from './reverse/applyPatch.js';
 import { breakOnXhrTool } from './reverse/breakOnXhr.js';
@@ -35,6 +36,7 @@ import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
 import { exportRegressionReportTool } from './reverse/exportRegressionReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
+import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
 import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
@@ -52,7 +54,10 @@ import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
 import { listIntermediateBaselinesTool } from './reverse/listIntermediateBaselines.js';
 import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.js';
+import { listScenarioPresetsTool } from './reverse/listScenarioPresets.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
+import { locateCryptoHelpersTool } from './reverse/locateCryptoHelpers.js';
+import { locateRequestSinkTool } from './reverse/locateRequestSink.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
@@ -63,6 +68,7 @@ import { registerIntermediateBaselineTool } from './reverse/registerIntermediate
 import { registerUpgradeBaselineTool } from './reverse/registerUpgradeBaseline.js';
 import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
+import { runScenarioRecipeTool } from './reverse/runScenarioRecipe.js';
 import { runDeliveryWorkflowTool } from './reverse/runDeliveryWorkflow.js';
 import { runIntermediateRegressionTool } from './reverse/runIntermediateRegression.js';
 import { runPatchIterationTool } from './reverse/runPatchIteration.js';
@@ -77,6 +83,7 @@ import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
 import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
 import { stabilizeFixtureTool } from './reverse/stabilizeFixture.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
+import { traceTokenFamilyTool } from './reverse/traceTokenFamily.js';
 import { understandCodeTool } from './reverse/understandCode.js';
 import { verifyNodePureTool } from './reverse/verifyNodePure.js';
 import { verifyPythonPureTool } from './reverse/verifyPythonPure.js';
@@ -123,6 +130,13 @@ export const reverseTools = [
   exportSessionReportTool,
   deobfuscateCodeTool,
   correlateRequestFlowsTool,
+  listScenarioPresetsTool,
+  runScenarioRecipeTool,
+  analyzeSignatureChainTool,
+  traceTokenFamilyTool,
+  locateRequestSinkTool,
+  locateCryptoHelpersTool,
+  exportScenarioReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -176,6 +190,7 @@ export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ..
 
 export {
   analyzeTargetTool,
+  analyzeSignatureChainTool,
   analyzeUpgradeDiffTool,
   applyPatchTool,
   breakOnXhrTool,
@@ -204,6 +219,7 @@ export {
   exportRegressionReportTool,
   exportReverseReportTool,
   exportRuntimeTraceTool,
+  exportScenarioReportTool,
   exportSdkPackageTool,
   exportSessionReportTool,
   exportTaskStateReportTool,
@@ -225,9 +241,12 @@ export {
   listPagesTool,
   listPatchHistoryTool,
   listRegressionBaselinesTool,
+  listScenarioPresetsTool,
   listToolsSummaryTool,
   listXhrBreakpointsTool,
   markAcceptanceTool,
+  locateCryptoHelpersTool,
+  locateRequestSinkTool,
   navigatePageTool,
   newPageTool,
   openReverseTaskTool,
@@ -248,6 +267,7 @@ export {
   runRegressionBaselineTool,
   runRebuildProbeTool,
   runRebuildWorkflowTool,
+  runScenarioRecipeTool,
   runUpgradeWorkflowTool,
   savePureFixtureTool,
   searchCollectedCodeTool,
@@ -255,6 +275,7 @@ export {
   smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,
   summarizeCodeTool,
+  traceTokenFamilyTool,
   understandCodeTool,
   verifyNodePureTool,
   verifyPythonPureTool,

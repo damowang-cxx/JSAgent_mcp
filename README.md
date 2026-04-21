@@ -33,6 +33,7 @@ The project currently includes:
 - PureExtraction gate, frozen sample manager, runtime trace sampler, Node pure scaffold, verifier, and pure report exporter
 - Python pure scaffold exporter, cross-language verifier/diff, port workflow, and upgrade-diff runner
 - canonical task manifest, stage gates, regression baseline registry, regression runner, SDK packager, and delivery workflow
+- scenario-oriented reverse capability layer for signature chains, token families, request sinks, and crypto helpers
 
 ## Design Principles
 
@@ -809,6 +810,45 @@ Recommended Phase 13 validation flow:
 9. `smoke_test_delivery_bundle`.
 10. `export_delivery_report`.
 
+## 第十四期说明: Scenario-Oriented Reverse Capability Layer
+
+Phase 14 adds a task-type scenario layer above the existing observe/capture/analyze/rebuild platform. It is scenario-oriented, not site-oriented: the presets target common reverse tasks instead of any specific website or vendor.
+
+New tools:
+
+- `analyze_signature_chain`: scores suspicious requests and sign/token/auth/nonce indicators, then returns priority targets and action steps.
+- `trace_token_family`: tracks token/auth/nonce/verify/challenge/sign family members across request fields, hook records, and collected code.
+- `locate_request_sink`: locates likely final request sinks such as `fetch`, `XMLHttpRequest`, `axios`, `$.ajax`, and `sendBeacon`.
+- `locate_crypto_helpers`: ranks hash/HMAC/AES/RSA/base64/encode helpers that are worth auditing.
+- `list_scenario_presets`: lists generic task-type presets.
+- `run_scenario_recipe`: runs a preset, combines analysis/trace/sink/helper evidence, and writes artifacts when requested.
+- `export_scenario_report`: exports the latest or artifact-backed scenario workflow as JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first: runtime and request evidence come before rebuild assumptions.
+- Hook-preferred: recipes prefer fetch/xhr capture and function hooks before debugger escalation.
+- Target-chain-first: analysis prioritizes the likely target request, parameter family, final sink, and helper functions.
+- Evidence-first: `taskId` workflows write `scenario/*` snapshots and `runtime-evidence` entries.
+- Actionable output: results include priority targets, why those targets matter, next actions, and stop conditions.
+
+Current boundaries:
+
+- Presets are task-type presets, not site-specific templates or vendor adapters.
+- Token family tracing is heuristic; it is not a complete data-flow or taint engine.
+- Request sink location focuses on the last hop near network dispatch; it is not a full callgraph.
+- No external AI provider, full debugger, second browser manager, or global runtime singleton is introduced.
+
+Recommended Phase 14 validation flow:
+
+1. `list_scenario_presets`.
+2. `run_scenario_recipe` with `{ "presetId": "api-signature-basic" }`.
+3. `analyze_signature_chain`.
+4. `locate_request_sink`.
+5. `locate_crypto_helpers`.
+6. `trace_token_family`.
+7. `export_scenario_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -861,6 +901,13 @@ Recommended Phase 13 validation flow:
 - `export_session_report`
 - `deobfuscate_code`
 - `correlate_request_flows`
+- `list_scenario_presets`
+- `run_scenario_recipe`
+- `analyze_signature_chain`
+- `trace_token_family`
+- `locate_request_sink`
+- `locate_crypto_helpers`
+- `export_scenario_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
