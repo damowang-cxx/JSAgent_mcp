@@ -16,6 +16,9 @@ import type { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js
 import type { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
 import type { PausedInspector } from '../debugger/PausedInspector.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
+import type { AstIndexBuilder } from '../flow/AstIndexBuilder.js';
+import type { FlowReasoningEngine } from '../flow/FlowReasoningEngine.js';
+import type { FlowReasoningRegistry } from '../flow/FlowReasoningRegistry.js';
 import type { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import type { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
 import type { HookManager } from '../hook/HookManager.js';
@@ -61,6 +64,7 @@ import type { PatchPreflightReportBuilder } from '../report/PatchPreflightReport
 import type { PortReportBuilder } from '../report/PortReportBuilder.js';
 import type { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import type { PureReportBuilder } from '../report/PureReportBuilder.js';
+import type { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import type { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
@@ -226,4 +230,8 @@ export interface AppRuntimeServices {
   rebuildInputResolver: RebuildInputResolver;
   rebuildContextRegistry: RebuildContextRegistry;
   rebuildContextReportBuilder: RebuildContextReportBuilder;
+  astIndexBuilder: AstIndexBuilder;
+  flowReasoningEngine: FlowReasoningEngine;
+  flowReasoningRegistry: FlowReasoningRegistry;
+  flowReasoningReportBuilder: FlowReasoningReportBuilder;
 }

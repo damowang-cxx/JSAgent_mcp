@@ -42,6 +42,7 @@ export interface TaskManifest {
     compareAnchor?: string | null;
     patchPreflight?: string | null;
     rebuildContext?: string | null;
+    flowReasoning?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

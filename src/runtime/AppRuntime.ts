@@ -16,6 +16,9 @@ import { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js';
 import { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
 import { PausedInspector } from '../debugger/PausedInspector.js';
 import { EvidenceStore } from '../evidence/EvidenceStore.js';
+import { AstIndexBuilder } from '../flow/AstIndexBuilder.js';
+import { FlowReasoningEngine } from '../flow/FlowReasoningEngine.js';
+import { FlowReasoningRegistry } from '../flow/FlowReasoningRegistry.js';
 import { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
 import { HookManager } from '../hook/HookManager.js';
@@ -61,6 +64,7 @@ import { PatchPreflightReportBuilder } from '../report/PatchPreflightReportBuild
 import { PortReportBuilder } from '../report/PortReportBuilder.js';
 import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
+import { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
@@ -228,12 +232,17 @@ export class AppRuntime implements AppRuntimeServices {
   readonly rebuildInputResolver: RebuildInputResolver;
   readonly rebuildContextRegistry: RebuildContextRegistry;
   readonly rebuildContextReportBuilder: RebuildContextReportBuilder;
+  readonly astIndexBuilder: AstIndexBuilder;
+  readonly flowReasoningEngine: FlowReasoningEngine;
+  readonly flowReasoningRegistry: FlowReasoningRegistry;
+  readonly flowReasoningReportBuilder: FlowReasoningReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
   constructor(readonly browserSession: BrowserSessionManager) {
     this.pageController = new PageController(browserSession);
     this.codeCollector = new CodeCollector(browserSession, this.pageController);
+    this.astIndexBuilder = new AstIndexBuilder(this.codeCollector);
     this.hookManager = new HookManager(browserSession);
     this.requestInitiatorTracker = new RequestInitiatorTracker(browserSession);
     this.networkCollector = new NetworkCollector(browserSession, this.requestInitiatorTracker);
@@ -248,6 +257,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.compareAnchorRegistry = new CompareAnchorRegistry(this.evidenceStore);
     this.patchPreflightRegistry = new PatchPreflightRegistry(this.evidenceStore);
     this.rebuildContextRegistry = new RebuildContextRegistry(this.evidenceStore);
+    this.flowReasoningRegistry = new FlowReasoningRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -289,6 +299,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.patchReportBuilder = new PatchReportBuilder();
     this.patchPreflightReportBuilder = new PatchPreflightReportBuilder();
     this.rebuildContextReportBuilder = new RebuildContextReportBuilder();
+    this.flowReasoningReportBuilder = new FlowReasoningReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -699,6 +710,24 @@ export class AppRuntime implements AppRuntimeServices {
       rebuildRunner: this.rebuildRunner,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner,
       scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.flowReasoningEngine = new FlowReasoningEngine({
+      astIndexBuilder: this.astIndexBuilder,
+      codeCollector: this.codeCollector,
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
+      debuggerSessionManager: this.debuggerSessionManager,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      fixtureCandidateRegistry: this.fixtureCandidateRegistry,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      probePlanRegistry: this.probePlanRegistry,
+      rebuildContextRegistry: this.rebuildContextRegistry,
+      replayRecipeRunner: this.replayRecipeRunner,
+      scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
       taskManifestManager: this.taskManifestManager
     });
   }
@@ -1153,5 +1182,21 @@ export class AppRuntime implements AppRuntimeServices {
 
   getRebuildContextReportBuilder(): RebuildContextReportBuilder {
     return this.rebuildContextReportBuilder;
+  }
+
+  getAstIndexBuilder(): AstIndexBuilder {
+    return this.astIndexBuilder;
+  }
+
+  getFlowReasoningEngine(): FlowReasoningEngine {
+    return this.flowReasoningEngine;
+  }
+
+  getFlowReasoningRegistry(): FlowReasoningRegistry {
+    return this.flowReasoningRegistry;
+  }
+
+  getFlowReasoningReportBuilder(): FlowReasoningReportBuilder {
+    return this.flowReasoningReportBuilder;
   }
 }

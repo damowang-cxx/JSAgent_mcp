@@ -10,6 +10,7 @@ import { selectPageTool } from './navigation/selectPage.js';
 import { clearNetworkRequestsTool } from './network/clearNetworkRequests.js';
 import { getNetworkRequestTool } from './network/getNetworkRequest.js';
 import { listNetworkRequestsTool } from './network/listNetworkRequests.js';
+import { analyzeFlowReasoningTool } from './reverse/analyzeFlowReasoning.js';
 import { analyzeTargetTool } from './reverse/analyzeTarget.js';
 import { analyzeSignatureChainTool } from './reverse/analyzeSignatureChain.js';
 import { analyzeUpgradeDiffTool } from './reverse/analyzeUpgradeDiff.js';
@@ -29,6 +30,7 @@ import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
+import { exportFlowReasoningReportTool } from './reverse/exportFlowReasoningReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
 import { exportPatchPreflightReportTool } from './reverse/exportPatchPreflightReport.js';
 import { exportProbePlanReportTool } from './reverse/exportProbePlanReport.js';
@@ -71,6 +73,7 @@ import { listBreakpointsTool } from './reverse/listBreakpoints.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
 import { listCompareAnchorsTool } from './reverse/listCompareAnchors.js';
 import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
+import { listFlowReasoningResultsTool } from './reverse/listFlowReasoningResults.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
@@ -123,6 +126,8 @@ import { stepIntoTool } from './reverse/stepInto.js';
 import { stepOutTool } from './reverse/stepOut.js';
 import { stepOverTool } from './reverse/stepOver.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
+import { traceHelperConsumersTool } from './reverse/traceHelperConsumers.js';
+import { traceRequestFieldBindingTool } from './reverse/traceRequestFieldBinding.js';
 import { traceTokenFamilyTool } from './reverse/traceTokenFamily.js';
 import { understandCodeTool } from './reverse/understandCode.js';
 import { verifyNodePureTool } from './reverse/verifyNodePure.js';
@@ -221,6 +226,11 @@ export const reverseTools = [
   listRebuildContextsTool,
   runRebuildFromContextTool,
   exportRebuildContextReportTool,
+  analyzeFlowReasoningTool,
+  traceHelperConsumersTool,
+  traceRequestFieldBindingTool,
+  listFlowReasoningResultsTool,
+  exportFlowReasoningReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -273,6 +283,7 @@ export const reverseTools = [
 export const allTools = [...coreTools, ...navigationTools, ...debuggingTools, ...networkTools, ...reverseTools] satisfies readonly RegisteredToolDefinition[];
 
 export {
+  analyzeFlowReasoningTool,
   analyzeTargetTool,
   analyzeSignatureChainTool,
   analyzeUpgradeDiffTool,
@@ -296,6 +307,7 @@ export {
   exportBoundaryFixtureReportTool,
   exportCompareAnchorReportTool,
   exportDebuggerReportTool,
+  exportFlowReasoningReportTool,
   exportPatchReportTool,
   exportPatchPreflightReportTool,
   exportProbePlanReportTool,
@@ -341,6 +353,7 @@ export {
   listCapturePresetsTool,
   listCompareAnchorsTool,
   listDependencyWindowsTool,
+  listFlowReasoningResultsTool,
   listHelperBoundariesTool,
   listHooksTool,
   listIntermediateBaselinesTool,
@@ -401,6 +414,8 @@ export {
   stepOutTool,
   stepOverTool,
   summarizeCodeTool,
+  traceHelperConsumersTool,
+  traceRequestFieldBindingTool,
   traceTokenFamilyTool,
   understandCodeTool,
   verifyNodePureTool,

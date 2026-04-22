@@ -41,6 +41,8 @@ The project currently includes:
 - debugger inspection layer for stepping, paused frame inspection, bounded scope summaries, and debugger reports
 - compare anchor integration for first explainable divergence selection
 - patch preflight integration for first explainable patch focus selection
+- rebuild integration for reverse-to-rebuild context provenance
+- Flow Reasoning Lite for helper consumers, request field binders, and sink-adjacent bindings
 
 ## Design Principles
 
@@ -48,10 +50,16 @@ The project currently includes:
   - collect first, then narrow results
 - Hook-preferred
   - prefer runtime sampling over debugger-first workflows
+- Breakpoint-last
+  - use debugger state as enhancer context after hook/replay/code evidence
 - Evidence-first
   - important observations should be writable into task artifacts
 - Rebuild-oriented
   - move from observe/capture/analyze into local probeable bundles
+- Target-chain-first
+  - reason around the selected reverse chain before broad project exploration
+- Smallest useful reasoning first
+  - produce bounded, explainable chains instead of full static-analysis graphs
 - Patch around first divergence
   - patch suggestions should address the first explainable mismatch, not a broad env template
 - Re-test immediately
@@ -1179,6 +1187,49 @@ Recommended Phase 22 validation flow:
 5. `run_rebuild_from_context`.
 6. `export_rebuild_context_report` with `format='json'` and `format='markdown'`.
 
+## Phase 23: Flow Reasoning Lite
+
+Phase 23 adds a lightweight, target-chain-first flow reasoning layer. It builds a bounded AST index over the current top-priority collected files and fuses helper boundary, dependency window, compare anchor, patch preflight, rebuild context, scenario/capture, and debugger enhancer evidence to explain helper return consumers, request field binders, and sink-adjacent bindings.
+
+New tools:
+
+- `analyze_flow_reasoning`: produces a bounded flow reasoning result for the current target chain.
+- `trace_helper_consumers`: focuses the reasoning result on where a helper return flows next.
+- `trace_request_field_binding`: focuses the reasoning result on sign/token/auth/challenge-like field binding.
+- `list_flow_reasoning_results`: reads the latest runtime or task artifact-backed flow reasoning result.
+- `export_flow_reasoning_report`: exports flow reasoning JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Rebuild-oriented
+- Target-chain-first
+- Smallest useful reasoning first
+
+Current boundaries:
+
+- This is a lightweight flow reasoning layer.
+- It is not a full AST/data-flow/SSA/taint engine.
+- It is not a full-project callgraph platform.
+- It is not a site adapter.
+- Debugger state is enhancer evidence only; hook/replay/boundary evidence remains primary.
+- Reasoning output is intended to feed helper boundary, dependency window, compare anchor, patch preflight, and rebuild context as supplemental evidence without rewriting their main flows.
+
+Recommended Phase 23 validation flow:
+
+1. `extract_helper_boundary`.
+2. `extract_dependency_window`.
+3. `select_compare_anchor`.
+4. `plan_patch_preflight`.
+5. `prepare_rebuild_context`.
+6. `analyze_flow_reasoning`.
+7. `trace_helper_consumers`.
+8. `trace_request_field_binding`.
+9. `export_flow_reasoning_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1280,6 +1331,11 @@ Recommended Phase 22 validation flow:
 - `list_rebuild_contexts`
 - `run_rebuild_from_context`
 - `export_rebuild_context_report`
+- `analyze_flow_reasoning`
+- `trace_helper_consumers`
+- `trace_request_field_binding`
+- `list_flow_reasoning_results`
+- `export_flow_reasoning_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
