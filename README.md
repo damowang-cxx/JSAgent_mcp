@@ -178,8 +178,14 @@ Phase 8 moves the workflow into rebuild/patch infrastructure:
 - `run_rebuild_workflow`
   - chains fixture extraction, bundle export, probe run, first-divergence compare, and patch plan
   - writes rebuild artifacts when `writeEvidence=true`
+- `prepare_rebuild_context`
+  - resolves boundary fixture, compare anchor, patch preflight, dependency window, and patch hints into a rebuild input context
+- `run_rebuild_from_context`
+  - runs the rebuild workflow with rebuild context provenance attached
 - `export_rebuild_report`
   - exports the latest rebuild workflow result as JSON or Markdown
+- `export_rebuild_context_report`
+  - exports the reverse-to-rebuild context as JSON or Markdown
 
 Phase 8 boundaries:
 
@@ -1136,6 +1142,43 @@ Recommended Phase 21 validation flow:
 8. `plan_patch_preflight`.
 9. `export_patch_preflight_report` with `format='json'` and `format='markdown'`.
 
+## Phase 22: Rebuild Integration
+
+Phase 22 connects reverse artifacts to rebuild as formal inputs. It resolves boundary fixtures, dependency windows, compare anchors, patch preflight, scenario patch hints, and debugger enhancer evidence into a `RebuildContext`, then runs the rebuild workflow with context provenance attached.
+
+New tools:
+
+- `prepare_rebuild_context`: resolves the current reverse evidence into rebuild-ready context.
+- `list_rebuild_contexts`: lists the latest runtime or task artifact-backed rebuild context.
+- `run_rebuild_from_context`: resolves context and runs the context-aware rebuild workflow.
+- `export_rebuild_context_report`: exports rebuild context JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Rebuild-oriented
+- First explainable divergence first
+
+Current boundaries:
+
+- Rebuild integration is the reverse-to-rebuild input layer.
+- It is not browser-perfect emulation.
+- It is not an automatic bundle slicing compiler.
+- It is not patch workflow integration; patch execution still stays in the existing patch tools.
+- Debugger evidence is an enhancer, not the sole truth source.
+
+Recommended Phase 22 validation flow:
+
+1. `generate_boundary_fixture`.
+2. `select_compare_anchor`.
+3. `plan_patch_preflight`.
+4. `prepare_rebuild_context`.
+5. `run_rebuild_from_context`.
+6. `export_rebuild_context_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1233,6 +1276,10 @@ Recommended Phase 21 validation flow:
 - `plan_patch_preflight`
 - `list_patch_preflights`
 - `export_patch_preflight_report`
+- `prepare_rebuild_context`
+- `list_rebuild_contexts`
+- `run_rebuild_from_context`
+- `export_rebuild_context_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
@@ -1289,7 +1336,8 @@ The current stage still does not implement:
 - full DevTools-style debugger workflows
 - exception breakpoint family, watch expressions, worker debugger, and multi-page debugger orchestration
 - full diff engine and semantic full-response diff platform
-- rebuild integration consuming selected compare anchors and patch preflight context
+- patch workflow consuming rebuild context and patch preflight context
+- browser-perfect rebuild emulation and automatic bundle slicing compiler
 - automatic patch apply strategy tree and AST patch synthesis
 - AI provider platform
 - AI analyzer augmentation

@@ -63,6 +63,7 @@ import type { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js
 import type { PureReportBuilder } from '../report/PureReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
+import type { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import type { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import type { ScenarioPatchHintReportBuilder } from '../report/ScenarioPatchHintReportBuilder.js';
@@ -76,6 +77,8 @@ import type { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
 import type { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
 import type { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
 import type { RebuildRunner } from '../rebuild/RebuildRunner.js';
+import type { RebuildContextRegistry } from '../rebuild-integration/RebuildContextRegistry.js';
+import type { RebuildInputResolver } from '../rebuild-integration/RebuildInputResolver.js';
 import type { DeliveryAssembler } from '../sdk/DeliveryAssembler.js';
 import type { DeliverySmokeTester } from '../sdk/DeliverySmokeTester.js';
 import type { ProvenanceWriter } from '../sdk/ProvenanceWriter.js';
@@ -220,4 +223,7 @@ export interface AppRuntimeServices {
   patchPreflightPlanner: PatchPreflightPlanner;
   patchPreflightRegistry: PatchPreflightRegistry;
   patchPreflightReportBuilder: PatchPreflightReportBuilder;
+  rebuildInputResolver: RebuildInputResolver;
+  rebuildContextRegistry: RebuildContextRegistry;
+  rebuildContextReportBuilder: RebuildContextReportBuilder;
 }

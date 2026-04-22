@@ -41,6 +41,7 @@ export interface TaskManifest {
     debuggerInspection?: string | null;
     compareAnchor?: string | null;
     patchPreflight?: string | null;
+    rebuildContext?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

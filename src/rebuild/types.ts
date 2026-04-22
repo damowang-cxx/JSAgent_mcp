@@ -1,4 +1,5 @@
 import type { CodeFileSummary } from '../collector/types.js';
+import type { RebuildContext } from '../rebuild-integration/types.js';
 
 export interface RebuildBundleOptions {
   taskId?: string;
@@ -52,7 +53,7 @@ export interface RebuildRunResult {
 
 export interface RuntimeFixture {
   createdAt: string;
-  source: 'hook' | 'network' | 'manual' | 'analyze-target';
+  source: 'hook' | 'network' | 'manual' | 'analyze-target' | 'boundary-fixture' | 'rebuild-context';
   page: {
     url: string;
     title?: string;
@@ -109,7 +110,8 @@ export interface RebuildWorkflowOptions {
     timeoutMs?: number;
     envOverrides?: Record<string, unknown>;
   };
-  fixtureSource?: 'current-page' | 'analyze-target-last';
+  fixtureSource?: 'current-page' | 'analyze-target-last' | 'boundary-fixture-last' | 'rebuild-context-last' | 'task-artifact';
+  rebuildContext?: RebuildContext | null;
   writeEvidence?: boolean;
 }
 
@@ -126,6 +128,14 @@ export interface RebuildWorkflowResult {
     suggestions: PatchSuggestion[];
     firstSuggestion?: PatchSuggestion | null;
   };
+  contextUsed?: RebuildContext | null;
+  usedCompareAnchor?: RebuildContext['usedCompareAnchor'];
+  usedPatchPreflight?: RebuildContext['usedPatchPreflight'];
+  expectedOutputs?: RebuildContext['expectedOutputs'];
+  preservedInputs?: RebuildContext['preservedInputs'];
+  excludedNoise?: string[];
+  expectedOutputsSource?: string | null;
+  preservedInputsSource?: string | null;
   nextActions: string[];
   whyTheseSteps: string[];
   stopIf: string[];

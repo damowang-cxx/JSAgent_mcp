@@ -166,6 +166,7 @@ export class TaskManifestManager {
         debuggerInspection: pointer('debugger/inspection-last') ?? manifest.latestPointers.debuggerInspection ?? null,
         compareAnchor: pointer('compare-anchor/latest') ?? manifest.latestPointers.compareAnchor ?? null,
         patchPreflight: pointer('patch-preflight/latest') ?? manifest.latestPointers.patchPreflight ?? null,
+        rebuildContext: pointer('rebuild-context/latest') ?? manifest.latestPointers.rebuildContext ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

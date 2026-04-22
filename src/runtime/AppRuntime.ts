@@ -63,6 +63,7 @@ import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
+import { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import { ScenarioPatchHintReportBuilder } from '../report/ScenarioPatchHintReportBuilder.js';
@@ -76,6 +77,8 @@ import { FixtureExtractor } from '../rebuild/FixtureExtractor.js';
 import { PatchAdvisor } from '../rebuild/PatchAdvisor.js';
 import { RebuildBundleExporter } from '../rebuild/RebuildBundleExporter.js';
 import { RebuildRunner } from '../rebuild/RebuildRunner.js';
+import { RebuildContextRegistry } from '../rebuild-integration/RebuildContextRegistry.js';
+import { RebuildInputResolver } from '../rebuild-integration/RebuildInputResolver.js';
 import { DeliveryAssembler } from '../sdk/DeliveryAssembler.js';
 import { DeliverySmokeTester } from '../sdk/DeliverySmokeTester.js';
 import { ProvenanceWriter } from '../sdk/ProvenanceWriter.js';
@@ -222,6 +225,9 @@ export class AppRuntime implements AppRuntimeServices {
   readonly patchPreflightPlanner: PatchPreflightPlanner;
   readonly patchPreflightRegistry: PatchPreflightRegistry;
   readonly patchPreflightReportBuilder: PatchPreflightReportBuilder;
+  readonly rebuildInputResolver: RebuildInputResolver;
+  readonly rebuildContextRegistry: RebuildContextRegistry;
+  readonly rebuildContextReportBuilder: RebuildContextReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -241,6 +247,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.pausedInspector = new PausedInspector(this.debuggerSessionManager);
     this.compareAnchorRegistry = new CompareAnchorRegistry(this.evidenceStore);
     this.patchPreflightRegistry = new PatchPreflightRegistry(this.evidenceStore);
+    this.rebuildContextRegistry = new RebuildContextRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -281,6 +288,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.acceptanceRecorder = new AcceptanceRecorder(this.evidenceStore);
     this.patchReportBuilder = new PatchReportBuilder();
     this.patchPreflightReportBuilder = new PatchPreflightReportBuilder();
+    this.rebuildContextReportBuilder = new RebuildContextReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -676,6 +684,21 @@ export class AppRuntime implements AppRuntimeServices {
       replayRecipeRunner: this.replayRecipeRunner,
       scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
       scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.rebuildInputResolver = new RebuildInputResolver({
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      divergenceComparator: this.divergenceComparator,
+      evidenceStore: this.evidenceStore,
+      fixtureCandidateRegistry: this.fixtureCandidateRegistry,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      rebuildBundleExporter: this.rebuildBundleExporter,
+      rebuildRunner: this.rebuildRunner,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
       taskManifestManager: this.taskManifestManager
     });
   }
@@ -1118,5 +1141,17 @@ export class AppRuntime implements AppRuntimeServices {
 
   getPatchPreflightReportBuilder(): PatchPreflightReportBuilder {
     return this.patchPreflightReportBuilder;
+  }
+
+  getRebuildInputResolver(): RebuildInputResolver {
+    return this.rebuildInputResolver;
+  }
+
+  getRebuildContextRegistry(): RebuildContextRegistry {
+    return this.rebuildContextRegistry;
+  }
+
+  getRebuildContextReportBuilder(): RebuildContextReportBuilder {
+    return this.rebuildContextReportBuilder;
   }
 }
