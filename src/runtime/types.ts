@@ -13,6 +13,9 @@ import type { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js'
 import type { CompareAnchorSelector } from '../compare/CompareAnchorSelector.js';
 import type { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import type { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
+import type { DeliveryContextAssembler } from '../delivery-consumption/DeliveryContextAssembler.js';
+import type { DeliveryContextRegistry } from '../delivery-consumption/DeliveryContextRegistry.js';
+import type { RegressionContextResolver } from '../delivery-consumption/RegressionContextResolver.js';
 import type { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
 import type { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
 import type { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js';
@@ -60,6 +63,7 @@ import type { RegressionRunner } from '../regression/RegressionRunner.js';
 import type { UpgradeRegressionRunner } from '../regression/UpgradeRegressionRunner.js';
 import type { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import type { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
+import type { DeliveryContextReportBuilder } from '../report/DeliveryContextReportBuilder.js';
 import type { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
 import type { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBuilder.js';
 import type { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
@@ -73,6 +77,7 @@ import type { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBu
 import type { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
+import type { RegressionContextReportBuilder } from '../report/RegressionContextReportBuilder.js';
 import type { AiAugmentationReportBuilder } from '../report/AiAugmentationReportBuilder.js';
 import type { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
@@ -248,4 +253,9 @@ export interface AppRuntimeServices {
   aiAugmentationService: AiAugmentationService;
   aiAugmentationRegistry: AiAugmentationRegistry;
   aiAugmentationReportBuilder: AiAugmentationReportBuilder;
+  regressionContextResolver: RegressionContextResolver;
+  deliveryContextAssembler: DeliveryContextAssembler;
+  deliveryContextRegistry: DeliveryContextRegistry;
+  regressionContextReportBuilder: RegressionContextReportBuilder;
+  deliveryContextReportBuilder: DeliveryContextReportBuilder;
 }

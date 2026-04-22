@@ -1,3 +1,12 @@
+import type {
+  DeliveryAiAugmentationSummary,
+  DeliveryCompareAnchorSummary,
+  DeliveryContext,
+  DeliveryPatchPreflightSummary,
+  DeliveryPurePreflightSummary,
+  DeliveryRebuildContextSummary
+} from '../delivery-consumption/types.js';
+
 export interface SDKPackageExport {
   packageId: string;
   taskId?: string | null;
@@ -8,6 +17,12 @@ export interface SDKPackageExport {
   contractFile: string;
   readmeFile: string;
   notes: string[];
+  deliveryContextUsed?: DeliveryContext | null;
+  compareAnchorUsed?: DeliveryCompareAnchorSummary | null;
+  patchPreflightUsed?: DeliveryPatchPreflightSummary | null;
+  rebuildContextUsed?: DeliveryRebuildContextSummary | null;
+  purePreflightUsed?: DeliveryPurePreflightSummary | null;
+  aiAugmentationUsed?: DeliveryAiAugmentationSummary | null;
 }
 
 export interface DeliveryBundleExport {
@@ -20,6 +35,12 @@ export interface DeliveryBundleExport {
   provenanceFile: string;
   smokeEntry?: string | null;
   notes: string[];
+  deliveryContextUsed?: DeliveryContext | null;
+  compareAnchorUsed?: DeliveryCompareAnchorSummary | null;
+  patchPreflightUsed?: DeliveryPatchPreflightSummary | null;
+  rebuildContextUsed?: DeliveryRebuildContextSummary | null;
+  purePreflightUsed?: DeliveryPurePreflightSummary | null;
+  aiAugmentationUsed?: DeliveryAiAugmentationSummary | null;
 }
 
 export interface DeliverySmokeTestResult {

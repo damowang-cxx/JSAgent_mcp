@@ -1,4 +1,5 @@
 import { AppError } from '../core/errors.js';
+import type { RegressionContext } from '../delivery-consumption/types.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { RegressionRunner } from '../regression/RegressionRunner.js';
 import type { RegressionBaseline, RegressionRunResult } from '../regression/types.js';
@@ -12,6 +13,12 @@ export interface RegressionWorkflowResult {
   nextActions: string[];
   whyTheseSteps: string[];
   stopIf: string[];
+  regressionContextUsed?: RegressionContext | null;
+  compareAnchorUsed?: RegressionContext['compareAnchor'];
+  patchPreflightUsed?: RegressionContext['patchPreflight'];
+  rebuildContextUsed?: RegressionContext['rebuildContext'];
+  purePreflightUsed?: RegressionContext['purePreflight'];
+  flowReasoningUsed?: RegressionContext['flowReasoning'];
 }
 
 export class RegressionWorkflowRunner {
@@ -27,15 +34,18 @@ export class RegressionWorkflowRunner {
 
   async run(options: {
     taskId?: string;
-    source?: 'pure' | 'port';
+    source?: 'pure' | 'port' | 'regression-context-last' | 'task-artifact';
+    baselineSource?: 'pure' | 'port';
+    regressionContext?: RegressionContext | null;
     registerIfMissing?: boolean;
     timeoutMs?: number;
     writeEvidence?: boolean;
   }): Promise<RegressionWorkflowResult> {
+    const baselineSource = options.baselineSource ?? (options.source === 'pure' || options.source === 'port' ? options.source : 'port');
     let baseline = await this.deps.baselineRegistry.getLatest(options.taskId);
     if (!baseline && options.registerIfMissing !== false) {
       baseline = await this.deps.baselineRegistry.register({
-        source: options.source ?? 'port',
+        source: baselineSource,
         taskId: options.taskId
       });
     }
@@ -45,6 +55,7 @@ export class RegressionWorkflowRunner {
 
     const regression = await this.deps.regressionRunner.run({
       baselineId: baseline.baselineId,
+      regressionContext: options.regressionContext ?? null,
       taskId: options.taskId,
       timeoutMs: options.timeoutMs,
       writeEvidence: options.writeEvidence
@@ -63,23 +74,73 @@ export class RegressionWorkflowRunner {
       baseline,
       gate,
       nextActions: regression.matchedBaseline
-        ? ['Export the SDK package after confirming the delivery gate.']
-        : [regression.nextActionHint],
+        ? [
+            'Export the SDK package after confirming the delivery gate.',
+            ...this.contextNextActions(options.regressionContext)
+          ]
+        : [regression.nextActionHint, ...this.contextNextActions(options.regressionContext)],
       regression,
       stopIf: [
         'Stop if the regression baseline was registered before pure/port gate passed.',
-        ...(regression.matchedBaseline ? [] : ['Stop delivery packaging until regression is matched.'])
+        ...(regression.matchedBaseline ? [] : ['Stop delivery packaging until regression is matched.']),
+        ...this.contextStopIf(options.regressionContext)
       ],
       whyTheseSteps: [
         'Regression baseline is fixture-bound and registered only after stage gates pass.',
-        'Regression reruns Node/Python pure before SDK packaging.'
-      ]
+        'Regression reruns Node/Python pure before SDK packaging.',
+        ...this.contextWhy(options.regressionContext)
+      ],
+      regressionContextUsed: options.regressionContext ?? null,
+      compareAnchorUsed: options.regressionContext?.compareAnchor ?? null,
+      patchPreflightUsed: options.regressionContext?.patchPreflight ?? null,
+      rebuildContextUsed: options.regressionContext?.rebuildContext ?? null,
+      purePreflightUsed: options.regressionContext?.purePreflight ?? null,
+      flowReasoningUsed: options.regressionContext?.flowReasoning ?? null
     };
     this.lastResult = result;
     return result;
   }
 
+  async runWithContext(options: {
+    taskId?: string;
+    source?: 'regression-context-last' | 'task-artifact';
+    baselineSource?: 'pure' | 'port';
+    regressionContext?: RegressionContext | null;
+    registerIfMissing?: boolean;
+    timeoutMs?: number;
+    writeEvidence?: boolean;
+  }): Promise<RegressionWorkflowResult> {
+    return await this.run(options);
+  }
+
   getLastRegressionWorkflowResult(): RegressionWorkflowResult | null {
     return this.lastResult;
+  }
+
+  private contextNextActions(context: RegressionContext | null | undefined): string[] {
+    return context
+      ? [
+          `Carry regression context ${context.contextId} into delivery context preparation.`,
+          ...context.nextActions.slice(0, 3)
+        ]
+      : [];
+  }
+
+  private contextStopIf(context: RegressionContext | null | undefined): string[] {
+    return context
+      ? [
+          `Stop if regression context ${context.contextId} conflicts with the matched baseline.`,
+          ...context.stopIf.slice(0, 3)
+        ]
+      : [];
+  }
+
+  private contextWhy(context: RegressionContext | null | undefined): string[] {
+    return context
+      ? [
+          `Regression context ${context.contextId} preserves compare, patch, rebuild, pure, and flow provenance for first-divergence review.`,
+          ...context.regressionNotes.slice(0, 3)
+        ]
+      : [];
   }
 }

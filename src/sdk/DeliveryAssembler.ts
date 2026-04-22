@@ -2,6 +2,7 @@ import { cp, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AppError } from '../core/errors.js';
+import type { DeliveryContext } from '../delivery-consumption/types.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { RegressionRunResult } from '../regression/types.js';
@@ -28,6 +29,7 @@ export class DeliveryAssembler {
     taskId?: string;
     target?: 'node' | 'python' | 'dual';
     overwrite?: boolean;
+    deliveryContext?: DeliveryContext | null;
   }): Promise<DeliveryBundleExport> {
     const target = options.target ?? 'dual';
     if (!options.taskId) {
@@ -55,6 +57,7 @@ export class DeliveryAssembler {
     }
 
     const sdkExport = await this.deps.sdkPackager.export({
+      deliveryContext: options.deliveryContext ?? null,
       overwrite: true,
       target,
       taskId: options.taskId
@@ -85,13 +88,22 @@ export class DeliveryAssembler {
       notes: [
         'Delivery bundle contains verified implementation files plus smoke test entries.',
         `Built from regression run ${regression.runId}.`,
-        `Task snapshot count at assembly time: ${files.length}.`
+        `Task snapshot count at assembly time: ${files.length}.`,
+        ...(options.deliveryContext
+          ? [`Delivery context ${options.deliveryContext.contextId} was attached as handoff provenance; gates remain deterministic.`]
+          : [])
       ],
       outputDir,
       provenanceFile,
       smokeEntry: smokeEntries[0] ?? null,
       target,
-      taskId: options.taskId
+      taskId: options.taskId,
+      deliveryContextUsed: options.deliveryContext ?? null,
+      compareAnchorUsed: options.deliveryContext?.compareAnchor ?? null,
+      patchPreflightUsed: options.deliveryContext?.patchPreflight ?? null,
+      rebuildContextUsed: options.deliveryContext?.rebuildContext ?? null,
+      purePreflightUsed: options.deliveryContext?.purePreflight ?? null,
+      aiAugmentationUsed: options.deliveryContext?.aiAugmentation ?? null
     };
 
     await this.deps.evidenceStore.writeSnapshot(options.taskId, 'delivery/bundle', bundle);

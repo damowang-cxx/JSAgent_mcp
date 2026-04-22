@@ -1323,6 +1323,50 @@ Recommended Phase 25 validation flow:
 6. `explain_reverse_context_with_ai`.
 7. `export_ai_augmentation_report` with `format='json'` and `format='markdown'`.
 
+## Phase 26: Delivery / Regression Consumption
+
+Phase 26 makes regression and delivery consume the reverse-to-rebuild-to-pure provenance produced in Phases 20-25. It adds lightweight `RegressionContext` and `DeliveryContext` artifacts so delivery handoff can explain which compare anchor, patch preflight, rebuild context, pure preflight, flow reasoning, and optional AI augmentation were consumed. Deterministic gates, matched baseline, and ready-for-delivery decisions remain the truth path.
+
+New tools:
+
+- `prepare_regression_context`: resolves compare anchor, patch preflight, rebuild context, pure preflight, flow reasoning, baseline, and latest regression into regression provenance.
+- `export_regression_context_report`: exports the regression context as JSON or markdown.
+- `prepare_delivery_context`: assembles delivery handoff context from regression context, reverse provenance, pure/rebuild context, and optional AI augmentation.
+- `export_delivery_context_report`: exports delivery handoff provenance as JSON or markdown.
+- `run_delivery_from_context`: resolves delivery context, then runs context-aware delivery workflow while preserving deterministic gate behavior.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Rebuild-oriented
+- First explainable divergence first
+- AI as semantic enhancer, not truth source
+
+Current boundaries:
+
+- Delivery/regression consumption is a provenance consumption layer.
+- It is not a CI platform.
+- It is not npm/PyPI publishing automation.
+- It is not a release orchestration system.
+- It is not an AI truth engine.
+- AI augmentation can improve handoff readability, but cannot decide matchedBaseline, readyForDelivery, or stage gates.
+
+Recommended Phase 26 validation flow:
+
+1. `select_compare_anchor`.
+2. `plan_patch_preflight`.
+3. `prepare_rebuild_context`.
+4. `plan_pure_preflight`.
+5. `explain_reverse_context_with_ai`.
+6. `prepare_regression_context`.
+7. `prepare_delivery_context`.
+8. `run_delivery_from_context`.
+9. `export_regression_context_report` with `format='json'` and `format='markdown'`.
+10. `export_delivery_context_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1436,6 +1480,11 @@ Recommended Phase 25 validation flow:
 - `explain_reverse_context_with_ai`
 - `list_ai_augmentations`
 - `export_ai_augmentation_report`
+- `prepare_regression_context`
+- `export_regression_context_report`
+- `prepare_delivery_context`
+- `export_delivery_context_report`
+- `run_delivery_from_context`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
@@ -1495,8 +1544,8 @@ The current stage still does not implement:
 - patch workflow consuming rebuild context and patch preflight context
 - browser-perfect rebuild emulation and automatic bundle slicing compiler
 - automatic patch apply strategy tree and AST patch synthesis
-- AI provider platform
-- AI analyzer augmentation
+- full multi-provider AI platform
+- AI-driven truth or auto-patching engine
 - complete VM-level deobfuscation
 - full response-body capture platform
 - worker hook ecosystems

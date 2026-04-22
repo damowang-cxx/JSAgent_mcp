@@ -1,4 +1,5 @@
 import { AppError } from '../core/errors.js';
+import type { DeliveryContext } from '../delivery-consumption/types.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { RegressionRunner } from '../regression/RegressionRunner.js';
@@ -21,6 +22,12 @@ export interface DeliveryWorkflowResult {
   nextActions: string[];
   whyTheseSteps: string[];
   stopIf: string[];
+  deliveryContextUsed?: DeliveryContext | null;
+  compareAnchorUsed?: DeliveryContext['compareAnchor'];
+  patchPreflightUsed?: DeliveryContext['patchPreflight'];
+  rebuildContextUsed?: DeliveryContext['rebuildContext'];
+  purePreflightUsed?: DeliveryContext['purePreflight'];
+  aiAugmentationUsed?: DeliveryContext['aiAugmentation'];
 }
 
 export class DeliveryWorkflowRunner {
@@ -38,6 +45,8 @@ export class DeliveryWorkflowRunner {
 
   async run(options: {
     taskId?: string;
+    source?: 'delivery-context-last' | 'task-artifact';
+    deliveryContext?: DeliveryContext | null;
     target?: 'node' | 'python' | 'dual';
     timeoutMs?: number;
     writeEvidence?: boolean;
@@ -57,12 +66,14 @@ export class DeliveryWorkflowRunner {
 
     const regression = await this.deps.regressionRunner.run({
       baselineId: baseline.baselineId,
+      regressionContext: options.deliveryContext?.regressionContext ?? null,
       taskId: options.taskId,
       timeoutMs: options.timeoutMs,
       writeEvidence: true
     });
     const sdk = regression.matchedBaseline
       ? await this.deps.sdkPackager.export({
+          deliveryContext: options.deliveryContext ?? null,
           overwrite: true,
           target: options.target,
           taskId: options.taskId
@@ -78,14 +89,22 @@ export class DeliveryWorkflowRunner {
       baseline,
       gates: nextGates,
       nextActions: readyForDelivery
-        ? ['Keep the SDK package and regression baseline as delivery artifacts.']
-        : [regression.nextActionHint, 'Re-run delivery workflow after resolving the blocking gate.'],
+        ? [
+            'Keep the SDK package and regression baseline as delivery artifacts.',
+            ...this.contextNextActions(options.deliveryContext)
+          ]
+        : [
+            regression.nextActionHint,
+            'Re-run delivery workflow after resolving the blocking gate.',
+            ...this.contextNextActions(options.deliveryContext)
+          ],
       readyForDelivery,
       regression,
       sdk,
       stopIf: [
         'Stop if pure/port gate is not satisfied for the requested SDK target.',
-        ...(regression.matchedBaseline ? [] : ['Stop SDK export until regression matches baseline.'])
+        ...(regression.matchedBaseline ? [] : ['Stop SDK export until regression matches baseline.']),
+        ...this.contextStopIf(options.deliveryContext)
       ],
       task: {
         taskDir: this.deps.evidenceStore.getTaskDir(options.taskId),
@@ -93,8 +112,15 @@ export class DeliveryWorkflowRunner {
       },
       whyTheseSteps: [
         'Delivery requires stage gates, a regression baseline, a passing regression run, and SDK package artifacts.',
-        'The SDK package is generated only after regression matches the registered baseline.'
-      ]
+        'The SDK package is generated only after regression matches the registered baseline.',
+        ...this.contextWhy(options.deliveryContext)
+      ],
+      deliveryContextUsed: options.deliveryContext ?? null,
+      compareAnchorUsed: options.deliveryContext?.compareAnchor ?? null,
+      patchPreflightUsed: options.deliveryContext?.patchPreflight ?? null,
+      rebuildContextUsed: options.deliveryContext?.rebuildContext ?? null,
+      purePreflightUsed: options.deliveryContext?.purePreflight ?? null,
+      aiAugmentationUsed: options.deliveryContext?.aiAugmentation ?? null
     };
 
     if (options.writeEvidence) {
@@ -109,8 +135,20 @@ export class DeliveryWorkflowRunner {
     return this.lastResult;
   }
 
+  async runWithContext(options: {
+    taskId?: string;
+    source?: 'delivery-context-last' | 'task-artifact';
+    deliveryContext?: DeliveryContext | null;
+    target?: 'node' | 'python' | 'dual';
+    timeoutMs?: number;
+    writeEvidence?: boolean;
+  }): Promise<DeliveryWorkflowResult> {
+    return await this.run(options);
+  }
+
   private async writeEvidence(taskId: string, result: DeliveryWorkflowResult): Promise<void> {
     await this.deps.evidenceStore.appendLog(taskId, 'runtime-evidence', {
+      deliveryContextId: result.deliveryContextUsed?.contextId ?? null,
       kind: 'delivery_workflow',
       readyForDelivery: result.readyForDelivery,
       regressionMatched: result.regression?.matchedBaseline ?? false,
@@ -149,6 +187,15 @@ export class DeliveryWorkflowRunner {
       `- Exported: ${Boolean(result.sdk)}`,
       `- Target: ${result.sdk?.target ?? '(none)'}`,
       '',
+      '## Delivery Context',
+      '',
+      `- Context: ${result.deliveryContextUsed?.contextId ?? '(none)'}`,
+      `- Compare Anchor: ${result.compareAnchorUsed?.label ?? '(none)'}`,
+      `- Patch Preflight: ${result.patchPreflightUsed ? `${result.patchPreflightUsed.surface}:${result.patchPreflightUsed.target}` : '(none)'}`,
+      `- Rebuild Context: ${result.rebuildContextUsed?.contextId ?? '(none)'}`,
+      `- Pure Preflight: ${result.purePreflightUsed?.contextId ?? '(none)'}`,
+      `- AI Augmentation: ${result.aiAugmentationUsed?.augmentationId ?? '(none)'}`,
+      '',
       '## Ready For Delivery',
       '',
       `- ${result.readyForDelivery}`,
@@ -165,5 +212,32 @@ export class DeliveryWorkflowRunner {
       '',
       ...result.stopIf.map((item) => `- ${item}`)
     ].join('\n')}\n`;
+  }
+
+  private contextNextActions(context: DeliveryContext | null | undefined): string[] {
+    return context
+      ? [
+          `Preserve delivery context ${context.contextId} in the handoff bundle/report.`,
+          ...context.nextActions.slice(0, 3)
+        ]
+      : [];
+  }
+
+  private contextStopIf(context: DeliveryContext | null | undefined): string[] {
+    return context
+      ? [
+          `Stop if delivery context ${context.contextId} conflicts with deterministic gates or regression results.`,
+          ...context.stopIf.slice(0, 3)
+        ]
+      : [];
+  }
+
+  private contextWhy(context: DeliveryContext | null | undefined): string[] {
+    return context
+      ? [
+          `Delivery context ${context.contextId} carries reverse, rebuild, pure, regression, and optional AI explanation provenance into delivery.`,
+          ...context.provenanceSummary.slice(0, 3)
+        ]
+      : [];
   }
 }

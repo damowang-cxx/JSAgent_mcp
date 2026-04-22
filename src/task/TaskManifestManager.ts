@@ -170,6 +170,8 @@ export class TaskManifestManager {
         flowReasoning: pointer('flow-reasoning/latest') ?? manifest.latestPointers.flowReasoning ?? null,
         purePreflight: pointer('pure-preflight/latest') ?? manifest.latestPointers.purePreflight ?? null,
         aiAugmentation: pointer('ai-augmentation/latest') ?? manifest.latestPointers.aiAugmentation ?? null,
+        regressionContext: pointer('regression-context/latest') ?? manifest.latestPointers.regressionContext ?? null,
+        deliveryContext: pointer('delivery-context/latest') ?? manifest.latestPointers.deliveryContext ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

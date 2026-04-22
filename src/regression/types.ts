@@ -1,4 +1,12 @@
 import type { UpgradeDiffResult } from '../port/types.js';
+import type {
+  DeliveryCompareAnchorSummary,
+  DeliveryFlowReasoningSummary,
+  DeliveryPatchPreflightSummary,
+  DeliveryPurePreflightSummary,
+  DeliveryRebuildContextSummary,
+  RegressionContext
+} from '../delivery-consumption/types.js';
 
 export interface RegressionBaseline {
   baselineId: string;
@@ -55,6 +63,12 @@ export interface RegressionRunResult {
   } | null;
   notes: string[];
   nextActionHint: string;
+  regressionContextUsed?: RegressionContext | null;
+  compareAnchorUsed?: DeliveryCompareAnchorSummary | null;
+  patchPreflightUsed?: DeliveryPatchPreflightSummary | null;
+  rebuildContextUsed?: DeliveryRebuildContextSummary | null;
+  purePreflightUsed?: DeliveryPurePreflightSummary | null;
+  flowReasoningUsed?: DeliveryFlowReasoningSummary | null;
 }
 
 export interface IntermediateRegressionResult {

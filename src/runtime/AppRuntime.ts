@@ -14,6 +14,9 @@ import { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
 import { CompareAnchorSelector } from '../compare/CompareAnchorSelector.js';
 import { RequestChainCorrelator } from '../correlation/RequestChainCorrelator.js';
 import { Deobfuscator } from '../deobfuscation/Deobfuscator.js';
+import { DeliveryContextAssembler } from '../delivery-consumption/DeliveryContextAssembler.js';
+import { DeliveryContextRegistry } from '../delivery-consumption/DeliveryContextRegistry.js';
+import { RegressionContextResolver } from '../delivery-consumption/RegressionContextResolver.js';
 import { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
 import { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
 import { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js';
@@ -61,6 +64,7 @@ import { UpgradeRegressionRunner } from '../regression/UpgradeRegressionRunner.j
 import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
+import { DeliveryContextReportBuilder } from '../report/DeliveryContextReportBuilder.js';
 import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
 import { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBuilder.js';
 import { FixtureCandidateReportBuilder } from '../report/FixtureCandidateReportBuilder.js';
@@ -74,6 +78,7 @@ import { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder
 import { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
+import { RegressionContextReportBuilder } from '../report/RegressionContextReportBuilder.js';
 import { AiAugmentationReportBuilder } from '../report/AiAugmentationReportBuilder.js';
 import { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
@@ -251,6 +256,11 @@ export class AppRuntime implements AppRuntimeServices {
   readonly aiAugmentationService: AiAugmentationService;
   readonly aiAugmentationRegistry: AiAugmentationRegistry;
   readonly aiAugmentationReportBuilder: AiAugmentationReportBuilder;
+  readonly regressionContextResolver: RegressionContextResolver;
+  readonly deliveryContextAssembler: DeliveryContextAssembler;
+  readonly deliveryContextRegistry: DeliveryContextRegistry;
+  readonly regressionContextReportBuilder: RegressionContextReportBuilder;
+  readonly deliveryContextReportBuilder: DeliveryContextReportBuilder;
   private readonly aiPromptLibrary: AiPromptLibrary;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
@@ -278,6 +288,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.flowReasoningRegistry = new FlowReasoningRegistry(this.evidenceStore);
     this.purePreflightRegistry = new PurePreflightRegistry(this.evidenceStore);
     this.aiAugmentationRegistry = new AiAugmentationRegistry(this.evidenceStore);
+    this.deliveryContextRegistry = new DeliveryContextRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -322,6 +333,8 @@ export class AppRuntime implements AppRuntimeServices {
     this.flowReasoningReportBuilder = new FlowReasoningReportBuilder();
     this.purePreflightReportBuilder = new PurePreflightReportBuilder();
     this.aiAugmentationReportBuilder = new AiAugmentationReportBuilder();
+    this.regressionContextReportBuilder = new RegressionContextReportBuilder();
+    this.deliveryContextReportBuilder = new DeliveryContextReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -679,6 +692,36 @@ export class AppRuntime implements AppRuntimeServices {
       regressionRunner: this.regressionRunner,
       sdkPackager: this.sdkPackager,
       stageGateEvaluator: this.stageGateEvaluator
+    });
+    this.regressionContextResolver = new RegressionContextResolver({
+      aiAugmentationRegistry: this.aiAugmentationRegistry,
+      baselineRegistry: this.baselineRegistry,
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      evidenceStore: this.evidenceStore,
+      flowReasoningRegistry: this.flowReasoningRegistry,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      purePreflightRegistry: this.purePreflightRegistry,
+      rebuildContextRegistry: this.rebuildContextRegistry,
+      regressionRunner: this.regressionRunner,
+      regressionWorkflowRunner: this.regressionWorkflowRunner,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.deliveryContextAssembler = new DeliveryContextAssembler({
+      aiAugmentationRegistry: this.aiAugmentationRegistry,
+      baselineRegistry: this.baselineRegistry,
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      deliveryAssembler: this.deliveryAssembler,
+      deliveryContextRegistry: this.deliveryContextRegistry,
+      deliveryWorkflowRunner: this.deliveryWorkflowRunner,
+      evidenceStore: this.evidenceStore,
+      flowReasoningRegistry: this.flowReasoningRegistry,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      purePreflightRegistry: this.purePreflightRegistry,
+      rebuildContextRegistry: this.rebuildContextRegistry,
+      regressionContextResolver: this.regressionContextResolver,
+      regressionWorkflowRunner: this.regressionWorkflowRunner,
+      sdkPackager: this.sdkPackager,
+      taskManifestManager: this.taskManifestManager
     });
     this.deliveryHardeningRunner = new DeliveryHardeningRunner({
       deliveryAssembler: this.deliveryAssembler,
@@ -1277,5 +1320,25 @@ export class AppRuntime implements AppRuntimeServices {
 
   getAiAugmentationReportBuilder(): AiAugmentationReportBuilder {
     return this.aiAugmentationReportBuilder;
+  }
+
+  getRegressionContextResolver(): RegressionContextResolver {
+    return this.regressionContextResolver;
+  }
+
+  getDeliveryContextAssembler(): DeliveryContextAssembler {
+    return this.deliveryContextAssembler;
+  }
+
+  getDeliveryContextRegistry(): DeliveryContextRegistry {
+    return this.deliveryContextRegistry;
+  }
+
+  getRegressionContextReportBuilder(): RegressionContextReportBuilder {
+    return this.regressionContextReportBuilder;
+  }
+
+  getDeliveryContextReportBuilder(): DeliveryContextReportBuilder {
+    return this.deliveryContextReportBuilder;
   }
 }

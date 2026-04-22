@@ -1,4 +1,5 @@
 import { AppError } from '../core/errors.js';
+import type { RegressionContext } from '../delivery-consumption/types.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
 import type { PureVerifier } from '../pure/PureVerifier.js';
@@ -24,6 +25,7 @@ export class RegressionRunner {
     taskId?: string;
     timeoutMs?: number;
     writeEvidence?: boolean;
+    regressionContext?: RegressionContext | null;
   }): Promise<RegressionRunResult> {
     const baseline = options.baselineId
       ? await this.deps.baselineRegistry.get(options.baselineId, options.taskId)
@@ -46,11 +48,26 @@ export class RegressionRunner {
           timeoutMs: options.timeoutMs
         })
       : null;
-    const result = this.deps.regressionDiff.diff({
+    const diffResult = this.deps.regressionDiff.diff({
       baseline,
       nodeVerification,
       pythonVerification
     });
+    const result: RegressionRunResult = options.regressionContext
+      ? {
+          ...diffResult,
+          compareAnchorUsed: options.regressionContext.compareAnchor ?? null,
+          flowReasoningUsed: options.regressionContext.flowReasoning ?? null,
+          notes: [
+            ...diffResult.notes,
+            `Regression context ${options.regressionContext.contextId} attached as provenance; matchedBaseline remains deterministic.`
+          ],
+          patchPreflightUsed: options.regressionContext.patchPreflight ?? null,
+          purePreflightUsed: options.regressionContext.purePreflight ?? null,
+          rebuildContextUsed: options.regressionContext.rebuildContext ?? null,
+          regressionContextUsed: options.regressionContext
+        }
+      : diffResult;
 
     if (options.writeEvidence && baseline.taskId) {
       await this.deps.evidenceStore.writeSnapshot(baseline.taskId, 'run/regression-run', result);

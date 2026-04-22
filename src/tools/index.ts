@@ -30,6 +30,7 @@ import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
 import { exportAiAugmentationReportTool } from './reverse/exportAiAugmentationReport.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
+import { exportDeliveryContextReportTool } from './reverse/exportDeliveryContextReport.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportFlowReasoningReportTool } from './reverse/exportFlowReasoningReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
@@ -41,6 +42,7 @@ import { exportPureReportTool } from './reverse/exportPureReport.js';
 import { exportRebuildContextReportTool } from './reverse/exportRebuildContextReport.js';
 import { exportRebuildBundleTool } from './reverse/exportRebuildBundle.js';
 import { exportRebuildReportTool } from './reverse/exportRebuildReport.js';
+import { exportRegressionContextReportTool } from './reverse/exportRegressionContextReport.js';
 import { exportRegressionReportTool } from './reverse/exportRegressionReport.js';
 import { exportReverseReportTool } from './reverse/exportReverseReport.js';
 import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
@@ -97,7 +99,9 @@ import { planPatchTool } from './reverse/planPatch.js';
 import { planPatchPreflightTool } from './reverse/planPatchPreflight.js';
 import { planPurePreflightTool } from './reverse/planPurePreflight.js';
 import { planScenarioProbeTool } from './reverse/planScenarioProbe.js';
+import { prepareDeliveryContextTool } from './reverse/prepareDeliveryContext.js';
 import { prepareRebuildContextTool } from './reverse/prepareRebuildContext.js';
+import { prepareRegressionContextTool } from './reverse/prepareRegressionContext.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { registerRegressionBaselineTool } from './reverse/registerRegressionBaseline.js';
@@ -109,6 +113,7 @@ import { resumeExecutionTool } from './reverse/resumeExecution.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
 import { replayTargetActionTool } from './reverse/replayTargetAction.js';
 import { runCaptureRecipeTool } from './reverse/runCaptureRecipe.js';
+import { runDeliveryFromContextTool } from './reverse/runDeliveryFromContext.js';
 import { runScenarioRecipeTool } from './reverse/runScenarioRecipe.js';
 import { runDeliveryWorkflowTool } from './reverse/runDeliveryWorkflow.js';
 import { runIntermediateRegressionTool } from './reverse/runIntermediateRegression.js';
@@ -245,6 +250,11 @@ export const reverseTools = [
   explainReverseContextWithAiTool,
   listAiAugmentationsTool,
   exportAiAugmentationReportTool,
+  prepareRegressionContextTool,
+  exportRegressionContextReportTool,
+  prepareDeliveryContextTool,
+  exportDeliveryContextReportTool,
+  runDeliveryFromContextTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -321,6 +331,7 @@ export {
   exportBoundaryFixtureReportTool,
   exportAiAugmentationReportTool,
   exportCompareAnchorReportTool,
+  exportDeliveryContextReportTool,
   exportDebuggerReportTool,
   exportFlowReasoningReportTool,
   exportPatchReportTool,
@@ -335,6 +346,7 @@ export {
   exportRebuildContextReportTool,
   exportRebuildBundleTool,
   exportRebuildReportTool,
+  exportRegressionContextReportTool,
   exportRegressionReportTool,
   exportReverseReportTool,
   exportRuntimeTraceTool,
@@ -398,7 +410,9 @@ export {
   planPurePreflightTool,
   pauseExecutionTool,
   planScenarioProbeTool,
+  prepareDeliveryContextTool,
   prepareRebuildContextTool,
+  prepareRegressionContextTool,
   probeReverseTargetTool,
   recordReverseEvidenceTool,
   registerIntermediateBaselineTool,
@@ -410,6 +424,7 @@ export {
   riskPanelTool,
   replayTargetActionTool,
   runCaptureRecipeTool,
+  runDeliveryFromContextTool,
   runPatchIterationTool,
   runDeliveryWorkflowTool,
   runIntermediateRegressionTool,
