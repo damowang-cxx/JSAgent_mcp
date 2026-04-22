@@ -38,6 +38,8 @@ import type { ScenarioPatchHintGenerator } from '../patch/ScenarioPatchHintGener
 import type { ScenarioPatchHintRegistry } from '../patch/ScenarioPatchHintRegistry.js';
 import type { PatchPreflightPlanner } from '../patch-preflight/PatchPreflightPlanner.js';
 import type { PatchPreflightRegistry } from '../patch-preflight/PatchPreflightRegistry.js';
+import type { PurePreflightPlanner } from '../pure-preflight/PurePreflightPlanner.js';
+import type { PurePreflightRegistry } from '../pure-preflight/PurePreflightRegistry.js';
 import type { CrossLanguageDiff } from '../port/CrossLanguageDiff.js';
 import type { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
 import type { PythonPortExtractor } from '../port/PythonPortExtractor.js';
@@ -65,6 +67,7 @@ import type { PortReportBuilder } from '../report/PortReportBuilder.js';
 import type { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import type { PureReportBuilder } from '../report/PureReportBuilder.js';
 import type { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
+import type { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import type { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
@@ -234,4 +237,7 @@ export interface AppRuntimeServices {
   flowReasoningEngine: FlowReasoningEngine;
   flowReasoningRegistry: FlowReasoningRegistry;
   flowReasoningReportBuilder: FlowReasoningReportBuilder;
+  purePreflightPlanner: PurePreflightPlanner;
+  purePreflightRegistry: PurePreflightRegistry;
+  purePreflightReportBuilder: PurePreflightReportBuilder;
 }

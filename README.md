@@ -43,6 +43,7 @@ The project currently includes:
 - patch preflight integration for first explainable patch focus selection
 - rebuild integration for reverse-to-rebuild context provenance
 - Flow Reasoning Lite for helper consumers, request field binders, and sink-adjacent bindings
+- Pure Preflight Integration for reverse-to-pure context provenance
 
 ## Design Principles
 
@@ -66,6 +67,8 @@ The project currently includes:
   - every applied patch must be followed by a rebuild probe and divergence comparison
 - Boundary-before-rewrite
   - define inputs, environment state, intermediates, and outputs before generating a pure scaffold
+- First explainable divergence first
+  - compare and pure expected outputs should start from the smallest explainable mismatch
 - single browser session owner
   - `BrowserSessionManager` remains the only owner of browser + selected page state
 - app-scoped runtime
@@ -1230,6 +1233,47 @@ Recommended Phase 23 validation flow:
 8. `trace_request_field_binding`.
 9. `export_flow_reasoning_report` with `format='json'` and `format='markdown'`.
 
+## Phase 24: Pure Preflight Integration
+
+Phase 24 adds a reverse-to-pure preflight layer. It resolves boundary fixture, compare anchor, patch preflight, rebuild context, flow reasoning, dependency window, and helper boundary evidence into a `PurePreflightContext`, then lets PureExtraction run with explicit provenance for expected outputs, preserved inputs, and excluded runtime noise.
+
+New tools:
+
+- `plan_pure_preflight`: resolves current reverse/rebuild/flow artifacts into pure-ready context.
+- `list_pure_preflights`: reads the latest runtime or task artifact-backed pure preflight context.
+- `run_pure_from_preflight`: resolves pure preflight, then runs preflight-aware PureExtraction.
+- `export_pure_preflight_report`: exports pure preflight JSON or markdown.
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Rebuild-oriented
+- Boundary-before-rewrite
+- First explainable divergence first
+
+Current boundaries:
+
+- Pure preflight is the reverse-to-pure input layer.
+- It is not automatic pure implementation synthesis.
+- It is not a new AST/data-flow/SSA/taint platform.
+- It is not AI augmentation.
+- Flow reasoning is enhancer evidence, not the sole truth source.
+- Debugger state is enhancer evidence only; hooks/replay/scenario/boundary/window remain primary.
+
+Recommended Phase 24 validation flow:
+
+1. `generate_boundary_fixture`.
+2. `select_compare_anchor`.
+3. `plan_patch_preflight`.
+4. `prepare_rebuild_context`.
+5. `analyze_flow_reasoning`.
+6. `plan_pure_preflight`.
+7. `run_pure_from_preflight`.
+8. `export_pure_preflight_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1336,6 +1380,10 @@ Recommended Phase 23 validation flow:
 - `trace_request_field_binding`
 - `list_flow_reasoning_results`
 - `export_flow_reasoning_report`
+- `plan_pure_preflight`
+- `list_pure_preflights`
+- `run_pure_from_preflight`
+- `export_pure_preflight_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`

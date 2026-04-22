@@ -3,6 +3,13 @@ import { z } from 'zod';
 import type { PureBoundary, PureFixture, RuntimeTraceExport } from '../../pure/types.js';
 
 export const pureSourceSchema = z.enum(['patch-last', 'analyze-target-last', 'current-page']);
+export const pureExtractionSourceSchema = z.enum([
+  'patch-last',
+  'analyze-target-last',
+  'current-page',
+  'pure-preflight-last',
+  'task-artifact'
+]);
 
 export const runtimeTraceSchema = z
   .object({

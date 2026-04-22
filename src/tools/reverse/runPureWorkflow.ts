@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 import { ToolCategory } from '../categories.js';
 import { defineTool } from '../ToolDefinition.js';
-import { pureSourceSchema } from './pureToolHelpers.js';
+import { pureExtractionSourceSchema } from './pureToolHelpers.js';
 
 const schema = z.object({
   overwrite: z.boolean().optional(),
   probeExpressions: z.array(z.string()).optional(),
-  source: pureSourceSchema.optional(),
+  source: pureExtractionSourceSchema.optional(),
   targetFunctionName: z.string().optional(),
   taskId: z.string().optional(),
   traceTimeoutMs: z.number().int().positive().optional(),

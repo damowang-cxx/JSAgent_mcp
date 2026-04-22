@@ -168,6 +168,7 @@ export class TaskManifestManager {
         patchPreflight: pointer('patch-preflight/latest') ?? manifest.latestPointers.patchPreflight ?? null,
         rebuildContext: pointer('rebuild-context/latest') ?? manifest.latestPointers.rebuildContext ?? null,
         flowReasoning: pointer('flow-reasoning/latest') ?? manifest.latestPointers.flowReasoning ?? null,
+        purePreflight: pointer('pure-preflight/latest') ?? manifest.latestPointers.purePreflight ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

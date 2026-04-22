@@ -38,6 +38,8 @@ import { ScenarioPatchHintGenerator } from '../patch/ScenarioPatchHintGenerator.
 import { ScenarioPatchHintRegistry } from '../patch/ScenarioPatchHintRegistry.js';
 import { PatchPreflightPlanner } from '../patch-preflight/PatchPreflightPlanner.js';
 import { PatchPreflightRegistry } from '../patch-preflight/PatchPreflightRegistry.js';
+import { PurePreflightPlanner } from '../pure-preflight/PurePreflightPlanner.js';
+import { PurePreflightRegistry } from '../pure-preflight/PurePreflightRegistry.js';
 import { CrossLanguageDiff } from '../port/CrossLanguageDiff.js';
 import { CrossLanguageVerifier } from '../port/CrossLanguageVerifier.js';
 import { PythonPortExtractor } from '../port/PythonPortExtractor.js';
@@ -65,6 +67,7 @@ import { PortReportBuilder } from '../report/PortReportBuilder.js';
 import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
+import { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
@@ -236,6 +239,9 @@ export class AppRuntime implements AppRuntimeServices {
   readonly flowReasoningEngine: FlowReasoningEngine;
   readonly flowReasoningRegistry: FlowReasoningRegistry;
   readonly flowReasoningReportBuilder: FlowReasoningReportBuilder;
+  readonly purePreflightPlanner: PurePreflightPlanner;
+  readonly purePreflightRegistry: PurePreflightRegistry;
+  readonly purePreflightReportBuilder: PurePreflightReportBuilder;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -258,6 +264,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.patchPreflightRegistry = new PatchPreflightRegistry(this.evidenceStore);
     this.rebuildContextRegistry = new RebuildContextRegistry(this.evidenceStore);
     this.flowReasoningRegistry = new FlowReasoningRegistry(this.evidenceStore);
+    this.purePreflightRegistry = new PurePreflightRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -300,6 +307,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.patchPreflightReportBuilder = new PatchPreflightReportBuilder();
     this.rebuildContextReportBuilder = new RebuildContextReportBuilder();
     this.flowReasoningReportBuilder = new FlowReasoningReportBuilder();
+    this.purePreflightReportBuilder = new PurePreflightReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -502,6 +510,7 @@ export class AppRuntime implements AppRuntimeServices {
       freezeManager: this.freezeManager,
       pureFixtureBuilder: this.pureFixtureBuilder,
       pureNodeExtractor: this.pureNodeExtractor,
+      purePreflightRegistry: this.purePreflightRegistry,
       pureReportBuilder: this.pureReportBuilder,
       pureVerifier: this.pureVerifier,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner,
@@ -728,6 +737,20 @@ export class AppRuntime implements AppRuntimeServices {
       replayRecipeRunner: this.replayRecipeRunner,
       scenarioPatchHintRegistry: this.scenarioPatchHintRegistry,
       scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.purePreflightPlanner = new PurePreflightPlanner({
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      evidenceStore: this.evidenceStore,
+      fixtureCandidateRegistry: this.fixtureCandidateRegistry,
+      flowReasoningRegistry: this.flowReasoningRegistry,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      pureExtractionRunner: this.pureExtractionRunner,
+      rebuildContextRegistry: this.rebuildContextRegistry,
+      rebuildWorkflowRunner: this.rebuildWorkflowRunner,
       taskManifestManager: this.taskManifestManager
     });
   }
@@ -1198,5 +1221,17 @@ export class AppRuntime implements AppRuntimeServices {
 
   getFlowReasoningReportBuilder(): FlowReasoningReportBuilder {
     return this.flowReasoningReportBuilder;
+  }
+
+  getPurePreflightPlanner(): PurePreflightPlanner {
+    return this.purePreflightPlanner;
+  }
+
+  getPurePreflightRegistry(): PurePreflightRegistry {
+    return this.purePreflightRegistry;
+  }
+
+  getPurePreflightReportBuilder(): PurePreflightReportBuilder {
+    return this.purePreflightReportBuilder;
   }
 }

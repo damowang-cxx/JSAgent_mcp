@@ -33,6 +33,7 @@ import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportFlowReasoningReportTool } from './reverse/exportFlowReasoningReport.js';
 import { exportPatchReportTool } from './reverse/exportPatchReport.js';
 import { exportPatchPreflightReportTool } from './reverse/exportPatchPreflightReport.js';
+import { exportPurePreflightReportTool } from './reverse/exportPurePreflightReport.js';
 import { exportProbePlanReportTool } from './reverse/exportProbePlanReport.js';
 import { exportPortReportTool } from './reverse/exportPortReport.js';
 import { exportPureReportTool } from './reverse/exportPureReport.js';
@@ -78,6 +79,7 @@ import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
 import { listPatchPreflightsTool } from './reverse/listPatchPreflights.js';
+import { listPurePreflightsTool } from './reverse/listPurePreflights.js';
 import { listIntermediateBaselinesTool } from './reverse/listIntermediateBaselines.js';
 import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.js';
 import { listRebuildContextsTool } from './reverse/listRebuildContexts.js';
@@ -90,6 +92,7 @@ import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
 import { planPatchPreflightTool } from './reverse/planPatchPreflight.js';
+import { planPurePreflightTool } from './reverse/planPurePreflight.js';
 import { planScenarioProbeTool } from './reverse/planScenarioProbe.js';
 import { prepareRebuildContextTool } from './reverse/prepareRebuildContext.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
@@ -109,6 +112,7 @@ import { runIntermediateRegressionTool } from './reverse/runIntermediateRegressi
 import { runPatchIterationTool } from './reverse/runPatchIteration.js';
 import { runPortWorkflowTool } from './reverse/runPortWorkflow.js';
 import { runPureWorkflowTool } from './reverse/runPureWorkflow.js';
+import { runPureFromPreflightTool } from './reverse/runPureFromPreflight.js';
 import { runRegressionBaselineTool } from './reverse/runRegressionBaseline.js';
 import { runRebuildProbeTool } from './reverse/runRebuildProbe.js';
 import { runRebuildFromContextTool } from './reverse/runRebuildFromContext.js';
@@ -231,6 +235,10 @@ export const reverseTools = [
   traceRequestFieldBindingTool,
   listFlowReasoningResultsTool,
   exportFlowReasoningReportTool,
+  planPurePreflightTool,
+  listPurePreflightsTool,
+  runPureFromPreflightTool,
+  exportPurePreflightReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -310,6 +318,7 @@ export {
   exportFlowReasoningReportTool,
   exportPatchReportTool,
   exportPatchPreflightReportTool,
+  exportPurePreflightReportTool,
   exportProbePlanReportTool,
   exportDeliveryBundleTool,
   exportDeliveryReportTool,
@@ -361,6 +370,7 @@ export {
   listPagesTool,
   listPatchHistoryTool,
   listPatchPreflightsTool,
+  listPurePreflightsTool,
   listRegressionBaselinesTool,
   listRebuildContextsTool,
   listScenarioPatchHintsTool,
@@ -376,6 +386,7 @@ export {
   pingTool,
   planPatchTool,
   planPatchPreflightTool,
+  planPurePreflightTool,
   pauseExecutionTool,
   planScenarioProbeTool,
   prepareRebuildContextTool,
@@ -395,6 +406,7 @@ export {
   runIntermediateRegressionTool,
   runPortWorkflowTool,
   runPureWorkflowTool,
+  runPureFromPreflightTool,
   runRegressionBaselineTool,
   runRebuildProbeTool,
   runRebuildFromContextTool,

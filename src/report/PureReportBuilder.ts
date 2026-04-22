@@ -23,6 +23,10 @@ export class PureReportBuilder {
       frozenSample: result.frozenSample,
       nextActions: result.nextActions,
       nodePure: result.nodePure,
+      excludedNoiseSource: result.excludedNoiseSource,
+      expectedOutputsSource: result.expectedOutputsSource,
+      preservedInputsSource: result.preservedInputsSource,
+      purePreflightUsed: result.purePreflightUsed ?? null,
       readyForPort: result.readyForPort,
       runtimeTrace: result.runtimeTrace,
       stopIf: result.stopIf,
@@ -40,6 +44,7 @@ export class PureReportBuilder {
       '',
       `- Task: ${result.task?.taskId ?? '(none)'}`,
       `- Page: ${result.frozenSample.page.url}`,
+      `- Pure Preflight: ${result.purePreflightUsed?.contextId ?? '(none)'}`,
       '',
       '## Frozen Sample',
       '',
@@ -59,6 +64,30 @@ export class PureReportBuilder {
       `- Derived Inputs: ${result.boundary.derivedInputs.join(', ') || '(none)'}`,
       `- Environment State: ${result.boundary.environmentState.join(', ') || '(none)'}`,
       `- Outputs: ${result.boundary.outputs.join(', ') || '(none)'}`,
+      `- Expected Outputs Source: ${result.expectedOutputsSource ?? 'legacy pure workflow expected outputs'}`,
+      `- Preserved Inputs Source: ${result.preservedInputsSource ?? 'legacy pure workflow preserved inputs'}`,
+      `- Excluded Noise Source: ${result.excludedNoiseSource ?? 'legacy pure workflow excluded noise'}`,
+      '',
+      '## Pure Preflight Provenance',
+      '',
+      result.purePreflightUsed
+        ? `- Source: ${result.purePreflightUsed.source}`
+        : '- No pure preflight context was attached.',
+      result.purePreflightUsed?.usedBoundaryFixture
+        ? `- Boundary Fixture: ${result.purePreflightUsed.usedBoundaryFixture.fixtureId} (${result.purePreflightUsed.usedBoundaryFixture.targetName})`
+        : '- Boundary Fixture: (none)',
+      result.purePreflightUsed?.usedCompareAnchor
+        ? `- Compare Anchor: ${result.purePreflightUsed.usedCompareAnchor.label} (${result.purePreflightUsed.usedCompareAnchor.kind})`
+        : '- Compare Anchor: (none)',
+      result.purePreflightUsed?.usedPatchPreflight
+        ? `- Patch Preflight: ${result.purePreflightUsed.usedPatchPreflight.surface}:${result.purePreflightUsed.usedPatchPreflight.target}`
+        : '- Patch Preflight: (none)',
+      result.purePreflightUsed?.usedRebuildContext
+        ? `- Rebuild Context: ${result.purePreflightUsed.usedRebuildContext.contextId} (${result.purePreflightUsed.usedRebuildContext.fixtureSource})`
+        : '- Rebuild Context: (none)',
+      result.purePreflightUsed?.usedFlowReasoning
+        ? `- Flow Reasoning: ${result.purePreflightUsed.usedFlowReasoning.resultId} (${result.purePreflightUsed.usedFlowReasoning.targetName})`
+        : '- Flow Reasoning: (none)',
       '',
       '## Fixture',
       '',

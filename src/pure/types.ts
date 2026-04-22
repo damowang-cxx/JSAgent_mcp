@@ -1,6 +1,18 @@
 import type { AcceptanceStatus } from '../patch/types.js';
+import type { PurePreflightContext } from '../pure-preflight/types.js';
 
 export type PureSource = 'patch-last' | 'analyze-target-last' | 'current-page';
+export type PureExtractionSource = PureSource | 'pure-preflight-last' | 'task-artifact';
+
+export interface PurePreflightUsageSummary {
+  contextId: string;
+  source: string;
+  usedBoundaryFixture?: PurePreflightContext['usedBoundaryFixture'];
+  usedCompareAnchor?: PurePreflightContext['usedCompareAnchor'];
+  usedPatchPreflight?: PurePreflightContext['usedPatchPreflight'];
+  usedRebuildContext?: PurePreflightContext['usedRebuildContext'];
+  usedFlowReasoning?: PurePreflightContext['usedFlowReasoning'];
+}
 
 export interface FrozenRuntimeSample {
   taskId?: string | null;
@@ -123,6 +135,10 @@ export interface PureExtractionResult {
   nodePure: NodePureScaffold;
   verification: PureVerificationResult;
   readyForPort: boolean;
+  purePreflightUsed?: PurePreflightUsageSummary | null;
+  expectedOutputsSource?: string;
+  preservedInputsSource?: string;
+  excludedNoiseSource?: string;
   nextActions: string[];
   whyTheseSteps: string[];
   stopIf: string[];
