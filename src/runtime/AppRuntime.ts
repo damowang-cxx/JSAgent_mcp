@@ -4,6 +4,10 @@ import { ExplainEngine } from '../analysis/ExplainEngine.js';
 import { RiskScorer } from '../analysis/RiskScorer.js';
 import { SessionReporter } from '../analysis/SessionReporter.js';
 import { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
+import { AiAugmentationRegistry } from '../ai/AiAugmentationRegistry.js';
+import { AiAugmentationService } from '../ai/AiAugmentationService.js';
+import { AiPromptLibrary } from '../ai/AiPromptLibrary.js';
+import { LLMProviderManager } from '../ai/LLMProviderManager.js';
 import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { CodeCollector } from '../collector/CodeCollector.js';
 import { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
@@ -70,6 +74,7 @@ import { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder
 import { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
+import { AiAugmentationReportBuilder } from '../report/AiAugmentationReportBuilder.js';
 import { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
@@ -242,6 +247,11 @@ export class AppRuntime implements AppRuntimeServices {
   readonly purePreflightPlanner: PurePreflightPlanner;
   readonly purePreflightRegistry: PurePreflightRegistry;
   readonly purePreflightReportBuilder: PurePreflightReportBuilder;
+  readonly llmProviderManager: LLMProviderManager;
+  readonly aiAugmentationService: AiAugmentationService;
+  readonly aiAugmentationRegistry: AiAugmentationRegistry;
+  readonly aiAugmentationReportBuilder: AiAugmentationReportBuilder;
+  private readonly aiPromptLibrary: AiPromptLibrary;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
 
@@ -249,6 +259,8 @@ export class AppRuntime implements AppRuntimeServices {
     this.pageController = new PageController(browserSession);
     this.codeCollector = new CodeCollector(browserSession, this.pageController);
     this.astIndexBuilder = new AstIndexBuilder(this.codeCollector);
+    this.llmProviderManager = new LLMProviderManager();
+    this.aiPromptLibrary = new AiPromptLibrary();
     this.hookManager = new HookManager(browserSession);
     this.requestInitiatorTracker = new RequestInitiatorTracker(browserSession);
     this.networkCollector = new NetworkCollector(browserSession, this.requestInitiatorTracker);
@@ -265,6 +277,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.rebuildContextRegistry = new RebuildContextRegistry(this.evidenceStore);
     this.flowReasoningRegistry = new FlowReasoningRegistry(this.evidenceStore);
     this.purePreflightRegistry = new PurePreflightRegistry(this.evidenceStore);
+    this.aiAugmentationRegistry = new AiAugmentationRegistry(this.evidenceStore);
     this.stageGateEvaluator = new StageGateEvaluator({
       evidenceStore: this.evidenceStore,
       taskManifestManager: this.taskManifestManager
@@ -308,6 +321,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.rebuildContextReportBuilder = new RebuildContextReportBuilder();
     this.flowReasoningReportBuilder = new FlowReasoningReportBuilder();
     this.purePreflightReportBuilder = new PurePreflightReportBuilder();
+    this.aiAugmentationReportBuilder = new AiAugmentationReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -751,6 +765,20 @@ export class AppRuntime implements AppRuntimeServices {
       pureExtractionRunner: this.pureExtractionRunner,
       rebuildContextRegistry: this.rebuildContextRegistry,
       rebuildWorkflowRunner: this.rebuildWorkflowRunner,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.aiAugmentationService = new AiAugmentationService({
+      analyzeTargetRunner: this.analyzeTargetRunner,
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      debuggerReportBuilder: this.debuggerReportBuilder,
+      deobfuscator: this.deobfuscator,
+      evidenceStore: this.evidenceStore,
+      flowReasoningRegistry: this.flowReasoningRegistry,
+      llmProviderManager: this.llmProviderManager,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      promptLibrary: this.aiPromptLibrary,
+      purePreflightRegistry: this.purePreflightRegistry,
+      rebuildContextRegistry: this.rebuildContextRegistry,
       taskManifestManager: this.taskManifestManager
     });
   }
@@ -1233,5 +1261,21 @@ export class AppRuntime implements AppRuntimeServices {
 
   getPurePreflightReportBuilder(): PurePreflightReportBuilder {
     return this.purePreflightReportBuilder;
+  }
+
+  getLlmProviderManager(): LLMProviderManager {
+    return this.llmProviderManager;
+  }
+
+  getAiAugmentationService(): AiAugmentationService {
+    return this.aiAugmentationService;
+  }
+
+  getAiAugmentationRegistry(): AiAugmentationRegistry {
+    return this.aiAugmentationRegistry;
+  }
+
+  getAiAugmentationReportBuilder(): AiAugmentationReportBuilder {
+    return this.aiAugmentationReportBuilder;
   }
 }

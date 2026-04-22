@@ -4,6 +4,9 @@ import type { ExplainEngine } from '../analysis/ExplainEngine.js';
 import type { RiskScorer } from '../analysis/RiskScorer.js';
 import type { SessionReporter } from '../analysis/SessionReporter.js';
 import type { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
+import type { AiAugmentationRegistry } from '../ai/AiAugmentationRegistry.js';
+import type { AiAugmentationService } from '../ai/AiAugmentationService.js';
+import type { LLMProviderManager } from '../ai/LLMProviderManager.js';
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
 import type { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
@@ -70,6 +73,7 @@ import type { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBu
 import type { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
+import type { AiAugmentationReportBuilder } from '../report/AiAugmentationReportBuilder.js';
 import type { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import type { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
@@ -240,4 +244,8 @@ export interface AppRuntimeServices {
   purePreflightPlanner: PurePreflightPlanner;
   purePreflightRegistry: PurePreflightRegistry;
   purePreflightReportBuilder: PurePreflightReportBuilder;
+  llmProviderManager: LLMProviderManager;
+  aiAugmentationService: AiAugmentationService;
+  aiAugmentationRegistry: AiAugmentationRegistry;
+  aiAugmentationReportBuilder: AiAugmentationReportBuilder;
 }

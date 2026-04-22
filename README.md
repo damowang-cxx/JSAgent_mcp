@@ -44,6 +44,7 @@ The project currently includes:
 - rebuild integration for reverse-to-rebuild context provenance
 - Flow Reasoning Lite for helper consumers, request field binders, and sink-adjacent bindings
 - Pure Preflight Integration for reverse-to-pure context provenance
+- AI Augmentation for optional semantic explanations over deterministic artifacts
 
 ## Design Principles
 
@@ -69,6 +70,8 @@ The project currently includes:
   - define inputs, environment state, intermediates, and outputs before generating a pure scaffold
 - First explainable divergence first
   - compare and pure expected outputs should start from the smallest explainable mismatch
+- AI as semantic enhancer, not truth source
+  - AI can explain artifacts, but deterministic evidence keeps authority
 - single browser session owner
   - `BrowserSessionManager` remains the only owner of browser + selected page state
 - app-scoped runtime
@@ -1274,6 +1277,52 @@ Recommended Phase 24 validation flow:
 7. `run_pure_from_preflight`.
 8. `export_pure_preflight_report` with `format='json'` and `format='markdown'`.
 
+## Phase 25: AI Augmentation
+
+Phase 25 adds an optional AI semantic explanation layer over deterministic reverse, rebuild, flow, compare, patch, and pure artifacts. AI output is stored and reported as augmentation only; compare anchors, patch preflight, rebuild divergence, and pure ready-for-port decisions still come from deterministic evidence.
+
+New tools:
+
+- `explain_reverse_context_with_ai`: generates an AI or deterministic fallback explanation for a selected artifact mode.
+- `list_ai_augmentations`: reads the latest runtime or task artifact-backed AI augmentation.
+- `export_ai_augmentation_report`: exports AI augmentation JSON or markdown.
+
+Provider configuration:
+
+- `AI_PROVIDER`
+- `AI_BASE_URL`
+- `AI_API_KEY`
+- `AI_MODEL`
+- `AI_TIMEOUT_MS`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Rebuild-oriented
+- AI as semantic enhancer, not truth source
+
+Current boundaries:
+
+- AI augmentation is an explanation and semantic-readability layer.
+- It is not a truth engine.
+- It is not AI auto patching.
+- It is not automatic pure synthesis.
+- It is not agentic orchestration.
+- Provider unavailable mode is stable; deterministic reverse/rebuild/patch/pure workflows continue without AI.
+
+Recommended Phase 25 validation flow:
+
+1. `analyze_flow_reasoning`.
+2. `select_compare_anchor`.
+3. `plan_patch_preflight`.
+4. `prepare_rebuild_context`.
+5. `plan_pure_preflight`.
+6. `explain_reverse_context_with_ai`.
+7. `export_ai_augmentation_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1384,6 +1433,9 @@ Recommended Phase 24 validation flow:
 - `list_pure_preflights`
 - `run_pure_from_preflight`
 - `export_pure_preflight_report`
+- `explain_reverse_context_with_ai`
+- `list_ai_augmentations`
+- `export_ai_augmentation_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`

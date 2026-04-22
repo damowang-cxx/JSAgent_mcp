@@ -28,6 +28,7 @@ import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffCrossLanguageTool } from './reverse/diffCrossLanguage.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
+import { exportAiAugmentationReportTool } from './reverse/exportAiAugmentationReport.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
 import { exportFlowReasoningReportTool } from './reverse/exportFlowReasoningReport.js';
@@ -53,6 +54,7 @@ import { exportSessionReportTool } from './reverse/exportSessionReport.js';
 import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
 import { exportUpgradeReportTool } from './reverse/exportUpgradeReport.js';
 import { exportWindowReportTool } from './reverse/exportWindowReport.js';
+import { explainReverseContextWithAiTool } from './reverse/explainReverseContextWithAi.js';
 import { extractDependencyWindowTool } from './reverse/extractDependencyWindow.js';
 import { extractHelperBoundaryTool } from './reverse/extractHelperBoundary.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
@@ -70,6 +72,7 @@ import { getTaskManifestTool } from './reverse/getTaskManifest.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
+import { listAiAugmentationsTool } from './reverse/listAiAugmentations.js';
 import { listBreakpointsTool } from './reverse/listBreakpoints.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
 import { listCompareAnchorsTool } from './reverse/listCompareAnchors.js';
@@ -239,6 +242,9 @@ export const reverseTools = [
   listPurePreflightsTool,
   runPureFromPreflightTool,
   exportPurePreflightReportTool,
+  explainReverseContextWithAiTool,
+  listAiAugmentationsTool,
+  exportAiAugmentationReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -313,6 +319,7 @@ export {
   evaluateScriptTool,
   evaluateOnCallFrameTool,
   exportBoundaryFixtureReportTool,
+  exportAiAugmentationReportTool,
   exportCompareAnchorReportTool,
   exportDebuggerReportTool,
   exportFlowReasoningReportTool,
@@ -340,6 +347,7 @@ export {
   exportUpgradeReportTool,
   exportWindowReportTool,
   extractDependencyWindowTool,
+  explainReverseContextWithAiTool,
   extractHelperBoundaryTool,
   extractNodePureTool,
   extractPythonPureTool,
@@ -357,6 +365,7 @@ export {
   getTaskManifestTool,
   injectHookTool,
   listCollectedCodeTool,
+  listAiAugmentationsTool,
   listBoundaryFixturesTool,
   listBreakpointsTool,
   listCapturePresetsTool,

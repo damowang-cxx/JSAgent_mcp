@@ -44,6 +44,7 @@ export interface TaskManifest {
     rebuildContext?: string | null;
     flowReasoning?: string | null;
     purePreflight?: string | null;
+    aiAugmentation?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];
