@@ -49,6 +49,7 @@ The project currently includes:
 - Browser Field Operations for selected-page DOM, console, storage, session, and stealth helpers
 - Script Intelligence & Source Precision for live selected-page script enumeration, exact source reads, and bounded source search
 - Debugger Finishing Pack for exception breakpoints, watch expressions, and lite debug target orchestration
+- Function Scalpel Pack for quick selected-page function hooks, traces, bounded object inspection, and event monitoring
 
 ## Design Principles
 
@@ -66,6 +67,8 @@ The project currently includes:
   - reason around the selected reverse chain before broad project exploration
 - Script-first precision before broad code collection fallback
   - inspect live selected-page scripts directly before falling back to collected-code analysis
+- Function-scalpel-first before broad workflow escalation
+  - use quick function/object/event probes before escalating into broader structured workflows
 - Smallest useful reasoning first
   - produce bounded, explainable chains instead of full static-analysis graphs
 - Patch around first divergence
@@ -1532,6 +1535,58 @@ Recommended Phase 29 validation flow:
 11. `select_debug_target`.
 12. `export_debugger_finishing_report` with `format='json'` and `format='markdown'`.
 
+## Phase 30: Function Scalpel Pack
+
+Phase 30 adds a lightweight function-level scalpel layer for the currently selected page. It gives operators a fast path to hook one function, trace calls, inspect a runtime object, monitor DOM/window events, and export bounded artifacts without replacing the structured scenario/capture/boundary/probe workflow.
+
+New tools:
+
+- `hook_function`
+- `trace_function`
+- `inspect_object`
+- `monitor_events`
+- `list_function_hooks`
+- `unhook_function`
+- `list_function_traces`
+- `clear_function_traces`
+- `list_monitored_events`
+- `clear_monitored_events`
+- `export_function_scalpel_report`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Target-chain-first
+- Function-scalpel-first before broad workflow escalation
+
+Current boundaries:
+
+- This is a function-level scalpel layer for selected-page runtime probes.
+- It is not a full instrumentation platform.
+- It is not a full trace profiler.
+- It is not a full event recorder.
+- It is not a site automation platform.
+- It is not AST patch synthesis, a site adapter, a second browser manager, or a global runtime singleton.
+- `create_hook` / `inject_hook`, scenario/capture, source precision, and debugger finishing remain separate structured paths; Phase 30 is a quicker micro-operation path.
+
+Recommended Phase 30 validation flow:
+
+1. `list_scripts`.
+2. `search_in_sources`.
+3. `find_in_script`.
+4. `hook_function`.
+5. `trace_function`.
+6. `inspect_object`.
+7. `monitor_events`.
+8. Reproduce the target action.
+9. `list_function_traces`.
+10. `list_monitored_events`.
+11. `unhook_function`.
+12. `export_function_scalpel_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1570,6 +1625,17 @@ Recommended Phase 29 validation flow:
 - `find_in_script`
 - `search_in_sources`
 - `export_source_precision_report`
+- `hook_function`
+- `trace_function`
+- `inspect_object`
+- `monitor_events`
+- `list_function_hooks`
+- `unhook_function`
+- `list_function_traces`
+- `clear_function_traces`
+- `list_monitored_events`
+- `clear_monitored_events`
+- `export_function_scalpel_report`
 - `create_hook`
 - `list_hooks`
 - `inject_hook`
@@ -1742,6 +1808,7 @@ The current stage still does not implement:
 - source map platform
 - worker / service worker source ecosystem
 - full conditional breakpoint manager, full worker/service-worker debugger platform, and full multi-target graph orchestration
+- full instrumentation platform, full trace profiler, full event recorder, and site automation platform
 - full diff engine and semantic full-response diff platform
 - patch workflow consuming rebuild context and patch preflight context
 - browser-perfect rebuild emulation and automatic bundle slicing compiler

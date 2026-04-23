@@ -39,6 +39,11 @@ import { FlowReasoningEngine } from '../flow/FlowReasoningEngine.js';
 import { FlowReasoningRegistry } from '../flow/FlowReasoningRegistry.js';
 import { BoundaryFixtureGenerator } from '../fixture/BoundaryFixtureGenerator.js';
 import { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
+import { EventMonitorRegistry } from '../function-scalpel/EventMonitorRegistry.js';
+import { FunctionHookManager } from '../function-scalpel/FunctionHookManager.js';
+import { FunctionScalpelRegistry } from '../function-scalpel/FunctionScalpelRegistry.js';
+import { FunctionTraceRegistry } from '../function-scalpel/FunctionTraceRegistry.js';
+import { ObjectInspector } from '../function-scalpel/ObjectInspector.js';
 import { HookManager } from '../hook/HookManager.js';
 import { IntermediateAlignment } from '../intermediate/IntermediateAlignment.js';
 import { IntermediateDiff } from '../intermediate/IntermediateDiff.js';
@@ -87,6 +92,7 @@ import { PortReportBuilder } from '../report/PortReportBuilder.js';
 import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
+import { FunctionScalpelReportBuilder } from '../report/FunctionScalpelReportBuilder.js';
 import { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
@@ -297,6 +303,12 @@ export class AppRuntime implements AppRuntimeServices {
   readonly sourceSearchEngine: SourceSearchEngine;
   readonly sourcePrecisionRegistry: SourcePrecisionRegistry;
   readonly sourcePrecisionReportBuilder: SourcePrecisionReportBuilder;
+  readonly functionHookManager: FunctionHookManager;
+  readonly functionTraceRegistry: FunctionTraceRegistry;
+  readonly objectInspector: ObjectInspector;
+  readonly eventMonitorRegistry: EventMonitorRegistry;
+  readonly functionScalpelRegistry: FunctionScalpelRegistry;
+  readonly functionScalpelReportBuilder: FunctionScalpelReportBuilder;
   private readonly aiPromptLibrary: AiPromptLibrary;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
@@ -349,6 +361,21 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager
     });
     this.sourcePrecisionReportBuilder = new SourcePrecisionReportBuilder();
+    this.functionTraceRegistry = new FunctionTraceRegistry();
+    this.functionHookManager = new FunctionHookManager({
+      browserSession
+    });
+    this.objectInspector = new ObjectInspector({
+      browserSession
+    });
+    this.eventMonitorRegistry = new EventMonitorRegistry({
+      browserSession
+    });
+    this.functionScalpelRegistry = new FunctionScalpelRegistry({
+      evidenceStore: this.evidenceStore,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.functionScalpelReportBuilder = new FunctionScalpelReportBuilder();
     this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
     this.exceptionBreakpointManager = new ExceptionBreakpointManager(this.debuggerSessionManager);
     this.watchExpressionRegistry = new WatchExpressionRegistry();
@@ -1322,6 +1349,30 @@ export class AppRuntime implements AppRuntimeServices {
 
   getSourcePrecisionReportBuilder(): SourcePrecisionReportBuilder {
     return this.sourcePrecisionReportBuilder;
+  }
+
+  getFunctionHookManager(): FunctionHookManager {
+    return this.functionHookManager;
+  }
+
+  getFunctionTraceRegistry(): FunctionTraceRegistry {
+    return this.functionTraceRegistry;
+  }
+
+  getObjectInspector(): ObjectInspector {
+    return this.objectInspector;
+  }
+
+  getEventMonitorRegistry(): EventMonitorRegistry {
+    return this.eventMonitorRegistry;
+  }
+
+  getFunctionScalpelRegistry(): FunctionScalpelRegistry {
+    return this.functionScalpelRegistry;
+  }
+
+  getFunctionScalpelReportBuilder(): FunctionScalpelReportBuilder {
+    return this.functionScalpelReportBuilder;
   }
 
   getBreakpointRegistry(): BreakpointRegistry {

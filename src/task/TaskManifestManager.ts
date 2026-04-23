@@ -175,6 +175,7 @@ export class TaskManifestManager {
         browserOps: pointer('browser-ops/latest') ?? manifest.latestPointers.browserOps ?? null,
         sourcePrecision: pointer('source-precision/latest') ?? manifest.latestPointers.sourcePrecision ?? null,
         debuggerFinishing: pointer('debugger-finishing/latest') ?? manifest.latestPointers.debuggerFinishing ?? null,
+        functionScalpel: pointer('function-scalpel/latest') ?? manifest.latestPointers.functionScalpel ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

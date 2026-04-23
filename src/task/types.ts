@@ -50,6 +50,7 @@ export interface TaskManifest {
     browserOps?: string | null;
     sourcePrecision?: string | null;
     debuggerFinishing?: string | null;
+    functionScalpel?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

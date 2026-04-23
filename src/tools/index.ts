@@ -22,6 +22,8 @@ import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
 import { clearHookDataTool } from './reverse/clearHookData.js';
 import { clearExceptionBreakpointsTool } from './reverse/clearExceptionBreakpoints.js';
+import { clearFunctionTracesTool } from './reverse/clearFunctionTraces.js';
+import { clearMonitoredEventsTool } from './reverse/clearMonitoredEvents.js';
 import { correlateRequestFlowsTool } from './reverse/correlateRequestFlows.js';
 import { compareRebuildResultTool } from './reverse/compareRebuildResult.js';
 import { createHookTool } from './reverse/createHook.js';
@@ -56,6 +58,7 @@ import { exportCompareAnchorReportTool } from './reverse/exportCompareAnchorRepo
 import { exportDebuggerReportTool } from './reverse/exportDebuggerReport.js';
 import { exportDebuggerFinishingReportTool } from './reverse/exportDebuggerFinishingReport.js';
 import { exportSourcePrecisionReportTool } from './reverse/exportSourcePrecisionReport.js';
+import { exportFunctionScalpelReportTool } from './reverse/exportFunctionScalpelReport.js';
 import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
@@ -82,9 +85,11 @@ import { getPausedInfoTool } from './reverse/getPausedInfo.js';
 import { getScopeVariablesTool } from './reverse/getScopeVariables.js';
 import { getStorageTool } from './reverse/getStorage.js';
 import { getTaskManifestTool } from './reverse/getTaskManifest.js';
+import { hookFunctionTool } from './reverse/hookFunction.js';
 import { injectPreloadScriptTool } from './reverse/injectPreloadScript.js';
 import { injectStealthTool } from './reverse/injectStealth.js';
 import { injectHookTool } from './reverse/injectHook.js';
+import { inspectObjectTool } from './reverse/inspectObject.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
 import { listAiAugmentationsTool } from './reverse/listAiAugmentations.js';
@@ -94,6 +99,8 @@ import { listCompareAnchorsTool } from './reverse/listCompareAnchors.js';
 import { listConsoleMessagesTool } from './reverse/listConsoleMessages.js';
 import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listFlowReasoningResultsTool } from './reverse/listFlowReasoningResults.js';
+import { listFunctionHooksTool } from './reverse/listFunctionHooks.js';
+import { listFunctionTracesTool } from './reverse/listFunctionTraces.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
 import { listScriptsTool } from './reverse/listScripts.js';
@@ -108,11 +115,13 @@ import { listScenarioPatchHintsTool } from './reverse/listScenarioPatchHints.js'
 import { listSessionStatesTool } from './reverse/listSessionStates.js';
 import { listStealthFeaturesTool } from './reverse/listStealthFeatures.js';
 import { listStealthPresetsTool } from './reverse/listStealthPresets.js';
+import { listMonitoredEventsTool } from './reverse/listMonitoredEvents.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
 import { loadSessionStateTool } from './reverse/loadSessionState.js';
 import { locateCryptoHelpersTool } from './reverse/locateCryptoHelpers.js';
 import { locateRequestSinkTool } from './reverse/locateRequestSink.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
+import { monitorEventsTool } from './reverse/monitorEvents.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
 import { planPatchPreflightTool } from './reverse/planPatchPreflight.js';
@@ -164,6 +173,7 @@ import { stepOverTool } from './reverse/stepOver.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
 import { takeScreenshotTool } from './reverse/takeScreenshot.js';
 import { traceHelperConsumersTool } from './reverse/traceHelperConsumers.js';
+import { traceFunctionTool } from './reverse/traceFunction.js';
 import { traceRequestFieldBindingTool } from './reverse/traceRequestFieldBinding.js';
 import { traceTokenFamilyTool } from './reverse/traceTokenFamily.js';
 import { typeTextTool } from './reverse/typeText.js';
@@ -183,6 +193,7 @@ import { listWatchExpressionsTool } from './reverse/listWatchExpressions.js';
 import { removeWatchExpressionTool } from './reverse/removeWatchExpression.js';
 import { selectDebugTargetTool } from './reverse/selectDebugTarget.js';
 import { setExceptionBreakpointsTool } from './reverse/setExceptionBreakpoints.js';
+import { unhookFunctionTool } from './reverse/unhookFunction.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
 export const coreTools = [pingTool, getServerInfoTool, listToolsSummaryTool] satisfies readonly RegisteredToolDefinition[];
@@ -210,6 +221,17 @@ export const reverseTools = [
   findInScriptTool,
   searchInSourcesTool,
   exportSourcePrecisionReportTool,
+  hookFunctionTool,
+  traceFunctionTool,
+  inspectObjectTool,
+  monitorEventsTool,
+  listFunctionHooksTool,
+  unhookFunctionTool,
+  listFunctionTracesTool,
+  clearFunctionTracesTool,
+  listMonitoredEventsTool,
+  clearMonitoredEventsTool,
+  exportFunctionScalpelReportTool,
   createHookTool,
   listHooksTool,
   injectHookTool,
@@ -387,7 +409,9 @@ export {
   checkBrowserHealthTool,
   clickElementTool,
   clearExceptionBreakpointsTool,
+  clearFunctionTracesTool,
   clearHookDataTool,
+  clearMonitoredEventsTool,
   clearNetworkRequestsTool,
   collectCodeTool,
   collectionDiffTool,
@@ -411,6 +435,7 @@ export {
   exportDeliveryContextReportTool,
   exportDebuggerFinishingReportTool,
   exportDebuggerReportTool,
+  exportFunctionScalpelReportTool,
   exportSourcePrecisionReportTool,
   exportFlowReasoningReportTool,
   exportPatchReportTool,
@@ -459,9 +484,11 @@ export {
   getScriptSourceTool,
   getStorageTool,
   getTaskManifestTool,
+  hookFunctionTool,
   injectHookTool,
   injectPreloadScriptTool,
   injectStealthTool,
+  inspectObjectTool,
   listCollectedCodeTool,
   listAiAugmentationsTool,
   listBoundaryFixturesTool,
@@ -472,6 +499,8 @@ export {
   listDebugTargetsTool,
   listDependencyWindowsTool,
   listFlowReasoningResultsTool,
+  listFunctionHooksTool,
+  listFunctionTracesTool,
   listHelperBoundariesTool,
   listHooksTool,
   listScriptsTool,
@@ -490,9 +519,11 @@ export {
   listStealthPresetsTool,
   listToolsSummaryTool,
   listWatchExpressionsTool,
+  listMonitoredEventsTool,
   listXhrBreakpointsTool,
   loadSessionStateTool,
   markAcceptanceTool,
+  monitorEventsTool,
   locateCryptoHelpersTool,
   locateRequestSinkTool,
   navigatePageTool,
@@ -554,9 +585,11 @@ export {
   summarizeCodeTool,
   takeScreenshotTool,
   traceHelperConsumersTool,
+  traceFunctionTool,
   traceRequestFieldBindingTool,
   traceTokenFamilyTool,
   typeTextTool,
+  unhookFunctionTool,
   understandCodeTool,
   verifyNodePureTool,
   verifyPythonPureTool,
