@@ -1,4 +1,4 @@
-import traverse, { type NodePath } from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
 import type { ScriptCatalog } from '../source-intel/ScriptCatalog.js';
@@ -9,6 +9,7 @@ import type { AstReferenceMatch } from './types.js';
 const DEFAULT_MAX_RESULTS = 100;
 const MAX_RESULTS = 500;
 const MAX_SCRIPTS = 40;
+const traverse = traverseModule.default;
 
 export class AstReferenceFinder {
   constructor(private readonly deps: {
@@ -46,7 +47,7 @@ export class AstReferenceFinder {
       const lastPart = queryParts.at(-1) ?? query;
 
       traverse(ast, {
-        Identifier: (path) => {
+        Identifier: (path: NodePath<t.Identifier>) => {
           if (path.node.name !== query && path.node.name !== lastPart) {
             return;
           }
@@ -55,7 +56,7 @@ export class AstReferenceFinder {
           }
           pushMatch(results, script.scriptId, script.url, source, path, classifyIdentifier(path), limit);
         },
-        MemberExpression: (path) => {
+        MemberExpression: (path: NodePath<t.MemberExpression>) => {
           const memberName = memberExpressionName(path.node);
           if (memberName !== query && propertyName(path.node.property) !== query && propertyName(path.node.property) !== lastPart) {
             return;

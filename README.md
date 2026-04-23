@@ -50,6 +50,7 @@ The project currently includes:
 - Script Intelligence & Source Precision for live selected-page script enumeration, exact source reads, and bounded source search
 - Debugger Finishing Pack for exception breakpoints, watch expressions, and lite debug target orchestration
 - Function Scalpel Pack for quick selected-page function hooks, traces, bounded object inspection, and event monitoring
+- Thick Substrate Pack for bounded AST assistance, AI routing/provider substrate, and stronger stealth coordination
 
 ## Design Principles
 
@@ -69,6 +70,8 @@ The project currently includes:
   - inspect live selected-page scripts directly before falling back to collected-code analysis
 - Function-scalpel-first before broad workflow escalation
   - use quick function/object/event probes before escalating into broader structured workflows
+- Substrate-first, not workflow explosion
+  - strengthen AST, AI, and stealth foundations without creating a parallel reverse workflow
 - Smallest useful reasoning first
   - produce bounded, explainable chains instead of full static-analysis graphs
 - Patch around first divergence
@@ -1587,6 +1590,54 @@ Recommended Phase 30 validation flow:
 11. `unhook_function`.
 12. `export_function_scalpel_report` with `format='json'` and `format='markdown'`.
 
+## Phase 31: Thick Substrate Pack
+
+Phase 31 thickens the substrate underneath the existing reverse chain instead of adding another workflow. It adds bounded AST-assisted locating/reference/rewrite preview helpers, a visible AI provider and routing-lite substrate, and stronger stealth coordination built on preload and feature-level state while keeping deterministic evidence as truth.
+
+New tools:
+
+- `find_ast_references`
+- `preview_ast_rewrite`
+- `list_ai_providers`
+- `set_ai_routing_policy`
+- `get_ai_routing_policy`
+- `list_stealth_runtime_state`
+- `set_stealth_features`
+- `export_ast_substrate_report`
+- `export_stealth_substrate_report`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Rebuild-oriented
+- AI as semantic enhancer, not truth source
+- Substrate-first, not workflow explosion
+
+Current boundaries:
+
+- This is a substrate-thickening layer for AST, AI routing/provider visibility, and stealth coordination.
+- It is not a full AST/data-flow/SSA/taint engine.
+- It is not a full callgraph platform.
+- It is not an AI truth engine, AI auto patcher, or automatic pure synthesis system.
+- It is not a full anti-detection platform or site adapter.
+- It does not introduce a second browser manager or a global runtime singleton.
+
+Recommended Phase 31 validation flow:
+
+1. `list_scripts`.
+2. `find_in_script`.
+3. `find_ast_references`.
+4. `preview_ast_rewrite`.
+5. `list_ai_providers`.
+6. `set_ai_routing_policy`.
+7. `list_stealth_runtime_state`.
+8. `set_stealth_features`.
+9. `export_ast_substrate_report`.
+10. `export_stealth_substrate_report`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1636,6 +1687,15 @@ Recommended Phase 30 validation flow:
 - `list_monitored_events`
 - `clear_monitored_events`
 - `export_function_scalpel_report`
+- `find_ast_references`
+- `preview_ast_rewrite`
+- `list_ai_providers`
+- `set_ai_routing_policy`
+- `get_ai_routing_policy`
+- `list_stealth_runtime_state`
+- `set_stealth_features`
+- `export_ast_substrate_report`
+- `export_stealth_substrate_report`
 - `create_hook`
 - `list_hooks`
 - `inject_hook`
@@ -1809,6 +1869,7 @@ The current stage still does not implement:
 - worker / service worker source ecosystem
 - full conditional breakpoint manager, full worker/service-worker debugger platform, and full multi-target graph orchestration
 - full instrumentation platform, full trace profiler, full event recorder, and site automation platform
+- full AST/data-flow/SSA/taint engine, full callgraph platform, and full anti-detection platform
 - full diff engine and semantic full-response diff platform
 - patch workflow consuming rebuild context and patch preflight context
 - browser-perfect rebuild emulation and automatic bundle slicing compiler

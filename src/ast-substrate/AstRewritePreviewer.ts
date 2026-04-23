@@ -1,5 +1,5 @@
-import generate from '@babel/generator';
-import traverse from '@babel/traverse';
+import generateModule from '@babel/generator';
+import traverseModule, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
 import type { ScriptCatalog } from '../source-intel/ScriptCatalog.js';
@@ -8,6 +8,8 @@ import { parseSource } from './AstLocator.js';
 import type { AstRewritePreview } from './types.js';
 
 const MAX_PREVIEW_CHARS = 20_000;
+const generate = generateModule.default;
+const traverse = traverseModule.default;
 
 export class AstRewritePreviewer {
   constructor(private readonly deps: {
@@ -71,7 +73,7 @@ export class AstRewritePreviewer {
 
 function normalizeMemberAccess(ast: t.File): void {
   traverse(ast, {
-    MemberExpression(path) {
+    MemberExpression(path: NodePath<t.MemberExpression>) {
       if (!path.node.computed || !t.isStringLiteral(path.node.property)) {
         return;
       }
@@ -92,13 +94,13 @@ function renameLocal(ast: t.File, target: string | undefined, notes: string[]): 
   }
   let renamed = false;
   traverse(ast, {
-    Program(path) {
+    Program(path: NodePath<t.Program>) {
       if (path.scope.hasBinding(parsed.from)) {
         path.scope.rename(parsed.from, parsed.to);
         renamed = true;
       }
     },
-    Scope(path) {
+    Function(path: NodePath<t.Function>) {
       if (!renamed && path.scope.hasOwnBinding(parsed.from)) {
         path.scope.rename(parsed.from, parsed.to);
         renamed = true;
@@ -119,7 +121,7 @@ function inlineConstant(ast: t.File, target: string | undefined, notes: string[]
 
   let literal: t.Expression | null = null;
   traverse(ast, {
-    VariableDeclarator(path) {
+    VariableDeclarator(path: NodePath<t.VariableDeclarator>) {
       if (literal || !t.isIdentifier(path.node.id) || path.node.id.name !== name) {
         return;
       }
@@ -135,15 +137,19 @@ function inlineConstant(ast: t.File, target: string | undefined, notes: string[]
   }
 
   let replacements = 0;
-  traverse(ast, {
-    Identifier(path) {
-      if (path.node.name !== name || path.isBindingIdentifier()) {
+  const traverseAny = traverse as unknown as (input: t.File, visitors: Record<string, unknown>) => void;
+  traverseAny(ast, {
+    Identifier(path: any) {
+      const identifierPath: any = path;
+      if (identifierPath.node.name !== name || identifierPath.isBindingIdentifier()) {
         return;
       }
-      if (path.parentPath.isMemberExpression() && path.parentPath.node.property === path.node && !path.parentPath.node.computed) {
+      if (identifierPath.parentPath.isMemberExpression()
+        && identifierPath.parentPath.node.property === identifierPath.node
+        && !identifierPath.parentPath.node.computed) {
         return;
       }
-      path.replaceWith(t.cloneNode(literal as t.Expression));
+      identifierPath.replaceWith(t.cloneNode(literal as t.Expression));
       replacements += 1;
     }
   });

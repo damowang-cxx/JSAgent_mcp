@@ -968,6 +968,8 @@ export class AppRuntime implements AppRuntimeServices {
     });
     this.aiAugmentationService = new AiAugmentationService({
       analyzeTargetRunner: this.analyzeTargetRunner,
+      aiProviderCatalog: this.aiProviderCatalog,
+      aiRoutingPolicy: this.aiRoutingPolicy,
       compareAnchorRegistry: this.compareAnchorRegistry,
       debuggerReportBuilder: this.debuggerReportBuilder,
       deobfuscator: this.deobfuscator,

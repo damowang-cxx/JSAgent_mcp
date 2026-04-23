@@ -16,7 +16,9 @@ import type { RebuildContext, StoredRebuildContextSnapshot } from '../rebuild-in
 import type { TaskManifestManager } from '../task/TaskManifestManager.js';
 import type { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
 import type { AnalyzeTargetResult } from '../analysis/types.js';
+import type { AiProviderCatalog } from './AiProviderCatalog.js';
 import type { AiPromptLibrary } from './AiPromptLibrary.js';
+import type { AiRoutingPolicy } from './AiRoutingPolicy.js';
 import type { LLMProviderManager } from './LLMProviderManager.js';
 import type { AiAugmentationMode, AiAugmentationResult, AiSourceArtifact } from './types.js';
 
@@ -31,6 +33,8 @@ interface AiAugmentationServiceDeps {
   debuggerReportBuilder: DebuggerReportBuilder;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  aiProviderCatalog: AiProviderCatalog;
+  aiRoutingPolicy: AiRoutingPolicy;
   llmProviderManager: LLMProviderManager;
   promptLibrary: AiPromptLibrary;
 }
@@ -59,11 +63,21 @@ export class AiAugmentationService {
     const evidence = options.source === 'task-artifact'
       ? await this.readTaskEvidence(options.taskId as string, options.mode)
       : await this.readRuntimeEvidence(options.mode);
-    const completion = await this.deps.llmProviderManager.complete({
-      messages: this.deps.promptLibrary.buildForMode(options.mode, evidence.artifacts),
-      maxTokens: 900,
-      temperature: 0.2
-    });
+    const routing = this.deps.aiRoutingPolicy.get();
+    const providerDecision = this.resolveProviderDecision();
+    const completion = providerDecision.attemptProvider
+      ? await this.deps.llmProviderManager.complete({
+        messages: this.deps.promptLibrary.buildForMode(options.mode, evidence.artifacts),
+        maxTokens: 900,
+        temperature: 0.2
+      })
+      : {
+        modelName: providerDecision.modelName,
+        notes: providerDecision.notes,
+        providerAvailable: false as const,
+        providerName: providerDecision.providerName,
+        text: '' as const
+      };
     const providerInfo = this.deps.llmProviderManager.getProviderInfo();
     const explanation = completion.providerAvailable
       ? completion.text
@@ -78,6 +92,7 @@ export class AiAugmentationService {
       nextActions: this.buildNextActions(options.mode, evidence.artifacts, completion.providerAvailable),
       notes: uniqueStrings([
         ...evidence.notes,
+        ...(routing.notes ?? []),
         ...completion.notes,
         completion.providerAvailable
           ? 'AI explanation was generated from bounded deterministic artifact summaries.'
@@ -88,6 +103,68 @@ export class AiAugmentationService {
       providerName: completion.providerName ?? providerInfo.providerName,
       modelName: completion.modelName ?? providerInfo.modelName
     };
+  }
+
+  private resolveProviderDecision(): {
+    attemptProvider: boolean;
+    providerName?: string;
+    modelName?: string;
+    notes: string[];
+  } {
+    const policy = this.deps.aiRoutingPolicy.get();
+    const providers = this.deps.aiProviderCatalog.listProviders();
+    const current = this.deps.llmProviderManager.getProviderInfo();
+    const currentMode = inferProviderMode(current.providerName, current.baseUrl);
+
+    switch (policy.defaultMode) {
+      case 'deterministic-only':
+        return {
+          attemptProvider: false,
+          notes: ['AI routing policy is deterministic-only; provider requests were skipped and fallback explanation remains bounded.']
+        };
+      case 'prefer-anthropic-compatible': {
+        const anthropic = providers.find((item) => item.mode === 'anthropic-compatible');
+        if (anthropic?.available && current.providerAvailable && currentMode === 'anthropic-compatible') {
+          return {
+            attemptProvider: true,
+            modelName: current.modelName ?? anthropic.model,
+            notes: ['AI routing policy prefers anthropic-compatible and the current provider route matches it.'],
+            providerName: current.providerName ?? anthropic.providerId
+          };
+        }
+        return {
+          attemptProvider: false,
+          modelName: anthropic?.model,
+          notes: ['AI routing policy prefers anthropic-compatible, but the current provider manager is not attached to a matching available route.'],
+          providerName: anthropic?.providerId
+        };
+      }
+      case 'prefer-openai-compatible':
+        if (current.providerAvailable && currentMode !== 'anthropic-compatible') {
+          return {
+            attemptProvider: true,
+            modelName: current.modelName,
+            notes: ['AI routing policy prefers openai-compatible and the current provider route is compatible.'],
+            providerName: current.providerName
+          };
+        }
+        return {
+          attemptProvider: false,
+          modelName: current.modelName,
+          notes: ['AI routing policy prefers openai-compatible, but no compatible provider is currently configured.'],
+          providerName: current.providerName
+        };
+      case 'auto':
+      default:
+        return {
+          attemptProvider: current.providerAvailable,
+          modelName: current.modelName,
+          notes: current.providerAvailable
+            ? ['AI routing policy is auto; the currently configured provider route was used.']
+            : ['AI routing policy is auto, but no provider is configured; deterministic fallback remains active.'],
+          providerName: current.providerName
+        };
+    }
   }
 
   private async readRuntimeEvidence(mode: AiAugmentationMode): Promise<AiEvidence> {
@@ -386,4 +463,15 @@ function uniqueStrings(values: readonly string[], limit: number): string[] {
 
 function isArtifact(value: AiSourceArtifact | null): value is AiSourceArtifact {
   return value !== null;
+}
+
+function inferProviderMode(providerName: string | undefined, baseUrl: string | undefined): 'openai-compatible' | 'anthropic-compatible' | 'unknown' {
+  const combined = `${providerName ?? ''} ${baseUrl ?? ''}`.toLowerCase();
+  if (combined.includes('anthropic') || combined.includes('claude')) {
+    return 'anthropic-compatible';
+  }
+  if (providerName || baseUrl) {
+    return 'openai-compatible';
+  }
+  return 'unknown';
 }

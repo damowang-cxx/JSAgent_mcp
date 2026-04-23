@@ -1,5 +1,5 @@
 import { parse } from '@babel/parser';
-import traverse, { type NodePath } from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
 import type { ScriptCatalog } from '../source-intel/ScriptCatalog.js';
@@ -9,6 +9,7 @@ import type { AstFunctionLocation } from './types.js';
 const DEFAULT_MAX_RESULTS = 50;
 const MAX_RESULTS = 200;
 const MAX_SCRIPTS = 30;
+const traverse = traverseModule.default;
 
 export class AstLocator {
   constructor(private readonly deps: {
@@ -41,19 +42,19 @@ export class AstLocator {
       }
 
       traverse(ast, {
-        ArrowFunctionExpression: (path) => {
+        ArrowFunctionExpression: (path: NodePath<t.ArrowFunctionExpression>) => {
           pushFunction(results, script.scriptId, script.url, source, path, 'arrow-function', options, limit);
         },
-        ClassMethod: (path) => {
+        ClassMethod: (path: NodePath<t.ClassMethod>) => {
           pushFunction(results, script.scriptId, script.url, source, path, 'class-method', options, limit);
         },
-        FunctionDeclaration: (path) => {
+        FunctionDeclaration: (path: NodePath<t.FunctionDeclaration>) => {
           pushFunction(results, script.scriptId, script.url, source, path, 'function-declaration', options, limit);
         },
-        FunctionExpression: (path) => {
+        FunctionExpression: (path: NodePath<t.FunctionExpression>) => {
           pushFunction(results, script.scriptId, script.url, source, path, 'function-expression', options, limit);
         },
-        ObjectMethod: (path) => {
+        ObjectMethod: (path: NodePath<t.ObjectMethod>) => {
           pushFunction(results, script.scriptId, script.url, source, path, 'object-method', options, limit);
         }
       });

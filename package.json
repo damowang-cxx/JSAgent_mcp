@@ -1,6 +1,6 @@
 {
   "name": "jsagent-mcp",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "description": "TypeScript MCP server for observe-first JavaScript reverse-engineering, rebuild, patch, pure extraction, port validation, regression, and delivery workflows.",
   "type": "module",
   "main": "./build/index.js",
@@ -27,6 +27,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/babel__generator": "^7.27.0",
+    "@types/babel__traverse": "^7.28.0",
     "@types/node": "^22.19.0",
     "tsx": "^4.21.0"
   }
