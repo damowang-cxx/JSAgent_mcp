@@ -33,6 +33,7 @@ import { deleteSessionStateTool } from './reverse/deleteSessionState.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffCrossLanguageTool } from './reverse/diffCrossLanguage.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
+import { exportAstSubstrateReportTool } from './reverse/exportAstSubstrateReport.js';
 import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
 import { exportAiAugmentationReportTool } from './reverse/exportAiAugmentationReport.js';
 import { exportBrowserOpsReportTool } from './reverse/exportBrowserOpsReport.js';
@@ -58,6 +59,7 @@ import { exportCompareAnchorReportTool } from './reverse/exportCompareAnchorRepo
 import { exportDebuggerReportTool } from './reverse/exportDebuggerReport.js';
 import { exportDebuggerFinishingReportTool } from './reverse/exportDebuggerFinishingReport.js';
 import { exportSourcePrecisionReportTool } from './reverse/exportSourcePrecisionReport.js';
+import { exportStealthSubstrateReportTool } from './reverse/exportStealthSubstrateReport.js';
 import { exportFunctionScalpelReportTool } from './reverse/exportFunctionScalpelReport.js';
 import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
@@ -184,15 +186,22 @@ import { waitForElementTool } from './reverse/waitForElement.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
 import { evaluateOnCallFrameTool } from './reverse/evaluateOnCallFrame.js';
+import { findAstReferencesTool } from './reverse/findAstReferences.js';
 import { findInScriptTool } from './reverse/findInScript.js';
 import { evaluateWatchExpressionsTool } from './reverse/evaluateWatchExpressions.js';
+import { getAiRoutingPolicyTool } from './reverse/getAiRoutingPolicy.js';
 import { getExceptionBreakpointsTool } from './reverse/getExceptionBreakpoints.js';
 import { pauseExecutionTool } from './reverse/pauseExecution.js';
+import { listAiProvidersTool } from './reverse/listAiProviders.js';
 import { listDebugTargetsTool } from './reverse/listDebugTargets.js';
+import { listStealthRuntimeStateTool } from './reverse/listStealthRuntimeState.js';
 import { listWatchExpressionsTool } from './reverse/listWatchExpressions.js';
+import { previewAstRewriteTool } from './reverse/previewAstRewrite.js';
 import { removeWatchExpressionTool } from './reverse/removeWatchExpression.js';
 import { selectDebugTargetTool } from './reverse/selectDebugTarget.js';
+import { setAiRoutingPolicyTool } from './reverse/setAiRoutingPolicy.js';
 import { setExceptionBreakpointsTool } from './reverse/setExceptionBreakpoints.js';
+import { setStealthFeaturesTool } from './reverse/setStealthFeatures.js';
 import { unhookFunctionTool } from './reverse/unhookFunction.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
@@ -232,6 +241,15 @@ export const reverseTools = [
   listMonitoredEventsTool,
   clearMonitoredEventsTool,
   exportFunctionScalpelReportTool,
+  findAstReferencesTool,
+  previewAstRewriteTool,
+  listAiProvidersTool,
+  setAiRoutingPolicyTool,
+  getAiRoutingPolicyTool,
+  listStealthRuntimeStateTool,
+  setStealthFeaturesTool,
+  exportAstSubstrateReportTool,
+  exportStealthSubstrateReportTool,
   createHookTool,
   listHooksTool,
   injectHookTool,
@@ -428,6 +446,7 @@ export {
   evaluateScriptTool,
   evaluateOnCallFrameTool,
   evaluateWatchExpressionsTool,
+  exportAstSubstrateReportTool,
   exportBoundaryFixtureReportTool,
   exportAiAugmentationReportTool,
   exportBrowserOpsReportTool,
@@ -437,6 +456,7 @@ export {
   exportDebuggerReportTool,
   exportFunctionScalpelReportTool,
   exportSourcePrecisionReportTool,
+  exportStealthSubstrateReportTool,
   exportFlowReasoningReportTool,
   exportPatchReportTool,
   exportPatchPreflightReportTool,
@@ -467,11 +487,13 @@ export {
   extractHelperBoundaryTool,
   extractNodePureTool,
   extractPythonPureTool,
+  findAstReferencesTool,
   findInScriptTool,
   freezeRuntimeSampleTool,
   generateBoundaryFixtureTool,
   generateScenarioPatchHintsTool,
   getCallFramesTool,
+  getAiRoutingPolicyTool,
   getCollectedCodeFileTool,
   getConsoleMessageTool,
   getExceptionBreakpointsTool,
@@ -491,6 +513,7 @@ export {
   inspectObjectTool,
   listCollectedCodeTool,
   listAiAugmentationsTool,
+  listAiProvidersTool,
   listBoundaryFixturesTool,
   listBreakpointsTool,
   listCapturePresetsTool,
@@ -517,6 +540,7 @@ export {
   listSessionStatesTool,
   listStealthFeaturesTool,
   listStealthPresetsTool,
+  listStealthRuntimeStateTool,
   listToolsSummaryTool,
   listWatchExpressionsTool,
   listMonitoredEventsTool,
@@ -534,6 +558,7 @@ export {
   planPatchPreflightTool,
   planPurePreflightTool,
   pauseExecutionTool,
+  previewAstRewriteTool,
   planScenarioProbeTool,
   prepareDeliveryContextTool,
   prepareRebuildContextTool,
@@ -573,9 +598,11 @@ export {
   selectCompareAnchorTool,
   selectDebugTargetTool,
   selectPageTool,
+  setAiRoutingPolicyTool,
   setBreakpointTool,
   setBreakpointOnTextTool,
   setExceptionBreakpointsTool,
+  setStealthFeaturesTool,
   setUserAgentTool,
   smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,

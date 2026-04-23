@@ -51,6 +51,8 @@ export interface TaskManifest {
     sourcePrecision?: string | null;
     debuggerFinishing?: string | null;
     functionScalpel?: string | null;
+    astSubstrate?: string | null;
+    stealthSubstrate?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

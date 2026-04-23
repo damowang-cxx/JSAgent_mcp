@@ -176,6 +176,8 @@ export class TaskManifestManager {
         sourcePrecision: pointer('source-precision/latest') ?? manifest.latestPointers.sourcePrecision ?? null,
         debuggerFinishing: pointer('debugger-finishing/latest') ?? manifest.latestPointers.debuggerFinishing ?? null,
         functionScalpel: pointer('function-scalpel/latest') ?? manifest.latestPointers.functionScalpel ?? null,
+        astSubstrate: pointer('ast-substrate/latest') ?? manifest.latestPointers.astSubstrate ?? null,
+        stealthSubstrate: pointer('stealth-substrate/latest') ?? manifest.latestPointers.stealthSubstrate ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

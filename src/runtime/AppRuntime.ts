@@ -7,7 +7,13 @@ import { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
 import { AiAugmentationRegistry } from '../ai/AiAugmentationRegistry.js';
 import { AiAugmentationService } from '../ai/AiAugmentationService.js';
 import { AiPromptLibrary } from '../ai/AiPromptLibrary.js';
+import { AiProviderCatalog } from '../ai/AiProviderCatalog.js';
+import { AiRoutingPolicy } from '../ai/AiRoutingPolicy.js';
 import { LLMProviderManager } from '../ai/LLMProviderManager.js';
+import { AstLocator } from '../ast-substrate/AstLocator.js';
+import { AstReferenceFinder } from '../ast-substrate/AstReferenceFinder.js';
+import { AstRewritePreviewer } from '../ast-substrate/AstRewritePreviewer.js';
+import { AstSubstrateRegistry } from '../ast-substrate/AstSubstrateRegistry.js';
 import { BrowserOpsRegistry } from '../browser-ops/BrowserOpsRegistry.js';
 import { ConsoleCollector } from '../browser-ops/ConsoleCollector.js';
 import { DomInspector } from '../browser-ops/DomInspector.js';
@@ -80,6 +86,7 @@ import { UpgradeRegressionRunner } from '../regression/UpgradeRegressionRunner.j
 import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
+import { AstSubstrateReportBuilder } from '../report/AstSubstrateReportBuilder.js';
 import { BrowserOpsReportBuilder } from '../report/BrowserOpsReportBuilder.js';
 import { DeliveryContextReportBuilder } from '../report/DeliveryContextReportBuilder.js';
 import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
@@ -105,6 +112,7 @@ import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import { ScenarioPatchHintReportBuilder } from '../report/ScenarioPatchHintReportBuilder.js';
 import { SdkReportBuilder } from '../report/SdkReportBuilder.js';
 import { SourcePrecisionReportBuilder } from '../report/SourcePrecisionReportBuilder.js';
+import { StealthSubstrateReportBuilder } from '../report/StealthSubstrateReportBuilder.js';
 import { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
 import { WindowReportBuilder } from '../report/WindowReportBuilder.js';
@@ -140,6 +148,8 @@ import { ScriptCatalog } from '../source-intel/ScriptCatalog.js';
 import { SourcePrecisionRegistry } from '../source-intel/SourcePrecisionRegistry.js';
 import { SourceReader } from '../source-intel/SourceReader.js';
 import { SourceSearchEngine } from '../source-intel/SourceSearchEngine.js';
+import { StealthCoordinator } from '../stealth/StealthCoordinator.js';
+import { StealthFeatureRegistry } from '../stealth/StealthFeatureRegistry.js';
 import { StageGateEvaluator } from '../task/StageGateEvaluator.js';
 import { TaskManifestManager } from '../task/TaskManifestManager.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
@@ -282,6 +292,8 @@ export class AppRuntime implements AppRuntimeServices {
   readonly purePreflightRegistry: PurePreflightRegistry;
   readonly purePreflightReportBuilder: PurePreflightReportBuilder;
   readonly llmProviderManager: LLMProviderManager;
+  readonly aiProviderCatalog: AiProviderCatalog;
+  readonly aiRoutingPolicy: AiRoutingPolicy;
   readonly aiAugmentationService: AiAugmentationService;
   readonly aiAugmentationRegistry: AiAugmentationRegistry;
   readonly aiAugmentationReportBuilder: AiAugmentationReportBuilder;
@@ -296,6 +308,9 @@ export class AppRuntime implements AppRuntimeServices {
   readonly storageInspector: StorageInspector;
   readonly sessionStateManager: SessionStateManager;
   readonly stealthPresetRegistry: StealthPresetRegistry;
+  readonly stealthCoordinator: StealthCoordinator;
+  readonly stealthFeatureRegistry: StealthFeatureRegistry;
+  readonly stealthSubstrateReportBuilder: StealthSubstrateReportBuilder;
   readonly browserOpsRegistry: BrowserOpsRegistry;
   readonly browserOpsReportBuilder: BrowserOpsReportBuilder;
   readonly scriptCatalog: ScriptCatalog;
@@ -303,6 +318,11 @@ export class AppRuntime implements AppRuntimeServices {
   readonly sourceSearchEngine: SourceSearchEngine;
   readonly sourcePrecisionRegistry: SourcePrecisionRegistry;
   readonly sourcePrecisionReportBuilder: SourcePrecisionReportBuilder;
+  readonly astLocator: AstLocator;
+  readonly astReferenceFinder: AstReferenceFinder;
+  readonly astRewritePreviewer: AstRewritePreviewer;
+  readonly astSubstrateRegistry: AstSubstrateRegistry;
+  readonly astSubstrateReportBuilder: AstSubstrateReportBuilder;
   readonly functionHookManager: FunctionHookManager;
   readonly functionTraceRegistry: FunctionTraceRegistry;
   readonly objectInspector: ObjectInspector;
@@ -318,6 +338,10 @@ export class AppRuntime implements AppRuntimeServices {
     this.codeCollector = new CodeCollector(browserSession, this.pageController);
     this.astIndexBuilder = new AstIndexBuilder(this.codeCollector);
     this.llmProviderManager = new LLMProviderManager();
+    this.aiProviderCatalog = new AiProviderCatalog({
+      llmProviderManager: this.llmProviderManager
+    });
+    this.aiRoutingPolicy = new AiRoutingPolicy();
     this.aiPromptLibrary = new AiPromptLibrary();
     this.hookManager = new HookManager(browserSession);
     this.requestInitiatorTracker = new RequestInitiatorTracker(browserSession);
@@ -341,6 +365,16 @@ export class AppRuntime implements AppRuntimeServices {
       browserSession,
       preloadScriptRegistry: this.preloadScriptRegistry
     });
+    this.stealthFeatureRegistry = new StealthFeatureRegistry();
+    this.stealthCoordinator = new StealthCoordinator({
+      browserSession,
+      evidenceStore: this.evidenceStore,
+      featureRegistry: this.stealthFeatureRegistry,
+      preloadScriptRegistry: this.preloadScriptRegistry,
+      stealthPresetRegistry: this.stealthPresetRegistry,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.stealthSubstrateReportBuilder = new StealthSubstrateReportBuilder();
     this.browserOpsRegistry = new BrowserOpsRegistry(this.evidenceStore);
     this.debuggerSessionManager = new DebuggerSessionManager({
       browserSession
@@ -361,6 +395,23 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager
     });
     this.sourcePrecisionReportBuilder = new SourcePrecisionReportBuilder();
+    this.astLocator = new AstLocator({
+      scriptCatalog: this.scriptCatalog,
+      sourceReader: this.sourceReader
+    });
+    this.astReferenceFinder = new AstReferenceFinder({
+      scriptCatalog: this.scriptCatalog,
+      sourceReader: this.sourceReader
+    });
+    this.astRewritePreviewer = new AstRewritePreviewer({
+      scriptCatalog: this.scriptCatalog,
+      sourceReader: this.sourceReader
+    });
+    this.astSubstrateRegistry = new AstSubstrateRegistry({
+      evidenceStore: this.evidenceStore,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.astSubstrateReportBuilder = new AstSubstrateReportBuilder();
     this.functionTraceRegistry = new FunctionTraceRegistry();
     this.functionHookManager = new FunctionHookManager({
       browserSession
@@ -1351,6 +1402,26 @@ export class AppRuntime implements AppRuntimeServices {
     return this.sourcePrecisionReportBuilder;
   }
 
+  getAstLocator(): AstLocator {
+    return this.astLocator;
+  }
+
+  getAstReferenceFinder(): AstReferenceFinder {
+    return this.astReferenceFinder;
+  }
+
+  getAstRewritePreviewer(): AstRewritePreviewer {
+    return this.astRewritePreviewer;
+  }
+
+  getAstSubstrateRegistry(): AstSubstrateRegistry {
+    return this.astSubstrateRegistry;
+  }
+
+  getAstSubstrateReportBuilder(): AstSubstrateReportBuilder {
+    return this.astSubstrateReportBuilder;
+  }
+
   getFunctionHookManager(): FunctionHookManager {
     return this.functionHookManager;
   }
@@ -1479,6 +1550,14 @@ export class AppRuntime implements AppRuntimeServices {
     return this.llmProviderManager;
   }
 
+  getAiProviderCatalog(): AiProviderCatalog {
+    return this.aiProviderCatalog;
+  }
+
+  getAiRoutingPolicy(): AiRoutingPolicy {
+    return this.aiRoutingPolicy;
+  }
+
   getAiAugmentationService(): AiAugmentationService {
     return this.aiAugmentationService;
   }
@@ -1533,6 +1612,18 @@ export class AppRuntime implements AppRuntimeServices {
 
   getStealthPresetRegistry(): StealthPresetRegistry {
     return this.stealthPresetRegistry;
+  }
+
+  getStealthCoordinator(): StealthCoordinator {
+    return this.stealthCoordinator;
+  }
+
+  getStealthFeatureRegistry(): StealthFeatureRegistry {
+    return this.stealthFeatureRegistry;
+  }
+
+  getStealthSubstrateReportBuilder(): StealthSubstrateReportBuilder {
+    return this.stealthSubstrateReportBuilder;
   }
 
   getBrowserOpsRegistry(): BrowserOpsRegistry {
