@@ -1,5 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings } from '../battlefield/lineage.js';
 import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CollectedCodeSummaryResult, CollectCodeOptions, TopPriorityCollectedCodeResult } from '../collector/types.js';
 import { EvidenceStore } from '../evidence/EvidenceStore.js';
@@ -21,6 +23,7 @@ interface ReverseWorkflowRunnerDeps {
   networkCollector: NetworkCollector;
   requestInitiatorTracker: RequestInitiatorTracker;
   evidenceStore: EvidenceStore;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 export class ReverseWorkflowRunner {
@@ -58,6 +61,10 @@ export class ReverseWorkflowRunner {
       title: await this.readPageTitle(page),
       url: page.url()
     };
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'probe_reverse_target');
 
     const task = options.taskId
       ? await this.deps.evidenceStore.openTask({
@@ -83,10 +90,12 @@ export class ReverseWorkflowRunner {
     return {
       collectedCode,
       ...(hooksInjected.length > 0 ? { hooksInjected } : {}),
+      ...(battlefield.notes.length > 0 ? { battlefieldNotes: battlefield.notes } : {}),
       initiatorTrackerAttached: true,
       networkObserverAttached: true,
       nextActions: this.buildNextActions({
         autoInjectHooks: options.autoInjectHooks ?? false,
+        battlefield,
         collectedCode,
         taskId: task?.taskId
       }),
@@ -157,6 +166,7 @@ export class ReverseWorkflowRunner {
 
   private buildNextActions(input: {
     autoInjectHooks: boolean;
+    battlefield: ReturnType<typeof buildBattlefieldLineageContribution>;
     collectedCode: CollectedCodeSummaryResult | TopPriorityCollectedCodeResult;
     taskId?: string;
   }): string[] {
@@ -176,7 +186,9 @@ export class ReverseWorkflowRunner {
       actions.push('Open a reverse task if you want to persist snapshots and evidence.');
     }
 
-    return actions;
+    actions.push('Run prepare_battlefield_context and plan_battlefield_action before escalating into boundary/window/probe or debugger-heavy work.');
+    actions.push(...input.battlefield.nextActions);
+    return uniqueStrings(actions, 12);
   }
 
   private async readPageTitle(page: Awaited<ReturnType<BrowserSessionManager['getSelectedPage']>>): Promise<string> {

@@ -15,7 +15,8 @@ export type CompareAnchorEvidenceSource =
   | 'boundary-fixture'
   | 'patch-hints'
   | 'debugger'
-  | 'rebuild';
+  | 'rebuild'
+  | 'battlefield';
 
 export type CompareStrategy = 'exact' | 'normalized-string' | 'presence-only' | 'structured-subset';
 

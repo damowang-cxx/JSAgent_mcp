@@ -1,3 +1,5 @@
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import { AppError } from '../core/errors.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { HelperBoundaryRegistry } from '../helper/HelperBoundaryRegistry.js';
@@ -21,6 +23,7 @@ interface ScenarioProbePlannerDeps {
   helperBoundaryRegistry: HelperBoundaryRegistry;
   replayRecipeRunner: ReplayRecipeRunner;
   scenarioWorkflowRunner: ScenarioWorkflowRunner;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface ProbeContext {
@@ -60,6 +63,11 @@ export class ScenarioProbePlanner {
     const validationChecks = this.buildValidationChecks(targetName, context);
     const nextActions = this.buildNextActions(targetName, context);
     const stopIf = this.buildStopConditions(targetName, context);
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'scenario probe planning');
 
     if (!context.window) {
       notes.push('No dependency window was available for this source; plan starts with boundary/scenario evidence and asks for a focused window next.');
@@ -70,15 +78,21 @@ export class ScenarioProbePlanner {
 
     return {
       basedOn,
-      fixtureHints,
-      hookHints,
-      nextActions,
-      notes: uniqueStrings(notes, 30),
+      fixtureHints: uniqueStrings(fixtureHints, 12),
+      hookHints: uniqueStrings([
+        ...hookHints,
+        ...battlefield.nextActions,
+        'search_in_sources around the target helper or request builder before adding broader probes.',
+        'hook_function / trace_function once the target function name is stable.',
+        'set_exception_breakpoints or add_watch_expression only for precise live-state confirmation.'
+      ], 16),
+      nextActions: uniqueStrings(uniqueBattlefieldStrings([...nextActions, ...battlefield.nextActions], 12), 12),
+      notes: uniqueStrings(uniqueBattlefieldStrings([...notes, ...battlefield.notes], 30), 30),
       planId: makeProbePlanId(targetName),
       priority: this.scorePriority(context),
       scenario,
       steps,
-      stopIf,
+      stopIf: uniqueStrings(uniqueBattlefieldStrings([...stopIf, ...battlefield.stopIf], 12), 12),
       targetName,
       validationChecks
     };

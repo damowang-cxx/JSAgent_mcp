@@ -1,5 +1,7 @@
 import { AppError } from '../core/errors.js';
 import type { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
 import type { StoredFixtureCandidate } from '../fixture/types.js';
@@ -35,6 +37,7 @@ interface RebuildInputResolverDeps {
   divergenceComparator: DivergenceComparator;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface RebuildResolverContext {
@@ -88,6 +91,11 @@ export class RebuildInputResolver {
           target: selectedPreflight.target
         }
       : null;
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'rebuild context resolution');
 
     const result: RebuildContext = {
       contextId: makeContextId(
@@ -100,10 +108,16 @@ export class RebuildInputResolver {
       excludedNoise: this.buildExcludedNoise(context),
       expectedOutputs: this.buildExpectedOutputs(context),
       fixtureSource,
-      nextActions: this.buildNextActions(context, fixtureSource, selectedAnchor?.label ?? null, selectedPreflight?.surface ?? null),
+      nextActions: uniqueBattlefieldStrings([
+        ...this.buildNextActions(context, fixtureSource, selectedAnchor?.label ?? null, selectedPreflight?.surface ?? null),
+        ...battlefield.nextActions
+      ], 14),
       preservedInputs: this.buildPreservedInputs(context),
-      rebuildNotes: this.buildNotes(context, fixtureSource),
-      stopIf: this.buildStopIf(context, fixtureSource),
+      rebuildNotes: uniqueBattlefieldStrings([
+        ...this.buildNotes(context, fixtureSource),
+        ...battlefield.notes
+      ], 40),
+      stopIf: uniqueBattlefieldStrings([...this.buildStopIf(context, fixtureSource), ...battlefield.stopIf], 14),
       usedBoundaryFixture,
       usedCompareAnchor,
       usedPatchPreflight

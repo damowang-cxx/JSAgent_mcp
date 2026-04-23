@@ -1,4 +1,6 @@
 import type { CompareAnchorSelectionResult, StoredCompareAnchorSnapshot } from '../compare/types.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import { AppError } from '../core/errors.js';
 import type { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
 import type { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
@@ -45,6 +47,7 @@ interface PatchPreflightPlannerDeps {
   patchPlanManager: PatchPlanManager;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface PatchPreflightContext {
@@ -86,6 +89,11 @@ export class PatchPreflightPlanner {
     const context = options.source === 'task-artifact'
       ? await this.readTaskContext(options.taskId as string)
       : await this.readRuntimeContext(options.targetUrl, maxCandidates);
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'patch preflight');
 
     const candidates = mergeCandidates(this.buildCandidates(context))
       .sort((left, right) => rankFocus(right) - rankFocus(left) || surfacePriority(left.surface) - surfacePriority(right.surface))
@@ -102,18 +110,19 @@ export class PatchPreflightPlanner {
     return {
       candidates,
       compareAnchorUsed,
-      nextActions: this.buildNextActions(selected, compareAnchorUsed),
-      notes: [
+      nextActions: uniqueBattlefieldStrings([...this.buildNextActions(selected, compareAnchorUsed), ...battlefield.nextActions], 16),
+      notes: uniqueBattlefieldStrings([
         ...context.notes,
+        ...battlefield.notes,
         compareAnchorUsed
           ? `Patch preflight consumed compare anchor ${compareAnchorUsed.label} (${compareAnchorUsed.kind}).`
           : 'No compare anchor was available; preflight may recommend selecting one before patching.',
         selected
           ? `Selected ${selected.surface} because it is the smallest evidence-backed patch surface currently available.`
           : 'No patch preflight focus selected because no concrete compare/boundary/fixture/debugger/rebuild evidence is available.'
-      ],
+      ], 40),
       selected,
-      stopIf: this.buildStopIf(selected)
+      stopIf: uniqueBattlefieldStrings([...this.buildStopIf(selected), ...battlefield.stopIf], 16)
     };
   }
 

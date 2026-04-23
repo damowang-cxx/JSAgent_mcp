@@ -1,3 +1,5 @@
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import type { RankedCodeFile } from '../collector/types.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
 import { AppError } from '../core/errors.js';
@@ -70,6 +72,7 @@ interface DependencyWindowExtractorDeps {
   signatureScenarioAnalyzer: SignatureScenarioAnalyzer;
   taskManifestManager: TaskManifestManager;
   tokenScenarioAnalyzer: TokenScenarioAnalyzer;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface WindowContext {
@@ -134,6 +137,11 @@ export class DependencyWindowExtractor {
       sinkResult,
       tokenTrace
     });
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'dependency window extraction');
 
     if (snippets.length === 0) {
       notes.push('No collected code snippet matched the target symbol; window relies on boundary/scenario/runtime evidence.');
@@ -148,7 +156,7 @@ export class DependencyWindowExtractor {
       files,
       inputs,
       nodes,
-      notes: uniqueStrings(notes, 30),
+      notes: uniqueStrings(uniqueBattlefieldStrings([...notes, ...battlefield.notes], 30), 30),
       outputs,
       purePreflightHints: this.buildPurePreflightHints(target.name, inputs, outputs),
       rebuildPreflightHints: this.buildRebuildPreflightHints(target.name, inputs, outputs, validationAnchors),

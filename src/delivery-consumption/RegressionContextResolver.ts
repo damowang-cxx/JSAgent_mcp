@@ -1,5 +1,7 @@
 import { AppError } from '../core/errors.js';
 import type { AiAugmentationRegistry } from '../ai/AiAugmentationRegistry.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { RegressionRunner } from '../regression/RegressionRunner.js';
 import type { RegressionBaseline, RegressionRunResult } from '../regression/types.js';
@@ -37,6 +39,7 @@ interface RegressionContextResolverDeps {
   regressionWorkflowRunner: RegressionWorkflowRunner;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface RegressionContextEvidence {
@@ -73,18 +76,33 @@ export class RegressionContextResolver {
     const purePreflight = this.summarizePurePreflight(evidence.purePreflight);
     const flowReasoning = this.summarizeFlowReasoning(evidence.flowReasoning);
     const baselineId = evidence.baseline?.baselineId ?? evidence.regression?.baselineId;
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'regression context');
 
     const context: RegressionContext = {
       ...(baselineId ? { baselineId } : {}),
       compareAnchor,
       contextId: makeContextId(compareAnchor?.label ?? patchPreflight?.target ?? flowReasoning?.targetName ?? baselineId ?? 'regression-context'),
       flowReasoning,
-      nextActions: this.buildNextActions(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, flowReasoning),
+      nextActions: uniqueBattlefieldStrings([
+        ...this.buildNextActions(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, flowReasoning),
+        ...battlefield.nextActions
+      ], 16),
       patchPreflight,
       purePreflight,
       rebuildContext,
-      regressionNotes: this.buildNotes(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, flowReasoning),
-      stopIf: this.buildStopIf(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight)
+      regressionNotes: uniqueBattlefieldStrings([
+        ...this.buildNotes(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, flowReasoning),
+        ...battlefield.notes,
+        ...battlefield.provenance
+      ], 40),
+      stopIf: uniqueBattlefieldStrings([
+        ...this.buildStopIf(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight),
+        ...battlefield.stopIf
+      ], 16)
     };
 
     return {

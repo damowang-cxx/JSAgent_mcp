@@ -1,4 +1,6 @@
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
 import { AppError } from '../core/errors.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
@@ -39,6 +41,7 @@ interface HelperBoundaryExtractorDeps {
   scenarioWorkflowRunner: ScenarioWorkflowRunner;
   signatureScenarioAnalyzer: SignatureScenarioAnalyzer;
   tokenScenarioAnalyzer: TokenScenarioAnalyzer;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 type ExtractSource = 'scenario-last' | 'capture-last' | 'task-artifact';
@@ -86,6 +89,11 @@ export class HelperBoundaryExtractor {
     const recommendedHooks = this.buildRecommendedHooks(helper.name, options.targetUrl, sinkResult.topSink ?? undefined);
     const rebuildHints = this.buildRebuildHints(helper.name, inputs, outputs, relatedRequests);
     const pureHints = this.buildPureHints(helper.name, inputs, outputs);
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'helper boundary extraction');
 
     if (helperContext.length === 0) {
       notes.push('Helper context was not found in collected code; boundary relies on runtime/request/helper locator evidence.');
@@ -100,7 +108,7 @@ export class HelperBoundaryExtractor {
       helperName: helper.name,
       inputs,
       kind: helper.kind,
-      notes: uniqueStrings(notes, 30),
+      notes: uniqueStrings(uniqueBattlefieldStrings([...notes, ...battlefield.notes], 30), 30),
       outputs,
       pureHints,
       rebuildHints,

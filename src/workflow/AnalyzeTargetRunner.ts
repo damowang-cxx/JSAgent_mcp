@@ -8,6 +8,8 @@ import type { ExplainEngine } from '../analysis/ExplainEngine.js';
 import type { RiskScorer } from '../analysis/RiskScorer.js';
 import type { StaticAnalyzer } from '../analysis/StaticAnalyzer.js';
 import type { AnalyzeTargetResult, PriorityTarget, RequestFingerprint } from '../analysis/types.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings } from '../battlefield/lineage.js';
 import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
 import type { CodeFile, CollectCodeOptions, CollectCodeResult, TopPriorityCollectedCodeResult } from '../collector/types.js';
@@ -39,6 +41,7 @@ interface AnalyzeTargetRunnerDeps {
   requestInitiatorTracker: RequestInitiatorTracker;
   riskScorer: RiskScorer;
   staticAnalyzer: StaticAnalyzer;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 const DEFAULT_TOP_N = 6;
@@ -142,6 +145,14 @@ export class AnalyzeTargetRunner {
       whyTheseSteps = explanation.whyTheseSteps;
       stopIf = this.mergeStrings(stopIf, explanation.stopIf);
     }
+
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'analyze_target');
+    recommendedNextSteps = this.applyBattlefieldSteps(recommendedNextSteps, battlefield);
+    whyTheseSteps = uniqueStrings([...whyTheseSteps, ...battlefield.notes, ...battlefield.whyTheseSteps], 20);
+    stopIf = uniqueStrings([...stopIf, ...battlefield.stopIf], 16);
 
     const result: AnalyzeTargetResult = {
       collection: {
@@ -337,6 +348,25 @@ export class AnalyzeTargetRunner {
 
   private mergeStrings(left: readonly string[], right: readonly string[]): string[] {
     return Array.from(new Set([...left, ...right]));
+  }
+
+  private applyBattlefieldSteps(
+    existing: AnalyzeTargetResult['recommendedNextSteps'],
+    battlefield: ReturnType<typeof buildBattlefieldLineageContribution>
+  ): AnalyzeTargetResult['recommendedNextSteps'] {
+    if (battlefield.nextActions.length === 0) {
+      return existing;
+    }
+
+    const generated = battlefield.nextActions.slice(0, 2).map((action, index) => ({
+      action,
+      reason: battlefield.whyTheseSteps[0] ?? 'Battlefield lineage keeps analysis aligned with live browser/source/runtime evidence.',
+      tool: index === 0 ? 'prepare_battlefield_context' : 'plan_battlefield_action'
+    }));
+    return this.mergeActionPlanSteps(existing, generated.map((step) => step.action)).map((step) => {
+      const replacement = generated.find((item) => item.action === step.action);
+      return replacement ?? step;
+    });
   }
 
   private async preparePage(): Promise<void> {

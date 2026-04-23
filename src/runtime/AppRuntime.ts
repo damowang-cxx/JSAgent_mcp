@@ -14,6 +14,9 @@ import { AstLocator } from '../ast-substrate/AstLocator.js';
 import { AstReferenceFinder } from '../ast-substrate/AstReferenceFinder.js';
 import { AstRewritePreviewer } from '../ast-substrate/AstRewritePreviewer.js';
 import { AstSubstrateRegistry } from '../ast-substrate/AstSubstrateRegistry.js';
+import { BattlefieldActionPlanner } from '../battlefield/BattlefieldActionPlanner.js';
+import { BattlefieldContextResolver } from '../battlefield/BattlefieldContextResolver.js';
+import { BattlefieldIntegrationRegistry } from '../battlefield/BattlefieldIntegrationRegistry.js';
 import { BrowserOpsRegistry } from '../browser-ops/BrowserOpsRegistry.js';
 import { ConsoleCollector } from '../browser-ops/ConsoleCollector.js';
 import { DomInspector } from '../browser-ops/DomInspector.js';
@@ -100,6 +103,7 @@ import { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js';
 import { PureReportBuilder } from '../report/PureReportBuilder.js';
 import { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
 import { FunctionScalpelReportBuilder } from '../report/FunctionScalpelReportBuilder.js';
+import { BattlefieldIntegrationReportBuilder } from '../report/BattlefieldIntegrationReportBuilder.js';
 import { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
@@ -323,6 +327,10 @@ export class AppRuntime implements AppRuntimeServices {
   readonly astRewritePreviewer: AstRewritePreviewer;
   readonly astSubstrateRegistry: AstSubstrateRegistry;
   readonly astSubstrateReportBuilder: AstSubstrateReportBuilder;
+  readonly battlefieldContextResolver: BattlefieldContextResolver;
+  readonly battlefieldActionPlanner: BattlefieldActionPlanner;
+  readonly battlefieldIntegrationRegistry: BattlefieldIntegrationRegistry;
+  readonly battlefieldIntegrationReportBuilder: BattlefieldIntegrationReportBuilder;
   readonly functionHookManager: FunctionHookManager;
   readonly functionTraceRegistry: FunctionTraceRegistry;
   readonly objectInspector: ObjectInspector;
@@ -349,6 +357,12 @@ export class AppRuntime implements AppRuntimeServices {
     this.xhrWatchpointManager = new XhrWatchpointManager(browserSession, this.requestInitiatorTracker);
     this.evidenceStore = new EvidenceStore();
     this.taskManifestManager = new TaskManifestManager(this.evidenceStore);
+    this.battlefieldIntegrationRegistry = new BattlefieldIntegrationRegistry({
+      evidenceStore: this.evidenceStore,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.battlefieldActionPlanner = new BattlefieldActionPlanner();
+    this.battlefieldIntegrationReportBuilder = new BattlefieldIntegrationReportBuilder();
     this.domInspector = new DomInspector({
       browserSession,
       evidenceStore: this.evidenceStore,
@@ -513,6 +527,7 @@ export class AppRuntime implements AppRuntimeServices {
       staticAnalyzer: this.staticAnalyzer
     });
     this.reverseWorkflowRunner = new ReverseWorkflowRunner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       browserSession,
       codeCollector: this.codeCollector,
       evidenceStore: this.evidenceStore,
@@ -522,6 +537,7 @@ export class AppRuntime implements AppRuntimeServices {
       requestInitiatorTracker: this.requestInitiatorTracker
     });
     this.analyzeTargetRunner = new AnalyzeTargetRunner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       browserSession,
       codeCollector: this.codeCollector,
       codeSummarizer: this.codeSummarizer,
@@ -599,6 +615,7 @@ export class AppRuntime implements AppRuntimeServices {
       networkCollector: this.networkCollector
     });
     this.scenarioWorkflowRunner = new ScenarioWorkflowRunner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       browserSession,
       codeCollector: this.codeCollector,
       cryptoHelperLocator: this.cryptoHelperLocator,
@@ -615,6 +632,7 @@ export class AppRuntime implements AppRuntimeServices {
       tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
     });
     this.replayRecipeRunner = new ReplayRecipeRunner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       browserSession,
       capturePresetRegistry: this.capturePresetRegistry,
       captureReportBuilder: this.captureReportBuilder,
@@ -700,6 +718,7 @@ export class AppRuntime implements AppRuntimeServices {
       runtimeTraceSampler: this.runtimeTraceSampler
     });
     this.helperBoundaryExtractor = new HelperBoundaryExtractor({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       browserSession,
       codeCollector: this.codeCollector,
       cryptoHelperLocator: this.cryptoHelperLocator,
@@ -715,6 +734,7 @@ export class AppRuntime implements AppRuntimeServices {
       tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
     });
     this.dependencyWindowExtractor = new DependencyWindowExtractor({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       codeCollector: this.codeCollector,
       cryptoHelperLocator: this.cryptoHelperLocator,
       evidenceStore: this.evidenceStore,
@@ -731,6 +751,7 @@ export class AppRuntime implements AppRuntimeServices {
       tokenScenarioAnalyzer: this.tokenScenarioAnalyzer
     });
     this.scenarioProbePlanner = new ScenarioProbePlanner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       dependencyWindowExtractor: this.dependencyWindowExtractor,
       dependencyWindowRegistry: this.dependencyWindowRegistry,
       evidenceStore: this.evidenceStore,
@@ -838,12 +859,14 @@ export class AppRuntime implements AppRuntimeServices {
     this.deliveryReportBuilder = new DeliveryReportBuilder();
     this.regressionWorkflowRunner = new RegressionWorkflowRunner({
       baselineRegistry: this.baselineRegistry,
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       regressionRunner: this.regressionRunner,
       stageGateEvaluator: this.stageGateEvaluator
     });
     this.upgradeWorkflowRunner = new UpgradeWorkflowRunner(this.upgradeRegressionRunner);
     this.deliveryWorkflowRunner = new DeliveryWorkflowRunner({
       baselineRegistry: this.baselineRegistry,
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       evidenceStore: this.evidenceStore,
       regressionRunner: this.regressionRunner,
       sdkPackager: this.sdkPackager,
@@ -852,6 +875,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.regressionContextResolver = new RegressionContextResolver({
       aiAugmentationRegistry: this.aiAugmentationRegistry,
       baselineRegistry: this.baselineRegistry,
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       compareAnchorRegistry: this.compareAnchorRegistry,
       evidenceStore: this.evidenceStore,
       flowReasoningRegistry: this.flowReasoningRegistry,
@@ -865,6 +889,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.deliveryContextAssembler = new DeliveryContextAssembler({
       aiAugmentationRegistry: this.aiAugmentationRegistry,
       baselineRegistry: this.baselineRegistry,
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       compareAnchorRegistry: this.compareAnchorRegistry,
       deliveryAssembler: this.deliveryAssembler,
       deliveryContextRegistry: this.deliveryContextRegistry,
@@ -887,6 +912,7 @@ export class AppRuntime implements AppRuntimeServices {
       stageGateEvaluator: this.stageGateEvaluator
     });
     this.compareAnchorSelector = new CompareAnchorSelector({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
       debuggerSessionManager: this.debuggerSessionManager,
       dependencyWindowRegistry: this.dependencyWindowRegistry,
@@ -902,6 +928,7 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager
     });
     this.patchPreflightPlanner = new PatchPreflightPlanner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       compareAnchorRegistry: this.compareAnchorRegistry,
       compareAnchorSelector: this.compareAnchorSelector,
       debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
@@ -920,6 +947,7 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager
     });
     this.rebuildInputResolver = new RebuildInputResolver({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       compareAnchorRegistry: this.compareAnchorRegistry,
       debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
       dependencyWindowRegistry: this.dependencyWindowRegistry,
@@ -953,6 +981,7 @@ export class AppRuntime implements AppRuntimeServices {
       taskManifestManager: this.taskManifestManager
     });
     this.purePreflightPlanner = new PurePreflightPlanner({
+      battlefieldIntegrationRegistry: this.battlefieldIntegrationRegistry,
       compareAnchorRegistry: this.compareAnchorRegistry,
       debuggerEvidenceCorrelator: this.debuggerEvidenceCorrelator,
       dependencyWindowRegistry: this.dependencyWindowRegistry,
@@ -981,6 +1010,38 @@ export class AppRuntime implements AppRuntimeServices {
       purePreflightRegistry: this.purePreflightRegistry,
       rebuildContextRegistry: this.rebuildContextRegistry,
       taskManifestManager: this.taskManifestManager
+    });
+    this.battlefieldContextResolver = new BattlefieldContextResolver({
+      aiRoutingPolicy: this.aiRoutingPolicy,
+      astSubstrateRegistry: this.astSubstrateRegistry,
+      browserOpsRegistry: this.browserOpsRegistry,
+      browserSession,
+      compareAnchorRegistry: this.compareAnchorRegistry,
+      debugTargetCatalog: this.debugTargetCatalog,
+      debuggerFinishingRegistry: this.debuggerFinishingRegistry,
+      deliveryContextRegistry: this.deliveryContextRegistry,
+      dependencyWindowRegistry: this.dependencyWindowRegistry,
+      eventMonitorRegistry: this.eventMonitorRegistry,
+      evidenceStore: this.evidenceStore,
+      exceptionBreakpointManager: this.exceptionBreakpointManager,
+      flowReasoningRegistry: this.flowReasoningRegistry,
+      functionHookManager: this.functionHookManager,
+      functionScalpelRegistry: this.functionScalpelRegistry,
+      functionTraceRegistry: this.functionTraceRegistry,
+      helperBoundaryRegistry: this.helperBoundaryRegistry,
+      patchPreflightRegistry: this.patchPreflightRegistry,
+      preloadScriptRegistry: this.preloadScriptRegistry,
+      purePreflightRegistry: this.purePreflightRegistry,
+      rebuildContextRegistry: this.rebuildContextRegistry,
+      replayRecipeRunner: this.replayRecipeRunner,
+      scenarioWorkflowRunner: this.scenarioWorkflowRunner,
+      scriptCatalog: this.scriptCatalog,
+      sessionStateManager: this.sessionStateManager,
+      sourcePrecisionRegistry: this.sourcePrecisionRegistry,
+      stealthCoordinator: this.stealthCoordinator,
+      stealthFeatureRegistry: this.stealthFeatureRegistry,
+      taskManifestManager: this.taskManifestManager,
+      watchExpressionRegistry: this.watchExpressionRegistry
     });
   }
 
@@ -1422,6 +1483,22 @@ export class AppRuntime implements AppRuntimeServices {
 
   getAstSubstrateReportBuilder(): AstSubstrateReportBuilder {
     return this.astSubstrateReportBuilder;
+  }
+
+  getBattlefieldContextResolver(): BattlefieldContextResolver {
+    return this.battlefieldContextResolver;
+  }
+
+  getBattlefieldActionPlanner(): BattlefieldActionPlanner {
+    return this.battlefieldActionPlanner;
+  }
+
+  getBattlefieldIntegrationRegistry(): BattlefieldIntegrationRegistry {
+    return this.battlefieldIntegrationRegistry;
+  }
+
+  getBattlefieldIntegrationReportBuilder(): BattlefieldIntegrationReportBuilder {
+    return this.battlefieldIntegrationReportBuilder;
   }
 
   getFunctionHookManager(): FunctionHookManager {

@@ -1,4 +1,6 @@
 import { AppError } from '../core/errors.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution } from '../battlefield/lineage.js';
 import type { DeliveryContext } from '../delivery-consumption/types.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
@@ -40,6 +42,7 @@ export class DeliveryWorkflowRunner {
       regressionRunner: RegressionRunner;
       sdkPackager: SDKPackager;
       stageGateEvaluator: StageGateEvaluator;
+      battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
     }
   ) {}
 
@@ -91,11 +94,13 @@ export class DeliveryWorkflowRunner {
       nextActions: readyForDelivery
         ? [
             'Keep the SDK package and regression baseline as delivery artifacts.',
+            ...this.battlefieldNextActions(),
             ...this.contextNextActions(options.deliveryContext)
           ]
         : [
             regression.nextActionHint,
             'Re-run delivery workflow after resolving the blocking gate.',
+            ...this.battlefieldNextActions(),
             ...this.contextNextActions(options.deliveryContext)
           ],
       readyForDelivery,
@@ -104,6 +109,7 @@ export class DeliveryWorkflowRunner {
       stopIf: [
         'Stop if pure/port gate is not satisfied for the requested SDK target.',
         ...(regression.matchedBaseline ? [] : ['Stop SDK export until regression matches baseline.']),
+        ...this.battlefieldStopIf(),
         ...this.contextStopIf(options.deliveryContext)
       ],
       task: {
@@ -113,6 +119,7 @@ export class DeliveryWorkflowRunner {
       whyTheseSteps: [
         'Delivery requires stage gates, a regression baseline, a passing regression run, and SDK package artifacts.',
         'The SDK package is generated only after regression matches the registered baseline.',
+        ...this.battlefieldWhy(),
         ...this.contextWhy(options.deliveryContext)
       ],
       deliveryContextUsed: options.deliveryContext ?? null,
@@ -239,5 +246,17 @@ export class DeliveryWorkflowRunner {
           ...context.provenanceSummary.slice(0, 3)
         ]
       : [];
+  }
+
+  private battlefieldNextActions(): string[] {
+    return buildBattlefieldLineageContribution(this.deps.battlefieldIntegrationRegistry?.getLast() ?? null, 'delivery workflow').nextActions.slice(0, 1);
+  }
+
+  private battlefieldStopIf(): string[] {
+    return buildBattlefieldLineageContribution(this.deps.battlefieldIntegrationRegistry?.getLast() ?? null, 'delivery workflow').stopIf.slice(0, 1);
+  }
+
+  private battlefieldWhy(): string[] {
+    return buildBattlefieldLineageContribution(this.deps.battlefieldIntegrationRegistry?.getLast() ?? null, 'delivery workflow').whyTheseSteps.slice(0, 1);
   }
 }

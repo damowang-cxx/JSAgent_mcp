@@ -1,3 +1,5 @@
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import { AppError } from '../core/errors.js';
 import type { StoredDebuggerInspectionSnapshot } from '../debugger/types.js';
 import type { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
@@ -43,6 +45,7 @@ interface CompareAnchorSelectorDeps {
   rebuildWorkflowRunner: RebuildWorkflowRunner;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface CompareAnchorContext {
@@ -79,13 +82,19 @@ export class CompareAnchorSelector {
     const context = options.source === 'task-artifact'
       ? await this.readTaskContext(options.taskId as string)
       : await this.readRuntimeContext(options.targetUrl, maxCandidates);
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'compare anchor selection');
 
-    const candidates = this.buildCandidates(context)
+    const candidates = this.annotateBattlefieldCandidates(this.buildCandidates(context), battlefieldSnapshot)
       .sort((left, right) => right.confidence - left.confidence || kindPriority(left.kind) - kindPriority(right.kind))
       .slice(0, maxCandidates);
     const selected = candidates[0] ?? null;
     const notes = [
       ...context.notes,
+      ...battlefield.notes,
       selected
         ? `Selected ${selected.kind} anchor because it is the smallest evidence-backed compare target currently available.`
         : 'No compare anchor was selected because no helper/window/fixture/probe/scenario/debugger/rebuild evidence exposed a concrete compare target.'
@@ -93,10 +102,10 @@ export class CompareAnchorSelector {
 
     return {
       candidates,
-      nextActions: this.buildNextActions(selected),
-      notes,
+      nextActions: uniqueBattlefieldStrings([...this.buildNextActions(selected), ...battlefield.nextActions], 14),
+      notes: uniqueBattlefieldStrings(notes, 30),
       selected,
-      stopIf: this.buildStopIf(selected)
+      stopIf: uniqueBattlefieldStrings([...this.buildStopIf(selected), ...battlefield.stopIf], 14)
     };
   }
 
@@ -395,6 +404,25 @@ export class CompareAnchorSelector {
   private async readStoredResult<T extends { result: unknown }>(taskId: string, name: string): Promise<T['result'] | null> {
     const snapshot = await this.readSnapshot<T>(taskId, name);
     return snapshot?.result ?? null;
+  }
+
+  private annotateBattlefieldCandidates(
+    candidates: CompareAnchor[],
+    battlefieldSnapshot: Awaited<ReturnType<typeof readBattlefieldLineageSnapshot>>
+  ): CompareAnchor[] {
+    if (!battlefieldSnapshot) {
+      return candidates;
+    }
+
+    return candidates.map((candidate) => ({
+      ...candidate,
+      notes: uniqueBattlefieldStrings([
+        ...(candidate.notes ?? []),
+        `Battlefield context ${battlefieldSnapshot.context.contextId} keeps this anchor tied to live browser/source/runtime evidence.`
+      ], 6),
+      reason: `${candidate.reason} Battlefield lineage keeps compare selection aligned with the current target chain.`,
+      sourceEvidence: uniqueSources([...candidate.sourceEvidence, 'battlefield'])
+    }));
   }
 }
 

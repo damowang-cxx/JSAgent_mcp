@@ -53,6 +53,7 @@ export interface TaskManifest {
     functionScalpel?: string | null;
     astSubstrate?: string | null;
     stealthSubstrate?: string | null;
+    battlefield?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

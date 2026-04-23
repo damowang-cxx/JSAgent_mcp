@@ -1,3 +1,5 @@
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings } from '../battlefield/lineage.js';
 import { AppError } from '../core/errors.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { HookManager } from '../hook/HookManager.js';
@@ -26,6 +28,7 @@ interface ReplayRecipeRunnerDeps {
   requestInitiatorTracker: RequestInitiatorTracker;
   signatureScenarioAnalyzer: SignatureScenarioAnalyzer;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 const DEFAULT_CAPTURE_WINDOW_MS = 4_000;
@@ -72,32 +75,41 @@ export class ReplayRecipeRunner {
       targetUrl: options.targetUrl,
       topN: options.topN ?? preset.collectHints?.topN
     });
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'capture replay');
 
     const result: ReplayRecipeResult = {
       evidenceWritten: false,
       executedSteps: evidence.executedSteps,
       hookSummary: evidence.hookSummary,
-      nextActions: this.buildNextActions({
-        observedRequests: evidence.observedRequests.length,
-        scenarioActions: scenarioResult.nextActions.map((action) => action.step),
-        suspiciousRequests: scenarioResult.suspiciousRequests.length
-      }),
-      notes: this.unique([
+      nextActions: uniqueStrings([
+        ...this.buildNextActions({
+          observedRequests: evidence.observedRequests.length,
+          scenarioActions: scenarioResult.nextActions.map((action) => action.step),
+          suspiciousRequests: scenarioResult.suspiciousRequests.length
+        }),
+        ...battlefield.nextActions
+      ], 14),
+      notes: uniqueStrings([
         ...notes,
+        ...battlefield.notes,
         ...(preset.notes ?? []),
         `Capture window: ${captureWindowMs}ms.`,
         evidence.observedRequests.length > 0
           ? `Observed ${evidence.observedRequests.length} request(s) during replay window.`
           : 'No new request was observed during replay window.'
-      ]),
+      ], 30),
       observedRequests: evidence.observedRequests,
       preset,
       scenarioResult,
-      stopIf: this.unique([
+      stopIf: uniqueStrings([
         ...scenarioResult.stopIf,
+        ...battlefield.stopIf,
         'Stop replay expansion once the same target request and helper boundary are reproducible across two runs.',
         'Stop adding actions if replay introduces unrelated requests that obscure the target chain.'
-      ]),
+      ], 16),
       suspiciousRequests: scenarioResult.suspiciousRequests,
       task: null
     };

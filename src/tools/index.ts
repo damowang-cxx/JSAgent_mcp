@@ -36,6 +36,7 @@ import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportAstSubstrateReportTool } from './reverse/exportAstSubstrateReport.js';
 import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
 import { exportAiAugmentationReportTool } from './reverse/exportAiAugmentationReport.js';
+import { exportBattlefieldIntegrationReportTool } from './reverse/exportBattlefieldIntegrationReport.js';
 import { exportBrowserOpsReportTool } from './reverse/exportBrowserOpsReport.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryContextReportTool } from './reverse/exportDeliveryContextReport.js';
@@ -96,6 +97,7 @@ import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
 import { listAiAugmentationsTool } from './reverse/listAiAugmentations.js';
 import { listBreakpointsTool } from './reverse/listBreakpoints.js';
+import { listBattlefieldContextsTool } from './reverse/listBattlefieldContexts.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
 import { listCompareAnchorsTool } from './reverse/listCompareAnchors.js';
 import { listConsoleMessagesTool } from './reverse/listConsoleMessages.js';
@@ -126,10 +128,12 @@ import { markAcceptanceTool } from './reverse/markAcceptance.js';
 import { monitorEventsTool } from './reverse/monitorEvents.js';
 import { openReverseTaskTool } from './reverse/openReverseTask.js';
 import { planPatchTool } from './reverse/planPatch.js';
+import { planBattlefieldActionTool } from './reverse/planBattlefieldAction.js';
 import { planPatchPreflightTool } from './reverse/planPatchPreflight.js';
 import { planPurePreflightTool } from './reverse/planPurePreflight.js';
 import { planScenarioProbeTool } from './reverse/planScenarioProbe.js';
 import { prepareDeliveryContextTool } from './reverse/prepareDeliveryContext.js';
+import { prepareBattlefieldContextTool } from './reverse/prepareBattlefieldContext.js';
 import { prepareRebuildContextTool } from './reverse/prepareRebuildContext.js';
 import { prepareRegressionContextTool } from './reverse/prepareRegressionContext.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
@@ -250,6 +254,10 @@ export const reverseTools = [
   setStealthFeaturesTool,
   exportAstSubstrateReportTool,
   exportStealthSubstrateReportTool,
+  prepareBattlefieldContextTool,
+  planBattlefieldActionTool,
+  listBattlefieldContextsTool,
+  exportBattlefieldIntegrationReportTool,
   createHookTool,
   listHooksTool,
   injectHookTool,
@@ -450,6 +458,7 @@ export {
   exportBoundaryFixtureReportTool,
   exportAiAugmentationReportTool,
   exportBrowserOpsReportTool,
+  exportBattlefieldIntegrationReportTool,
   exportCompareAnchorReportTool,
   exportDeliveryContextReportTool,
   exportDebuggerFinishingReportTool,
@@ -515,6 +524,7 @@ export {
   listAiAugmentationsTool,
   listAiProvidersTool,
   listBoundaryFixturesTool,
+  listBattlefieldContextsTool,
   listBreakpointsTool,
   listCapturePresetsTool,
   listCompareAnchorsTool,
@@ -555,12 +565,14 @@ export {
   openReverseTaskTool,
   pingTool,
   planPatchTool,
+  planBattlefieldActionTool,
   planPatchPreflightTool,
   planPurePreflightTool,
   pauseExecutionTool,
   previewAstRewriteTool,
   planScenarioProbeTool,
   prepareDeliveryContextTool,
+  prepareBattlefieldContextTool,
   prepareRebuildContextTool,
   prepareRegressionContextTool,
   probeReverseTargetTool,

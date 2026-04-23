@@ -13,6 +13,9 @@ import type { AstLocator } from '../ast-substrate/AstLocator.js';
 import type { AstReferenceFinder } from '../ast-substrate/AstReferenceFinder.js';
 import type { AstRewritePreviewer } from '../ast-substrate/AstRewritePreviewer.js';
 import type { AstSubstrateRegistry } from '../ast-substrate/AstSubstrateRegistry.js';
+import type { BattlefieldActionPlanner } from '../battlefield/BattlefieldActionPlanner.js';
+import type { BattlefieldContextResolver } from '../battlefield/BattlefieldContextResolver.js';
+import type { BattlefieldIntegrationRegistry } from '../battlefield/BattlefieldIntegrationRegistry.js';
 import type { BrowserOpsRegistry } from '../browser-ops/BrowserOpsRegistry.js';
 import type { ConsoleCollector } from '../browser-ops/ConsoleCollector.js';
 import type { DomInspector } from '../browser-ops/DomInspector.js';
@@ -99,6 +102,7 @@ import type { ProbePlanReportBuilder } from '../report/ProbePlanReportBuilder.js
 import type { PureReportBuilder } from '../report/PureReportBuilder.js';
 import type { FlowReasoningReportBuilder } from '../report/FlowReasoningReportBuilder.js';
 import type { FunctionScalpelReportBuilder } from '../report/FunctionScalpelReportBuilder.js';
+import type { BattlefieldIntegrationReportBuilder } from '../report/BattlefieldIntegrationReportBuilder.js';
 import type { PurePreflightReportBuilder } from '../report/PurePreflightReportBuilder.js';
 import type { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import type { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
@@ -320,6 +324,10 @@ export interface AppRuntimeServices {
   astRewritePreviewer: AstRewritePreviewer;
   astSubstrateRegistry: AstSubstrateRegistry;
   astSubstrateReportBuilder: AstSubstrateReportBuilder;
+  battlefieldContextResolver: BattlefieldContextResolver;
+  battlefieldActionPlanner: BattlefieldActionPlanner;
+  battlefieldIntegrationRegistry: BattlefieldIntegrationRegistry;
+  battlefieldIntegrationReportBuilder: BattlefieldIntegrationReportBuilder;
   functionHookManager: FunctionHookManager;
   functionTraceRegistry: FunctionTraceRegistry;
   objectInspector: ObjectInspector;

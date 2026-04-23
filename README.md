@@ -51,6 +51,7 @@ The project currently includes:
 - Debugger Finishing Pack for exception breakpoints, watch expressions, and lite debug target orchestration
 - Function Scalpel Pack for quick selected-page function hooks, traces, bounded object inspection, and event monitoring
 - Thick Substrate Pack for bounded AST assistance, dual-mode AI provider routing, and stronger stealth coordination
+- Battlefield Integration & Hardening for battlefield-first context planning, workflow lineage, and artifact/report hardening across phases 27-31
 
 ## Design Principles
 
@@ -70,6 +71,8 @@ The project currently includes:
   - inspect live selected-page scripts directly before falling back to collected-code analysis
 - Function-scalpel-first before broad workflow escalation
   - use quick function/object/event probes before escalating into broader structured workflows
+- Battlefield-first before heavy workflow escalation
+  - align browser ops, source precision, function scalpel, and debugger state before escalating into boundary/window/probe/rebuild/pure/delivery
 - Substrate-first, not workflow explosion
   - strengthen AST, AI, and stealth foundations without creating a parallel reverse workflow
 - Smallest useful reasoning first
@@ -431,41 +434,27 @@ npm start
 
 - `list_pages`
 - `select_page`
-- `list_network_requests`
-- `break_on_xhr`
-- reproduce a request in the page
-- `get_request_initiator`
-- `collect_code` with `returnMode='summary'`
-- `collect_code` with `returnMode='top-priority'`
-- `get_collected_code_file`
-- `summarize_code`
-- `understand_code`
-- `detect_crypto`
-- `risk_panel`
-- `deobfuscate_code`
-- `correlate_request_flows`
-- `analyze_target`
-- `save_pure_fixture`
-- `export_rebuild_bundle`
-- `run_rebuild_probe`
-- `compare_rebuild_result`
-- `diff_env_requirements`
-- `run_rebuild_workflow`
-- `export_rebuild_report`
-- `stabilize_fixture`
-- `plan_patch`
-- `apply_patch`
-- `run_patch_iteration`
-- `mark_acceptance`
-- `export_patch_report`
-- `freeze_runtime_sample`
-- `export_runtime_trace`
-- `define_pure_boundary`
-- `build_pure_fixture`
-- `extract_node_pure`
-- `verify_node_pure`
-- `run_pure_workflow`
-- `export_pure_report`
+- `query_dom`
+- `list_scripts`
+- `search_in_sources`
+- `hook_function`
+- `inspect_object`
+- `set_exception_breakpoints`
+- `prepare_battlefield_context`
+- `plan_battlefield_action`
+- `run_scenario_recipe`
+- `extract_helper_boundary`
+- `extract_dependency_window`
+- `select_compare_anchor`
+- `plan_patch_preflight`
+- `prepare_rebuild_context`
+- `plan_pure_preflight`
+- `run_rebuild_from_context`
+- `run_pure_from_preflight`
+- `prepare_regression_context`
+- `prepare_delivery_context`
+- `run_delivery_from_context`
+- `export_battlefield_integration_report`
 - `export_reverse_report`
 - `export_session_report`
 - `collection_diff`
@@ -1640,6 +1629,61 @@ Recommended Phase 31 validation flow:
 9. `export_ast_substrate_report`.
 10. `export_stealth_substrate_report`.
 
+## Phase 32: Battlefield Integration & Hardening
+
+Phase 32 does not add a separate reverse workflow. It integrates the battlefield-oriented capabilities from phases 27-31 back into the structured reverse chain so browser ops, source precision, function scalpel, debugger finishing, and thick substrate lineage are visible in scenario/capture/boundary/window/probe/compare/preflight/rebuild/pure/regression/delivery artifacts.
+
+New tools:
+
+- `prepare_battlefield_context`
+- `plan_battlefield_action`
+- `list_battlefield_contexts`
+- `export_battlefield_integration_report`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Target-chain-first
+- Battlefield-first before heavy workflow escalation
+- Substrate-first, not workflow explosion
+
+Current boundaries:
+
+- This is a battlefield-first integration and hardening layer.
+- It is not a parallel battlefield workflow platform.
+- It does not replace deterministic compare / patch / rebuild / pure / regression / delivery truth.
+- It does not introduce a site adapter, a second browser manager, a full CI platform, or a full orchestrator/dashboard.
+- AI remains an enhancer only; battlefield planning is explainable state reduction, not a new truth engine.
+
+Recommended Phase 32 validation flow:
+
+1. `list_pages`.
+2. `select_page`.
+3. `query_dom`.
+4. `list_scripts`.
+5. `search_in_sources`.
+6. `hook_function`.
+7. `inspect_object`.
+8. `set_exception_breakpoints`.
+9. `prepare_battlefield_context`.
+10. `plan_battlefield_action`.
+11. `run_scenario_recipe`.
+12. `extract_helper_boundary`.
+13. `extract_dependency_window`.
+14. `select_compare_anchor`.
+15. `plan_patch_preflight`.
+16. `prepare_rebuild_context`.
+17. `plan_pure_preflight`.
+18. `run_rebuild_from_context`.
+19. `run_pure_from_preflight`.
+20. `prepare_regression_context`.
+21. `prepare_delivery_context`.
+22. `run_delivery_from_context`.
+23. `export_battlefield_integration_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1698,6 +1742,10 @@ Recommended Phase 31 validation flow:
 - `set_stealth_features`
 - `export_ast_substrate_report`
 - `export_stealth_substrate_report`
+- `prepare_battlefield_context`
+- `plan_battlefield_action`
+- `list_battlefield_contexts`
+- `export_battlefield_integration_report`
 - `create_hook`
 - `list_hooks`
 - `inject_hook`

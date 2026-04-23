@@ -1,4 +1,6 @@
 import { AppError } from '../core/errors.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution } from '../battlefield/lineage.js';
 import type { RegressionContext } from '../delivery-consumption/types.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { RegressionRunner } from '../regression/RegressionRunner.js';
@@ -29,6 +31,7 @@ export class RegressionWorkflowRunner {
       baselineRegistry: BaselineRegistry;
       regressionRunner: RegressionRunner;
       stageGateEvaluator: StageGateEvaluator;
+      battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
     }
   ) {}
 
@@ -76,18 +79,21 @@ export class RegressionWorkflowRunner {
       nextActions: regression.matchedBaseline
         ? [
             'Export the SDK package after confirming the delivery gate.',
+            ...this.battlefieldNextActions(),
             ...this.contextNextActions(options.regressionContext)
           ]
-        : [regression.nextActionHint, ...this.contextNextActions(options.regressionContext)],
+        : [regression.nextActionHint, ...this.battlefieldNextActions(), ...this.contextNextActions(options.regressionContext)],
       regression,
       stopIf: [
         'Stop if the regression baseline was registered before pure/port gate passed.',
         ...(regression.matchedBaseline ? [] : ['Stop delivery packaging until regression is matched.']),
+        ...this.battlefieldStopIf(),
         ...this.contextStopIf(options.regressionContext)
       ],
       whyTheseSteps: [
         'Regression baseline is fixture-bound and registered only after stage gates pass.',
         'Regression reruns Node/Python pure before SDK packaging.',
+        ...this.battlefieldWhy(),
         ...this.contextWhy(options.regressionContext)
       ],
       regressionContextUsed: options.regressionContext ?? null,
@@ -142,5 +148,17 @@ export class RegressionWorkflowRunner {
           ...context.regressionNotes.slice(0, 3)
         ]
       : [];
+  }
+
+  private battlefieldNextActions(): string[] {
+    return buildBattlefieldLineageContribution(this.deps.battlefieldIntegrationRegistry?.getLast() ?? null, 'regression workflow').nextActions.slice(0, 1);
+  }
+
+  private battlefieldStopIf(): string[] {
+    return buildBattlefieldLineageContribution(this.deps.battlefieldIntegrationRegistry?.getLast() ?? null, 'regression workflow').stopIf.slice(0, 1);
+  }
+
+  private battlefieldWhy(): string[] {
+    return buildBattlefieldLineageContribution(this.deps.battlefieldIntegrationRegistry?.getLast() ?? null, 'regression workflow').whyTheseSteps.slice(0, 1);
   }
 }

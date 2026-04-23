@@ -1,6 +1,8 @@
 import { AppError } from '../core/errors.js';
 import type { AiAugmentationRegistry } from '../ai/AiAugmentationRegistry.js';
 import type { AiAugmentationResult, StoredAiAugmentationSnapshot } from '../ai/types.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import type { BaselineRegistry } from '../regression/BaselineRegistry.js';
 import type { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
 import type { CompareAnchorSelectionResult, StoredCompareAnchorSnapshot } from '../compare/types.js';
@@ -46,6 +48,7 @@ interface DeliveryContextAssemblerDeps {
   deliveryContextRegistry: DeliveryContextRegistry;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface DeliveryContextEvidence {
@@ -81,19 +84,37 @@ export class DeliveryContextAssembler {
     const rebuildContext = this.summarizeRebuildContext(evidence.rebuildContext) ?? evidence.regressionContext?.rebuildContext ?? null;
     const purePreflight = this.summarizePurePreflight(evidence.purePreflight) ?? evidence.regressionContext?.purePreflight ?? null;
     const aiAugmentation = this.summarizeAiAugmentation(evidence.aiAugmentation);
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'delivery context');
 
     const context: DeliveryContext = {
       aiAugmentation,
       compareAnchor,
       contextId: makeContextId(compareAnchor?.label ?? purePreflight?.contextId ?? evidence.regressionContext?.contextId ?? 'delivery-context'),
-      handoffNotes: this.buildHandoffNotes(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
-      nextActions: this.buildNextActions(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
+      handoffNotes: uniqueBattlefieldStrings([
+        ...this.buildHandoffNotes(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
+        ...battlefield.notes,
+        ...battlefield.provenance
+      ], 40),
+      nextActions: uniqueBattlefieldStrings([
+        ...this.buildNextActions(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
+        ...battlefield.nextActions
+      ], 16),
       patchPreflight,
-      provenanceSummary: this.buildProvenanceSummary(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
+      provenanceSummary: uniqueBattlefieldStrings([
+        ...this.buildProvenanceSummary(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
+        ...battlefield.provenance
+      ], 30),
       purePreflight,
       rebuildContext,
       regressionContext: evidence.regressionContext,
-      stopIf: this.buildStopIf(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation)
+      stopIf: uniqueBattlefieldStrings([
+        ...this.buildStopIf(evidence, compareAnchor, patchPreflight, rebuildContext, purePreflight, aiAugmentation),
+        ...battlefield.stopIf
+      ], 16)
     };
 
     return {

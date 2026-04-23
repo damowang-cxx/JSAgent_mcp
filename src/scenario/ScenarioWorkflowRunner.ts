@@ -1,5 +1,7 @@
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import type { CodeCollector } from '../collector/CodeCollector.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings } from '../battlefield/lineage.js';
 import { AppError } from '../core/errors.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { HookManager } from '../hook/HookManager.js';
@@ -37,6 +39,7 @@ interface ScenarioWorkflowRunnerDeps {
   signatureScenarioAnalyzer: SignatureScenarioAnalyzer;
   taskManifestManager: TaskManifestManager;
   tokenScenarioAnalyzer: TokenScenarioAnalyzer;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 export class ScenarioWorkflowRunner {
@@ -97,6 +100,11 @@ export class ScenarioWorkflowRunner {
     if (hooksInjected.length > 0) {
       analysis.notes.push(`Scenario recipe ensured hooks: ${hooksInjected.join(', ')}.`);
     }
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'scenario workflow');
+    analysis.notes = uniqueStrings([...analysis.notes, ...battlefield.notes], 30);
 
     const plan = this.deps.scenarioActionPlanner.plan({
       analysis,
@@ -110,13 +118,13 @@ export class ScenarioWorkflowRunner {
       analysis,
       evidenceWritten: false,
       helperResult,
-      nextActions: plan.nextActions,
+      nextActions: uniqueStrings([...plan.nextActions, ...battlefield.nextActions], 14),
       preset,
       sinkResult,
-      stopIf: plan.stopIf,
+      stopIf: uniqueStrings([...plan.stopIf, ...battlefield.stopIf], 14),
       task: null,
       tokenTrace,
-      whyTheseSteps: plan.whyTheseSteps
+      whyTheseSteps: uniqueStrings([...plan.whyTheseSteps, ...battlefield.whyTheseSteps], 16)
     };
 
     if (options.taskId && options.writeEvidence) {

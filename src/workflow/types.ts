@@ -36,6 +36,7 @@ export interface ProbeReverseTargetResult {
     taskId: string;
     taskDir: string;
   } | null;
+  battlefieldNotes?: string[];
   nextActions: string[];
 }
 

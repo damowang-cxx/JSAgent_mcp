@@ -1,6 +1,8 @@
 import { AppError } from '../core/errors.js';
 import type { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
 import type { CompareAnchorSelectionResult, StoredCompareAnchorSnapshot } from '../compare/types.js';
+import type { BattlefieldSnapshotRegistryLike } from '../battlefield/lineage.js';
+import { buildBattlefieldLineageContribution, readBattlefieldLineageSnapshot, uniqueStrings as uniqueBattlefieldStrings } from '../battlefield/lineage.js';
 import type { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
 import type { EvidenceStore } from '../evidence/EvidenceStore.js';
 import type { FixtureCandidateRegistry } from '../fixture/FixtureCandidateRegistry.js';
@@ -33,6 +35,7 @@ interface PurePreflightPlannerDeps {
   rebuildWorkflowRunner: RebuildWorkflowRunner;
   evidenceStore: EvidenceStore;
   taskManifestManager: TaskManifestManager;
+  battlefieldIntegrationRegistry?: BattlefieldSnapshotRegistryLike;
 }
 
 interface PurePreflightEvidence {
@@ -103,6 +106,11 @@ export class PurePreflightPlanner {
           targetName: evidence.flowReasoning.targetName
         }
       : null;
+    const battlefieldSnapshot = await readBattlefieldLineageSnapshot(this.deps.battlefieldIntegrationRegistry, {
+      preferTaskArtifact: options.source === 'task-artifact',
+      taskId: options.taskId
+    });
+    const battlefield = buildBattlefieldLineageContribution(battlefieldSnapshot, 'pure preflight');
 
     const targetName = usedBoundaryFixture?.targetName ??
       usedFlowReasoning?.targetName ??
@@ -115,11 +123,11 @@ export class PurePreflightPlanner {
       contextId: makeContextId(targetName),
       excludedNoise: uniqueStrings(this.buildExcludedNoise(evidence), 50),
       expectedOutputs: uniqueBy(this.buildExpectedOutputs(evidence), (item) => `${item.target}:${item.name}`).slice(0, 40),
-      nextActions: uniqueStrings(this.buildNextActions(evidence, source), 16),
+      nextActions: uniqueBattlefieldStrings([...this.buildNextActions(evidence, source), ...battlefield.nextActions], 16),
       preservedInputs: uniqueBy(this.buildPreservedInputs(evidence), (item) => item.name).slice(0, 40),
-      pureNotes: uniqueStrings(this.buildPureNotes(evidence, source), 50),
+      pureNotes: uniqueBattlefieldStrings([...this.buildPureNotes(evidence, source), ...battlefield.notes], 50),
       source,
-      stopIf: uniqueStrings(this.buildStopIf(evidence, source), 16),
+      stopIf: uniqueBattlefieldStrings([...this.buildStopIf(evidence, source), ...battlefield.stopIf], 16),
       usedBoundaryFixture,
       usedCompareAnchor,
       usedFlowReasoning,

@@ -60,7 +60,8 @@ export class RegressionRunner {
           flowReasoningUsed: options.regressionContext.flowReasoning ?? null,
           notes: [
             ...diffResult.notes,
-            `Regression context ${options.regressionContext.contextId} attached as provenance; matchedBaseline remains deterministic.`
+            `Regression context ${options.regressionContext.contextId} attached as provenance; matchedBaseline remains deterministic.`,
+            'Battlefield lineage may be present inside regression context notes, but it does not override deterministic regression truth.'
           ],
           patchPreflightUsed: options.regressionContext.patchPreflight ?? null,
           purePreflightUsed: options.regressionContext.purePreflight ?? null,

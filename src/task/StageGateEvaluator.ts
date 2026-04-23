@@ -50,16 +50,22 @@ export class StageGateEvaluator {
 
     switch (stage) {
       case 'observe':
-        return this.result(stage, hasAnySnapshot('analyze-target-summary') || hasLog('runtime-evidence'), {
+        return this.result(stage, hasAnySnapshot('analyze-target-summary', 'battlefield/latest') || hasLog('runtime-evidence'), {
           missing: ['analyze-target-summary or runtime-evidence'],
-          next: ['Run analyze_target or record runtime evidence.'],
-          reasons: [`Observed evidence kinds: ${Array.from(runtimeKinds).join(', ') || '(none)'}.`]
+          next: ['Run analyze_target or prepare_battlefield_context, then record runtime evidence.'],
+          reasons: [
+            `Observed evidence kinds: ${Array.from(runtimeKinds).join(', ') || '(none)'}.`,
+            `Battlefield snapshot present: ${hasSnapshot('battlefield/latest')}.`
+          ]
         });
       case 'capture':
         return this.result(stage, hasLog('network') || hasLog('hooks') || hasAnySnapshot('run/frozen-sample', 'run/fixtures', 'analyze-target-summary'), {
           missing: ['network/hooks log or captured fixture snapshot'],
-          next: ['Collect code, hook/network samples, or save a fixture.'],
-          reasons: [`Network logs: ${logs.network?.length ?? 0}, hook logs: ${logs.hooks?.length ?? 0}.`]
+          next: ['Collect code, hook/network samples, or save a fixture.', 'Use plan_battlefield_action if browser/source/scalpel/debugger state is still fragmented.'],
+          reasons: [
+            `Network logs: ${logs.network?.length ?? 0}, hook logs: ${logs.hooks?.length ?? 0}.`,
+            `Battlefield snapshot present: ${hasSnapshot('battlefield/latest')}.`
+          ]
         });
       case 'rebuild':
         return this.result(stage, hasAnySnapshot('rebuild-bundle', 'rebuild-run'), {
