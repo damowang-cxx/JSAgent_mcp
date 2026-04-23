@@ -91,6 +91,44 @@ export interface CallFrameEvaluationResult {
   evaluatedAt: string;
 }
 
+export type ExceptionBreakpointMode = 'none' | 'uncaught' | 'caught' | 'all';
+
+export interface WatchExpressionRecord {
+  watchId: string;
+  expression: string;
+  createdAt: string;
+  enabled: boolean;
+}
+
+export interface WatchExpressionValue {
+  watchId: string;
+  expression: string;
+  ok: boolean;
+  preview?: string;
+  valueType?: string;
+  error?: string;
+  evaluatedAt: string;
+}
+
+export interface DebugTargetSummary {
+  targetId: string;
+  kind: 'page' | 'worker' | 'shared-worker' | 'unknown';
+  title?: string;
+  url?: string;
+  isSelectedPage?: boolean;
+  isCurrentDebuggerTarget?: boolean;
+}
+
+export interface DebuggerFinishingSnapshot {
+  createdAt?: string;
+  exceptionBreakpointMode?: ExceptionBreakpointMode;
+  watchExpressions?: WatchExpressionRecord[];
+  lastWatchValues?: WatchExpressionValue[];
+  lastDebugTargets?: DebugTargetSummary[];
+  currentDebugTargetId?: string | null;
+  notes?: string[];
+}
+
 export interface DebuggerCorrelationHint {
   kind: 'request' | 'hook' | 'scenario-target' | 'sink';
   value: string;

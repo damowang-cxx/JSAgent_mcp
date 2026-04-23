@@ -1,17 +1,21 @@
-import type { CDPSession, Page } from 'puppeteer';
+import type { CDPSession, Page, Target } from 'puppeteer';
 
 import type { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { AppError } from '../core/errors.js';
 import type {
   BreakpointLocation,
   CallFrameEvaluationResult,
+  DebugTargetSummary,
   DebuggerCallFrameDetail,
   DebuggerCallFrameSummary,
   DebuggerScriptSummary,
   DebuggerScopeSummary,
   DebuggerScopeVariable,
+  ExceptionBreakpointMode,
   ManagedBreakpoint,
-  PausedStateSummary
+  PausedStateSummary,
+  WatchExpressionRecord,
+  WatchExpressionValue
 } from './types.js';
 
 interface DebuggerScriptInternal extends DebuggerScriptSummary {
@@ -76,6 +80,8 @@ interface CdpPausedEvent {
   callFrames?: CdpCallFrame[];
 }
 
+interface CdpRuntimeEvaluationResponse extends CdpEvaluationResponse {}
+
 interface TextSearchMatch {
   script: DebuggerScriptInternal;
   index: number;
@@ -90,10 +96,14 @@ const DEFAULT_MAX_SCOPE_VARIABLES = 80;
 const DEFAULT_MAX_VALUE_DEPTH = 1;
 const MAX_PREVIEW_LENGTH = 500;
 const MAX_OBJECT_PROPERTIES = 12;
+const WATCH_EVALUATION_TIMEOUT_MS = 3_000;
 
 export class DebuggerSessionManager {
   private session: CDPSession | null = null;
   private pageId: string | null = null;
+  private currentDebugTargetId: string | null = null;
+  private explicitDebugTargetId: string | null = null;
+  private exceptionPauseMode: ExceptionBreakpointMode = 'none';
   private scripts = new Map<string, DebuggerScriptInternal>();
   private breakpoints = new Map<string, ManagedBreakpoint>();
   private pausedState: PausedStateSummary = emptyPausedState();
@@ -102,6 +112,10 @@ export class DebuggerSessionManager {
   constructor(private readonly deps: { browserSession: BrowserSessionManager }) {}
 
   async ensureAttached(): Promise<void> {
+    if (this.session && this.explicitDebugTargetId) {
+      return;
+    }
+
     const page = await this.deps.browserSession.getSelectedPage();
     const nextPageId = this.deps.browserSession.getPageId(page);
     if (this.session && this.pageId === nextPageId) {
@@ -415,6 +429,104 @@ export class DebuggerSessionManager {
     }
   }
 
+  async setExceptionPauseMode(mode: ExceptionBreakpointMode): Promise<void> {
+    await this.ensureAttached();
+    await this.applyExceptionPauseMode(mode);
+    this.exceptionPauseMode = mode;
+  }
+
+  getExceptionPauseMode(): ExceptionBreakpointMode {
+    return this.exceptionPauseMode;
+  }
+
+  async listDebugTargets(): Promise<DebugTargetSummary[]> {
+    const browser = await this.deps.browserSession.ensureBrowser();
+    const selectedTargetId = await this.getSelectedPageTargetId();
+    const summaries: DebugTargetSummary[] = [];
+
+    for (const target of browser.targets()) {
+      const targetId = targetIdOf(target);
+      if (!targetId) {
+        continue;
+      }
+      const kind = kindOfTarget(target);
+      if (!isDebuggableTargetKind(kind)) {
+        continue;
+      }
+
+      summaries.push({
+        targetId,
+        kind,
+        ...(await this.targetTitle(target)),
+        ...(target.url() ? { url: target.url() } : {}),
+        isSelectedPage: selectedTargetId === targetId,
+        isCurrentDebuggerTarget: this.currentDebugTargetId === targetId
+      });
+    }
+
+    return summaries.sort((left, right) => {
+      const selectedSort = Number(Boolean(right.isSelectedPage)) - Number(Boolean(left.isSelectedPage));
+      if (selectedSort !== 0) {
+        return selectedSort;
+      }
+      return left.kind.localeCompare(right.kind) || (left.url ?? '').localeCompare(right.url ?? '') || left.targetId.localeCompare(right.targetId);
+    });
+  }
+
+  async selectDebugTarget(targetId: string): Promise<DebugTargetSummary> {
+    const normalizedTargetId = targetId.trim();
+    if (!normalizedTargetId) {
+      throw new AppError('DEBUG_TARGET_ID_REQUIRED', 'select_debug_target requires a non-empty targetId.');
+    }
+
+    const browser = await this.deps.browserSession.ensureBrowser();
+    const target = browser.targets().find((candidate) => targetIdOf(candidate) === normalizedTargetId);
+    if (!target) {
+      throw new AppError('DEBUG_TARGET_NOT_FOUND', `Debug target not found: ${normalizedTargetId}`, {
+        targetId: normalizedTargetId
+      });
+    }
+
+    const kind = kindOfTarget(target);
+    if (!isDebuggableTargetKind(kind)) {
+      throw new AppError('DEBUG_TARGET_UNSUPPORTED', `Target is not supported by the debugger finishing lite layer: ${normalizedTargetId}`, {
+        kind,
+        targetId: normalizedTargetId
+      });
+    }
+
+    await this.detachCurrent();
+    await this.attachToTarget(target, normalizedTargetId);
+    const selectedTargetId = await this.getSelectedPageTargetId();
+    this.explicitDebugTargetId = selectedTargetId === normalizedTargetId ? null : normalizedTargetId;
+    return {
+      targetId: normalizedTargetId,
+      kind,
+      ...(await this.targetTitle(target)),
+      ...(target.url() ? { url: target.url() } : {}),
+      isSelectedPage: selectedTargetId === normalizedTargetId,
+      isCurrentDebuggerTarget: true
+    };
+  }
+
+  getCurrentDebugTargetId(): string | null {
+    return this.currentDebugTargetId;
+  }
+
+  async evaluateWatchExpressions(expressions: WatchExpressionRecord[], frameIndex?: number): Promise<WatchExpressionValue[]> {
+    await this.ensureAttached();
+    const enabled = expressions.filter((item) => item.enabled);
+    if (enabled.length === 0) {
+      return [];
+    }
+
+    const values: WatchExpressionValue[] = [];
+    for (const expression of enabled) {
+      values.push(await this.evaluateWatchExpression(expression, frameIndex));
+    }
+    return values;
+  }
+
   clearStateForPageChange(): void {
     this.scripts.clear();
     this.breakpoints.clear();
@@ -424,8 +536,38 @@ export class DebuggerSessionManager {
 
   private async attachToPage(page: Page, pageId: string): Promise<void> {
     const session = await page.createCDPSession();
+    await this.attachToSession(session, pageId);
+  }
+
+  private async attachToTarget(target: Target, targetId: string): Promise<void> {
+    if (kindOfTarget(target) === 'page') {
+      const page = await target.page();
+      if (!page) {
+        throw new AppError('DEBUG_TARGET_PAGE_UNAVAILABLE', `Page target is not available: ${targetId}`, {
+          targetId
+        });
+      }
+      await this.attachToPage(page, targetId);
+      return;
+    }
+
+    const maybeTarget = target as Target & {
+      createCDPSession?: () => Promise<CDPSession>;
+    };
+    if (typeof maybeTarget.createCDPSession !== 'function') {
+      throw new AppError('DEBUG_TARGET_ATTACH_UNSUPPORTED', `Target cannot create a CDP session: ${targetId}`, {
+        targetId
+      });
+    }
+
+    const session = await maybeTarget.createCDPSession();
+    await this.attachToSession(session, targetId);
+  }
+
+  private async attachToSession(session: CDPSession, targetId: string): Promise<void> {
     this.session = session;
-    this.pageId = pageId;
+    this.pageId = targetId;
+    this.currentDebugTargetId = targetId;
     this.clearStateForPageChange();
 
     session.on('Debugger.scriptParsed', (event: unknown) => {
@@ -469,12 +611,15 @@ export class DebuggerSessionManager {
 
     await session.send('Debugger.enable');
     await session.send('Runtime.enable');
+    await this.applyExceptionPauseMode(this.exceptionPauseMode);
   }
 
   private async detachCurrent(): Promise<void> {
     const session = this.session;
     this.session = null;
     this.pageId = null;
+    this.currentDebugTargetId = null;
+    this.explicitDebugTargetId = null;
     this.clearStateForPageChange();
 
     if (!session) {
@@ -521,6 +666,121 @@ export class DebuggerSessionManager {
     const previousPausedAt = this.pausedState.pausedAt;
     await this.requireSession().send(method);
     await this.waitForStepResult(previousPausedAt, DEFAULT_STEP_WAIT_MS);
+  }
+
+  private async applyExceptionPauseMode(mode: ExceptionBreakpointMode): Promise<void> {
+    const session = this.requireSession();
+    await session.send('Debugger.setPauseOnExceptions', {
+      state: toCdpExceptionState(mode)
+    });
+  }
+
+  private async evaluateWatchExpression(
+    watch: WatchExpressionRecord,
+    frameIndex: number | undefined
+  ): Promise<WatchExpressionValue> {
+    const evaluatedAt = new Date().toISOString();
+    const expression = watch.expression.trim();
+    if (!expression) {
+      return {
+        error: 'Watch expression is empty.',
+        evaluatedAt,
+        expression: watch.expression,
+        ok: false,
+        watchId: watch.watchId
+      };
+    }
+
+    try {
+      const response = await withTimeout(
+        this.pausedState.isPaused
+          ? this.evaluateWatchOnCallFrame(expression, frameIndex ?? 0)
+          : this.evaluateWatchInRuntime(expression),
+        WATCH_EVALUATION_TIMEOUT_MS,
+        `Watch expression timed out after ${WATCH_EVALUATION_TIMEOUT_MS}ms.`
+      );
+      return this.toWatchValue(watch, response);
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error),
+        evaluatedAt,
+        expression: watch.expression,
+        ok: false,
+        watchId: watch.watchId
+      };
+    }
+  }
+
+  private async evaluateWatchOnCallFrame(expression: string, frameIndex: number): Promise<CdpEvaluationResponse> {
+    const frame = this.getPausedFrame(frameIndex);
+    if (!frame.callFrameId) {
+      throw new AppError('DEBUGGER_CALL_FRAME_ID_MISSING', 'The selected paused call frame does not expose a callFrameId.');
+    }
+    return await this.requireSession().send('Debugger.evaluateOnCallFrame', {
+      callFrameId: frame.callFrameId,
+      expression,
+      generatePreview: true,
+      includeCommandLineAPI: false,
+      objectGroup: 'jsagent-debugger-watch',
+      returnByValue: false,
+      silent: true
+    }) as CdpEvaluationResponse;
+  }
+
+  private async evaluateWatchInRuntime(expression: string): Promise<CdpRuntimeEvaluationResponse> {
+    return await this.requireSession().send('Runtime.evaluate', {
+      awaitPromise: false,
+      expression,
+      generatePreview: true,
+      includeCommandLineAPI: false,
+      objectGroup: 'jsagent-debugger-watch',
+      returnByValue: false,
+      silent: true
+    }) as CdpRuntimeEvaluationResponse;
+  }
+
+  private async toWatchValue(watch: WatchExpressionRecord, response: CdpEvaluationResponse): Promise<WatchExpressionValue> {
+    if (response.exceptionDetails) {
+      return {
+        error: this.evaluationErrorMessage(response.exceptionDetails),
+        evaluatedAt: new Date().toISOString(),
+        expression: watch.expression,
+        ok: false,
+        watchId: watch.watchId
+      };
+    }
+
+    const serialized = await this.serializeRemoteObject(response.result ?? { type: 'undefined' }, {
+      depth: 0,
+      maxDepth: 1,
+      seen: new Set<string>()
+    });
+    return {
+      evaluatedAt: new Date().toISOString(),
+      expression: watch.expression,
+      ok: true,
+      preview: serialized.preview,
+      valueType: serialized.valueType,
+      watchId: watch.watchId
+    };
+  }
+
+  private async getSelectedPageTargetId(): Promise<string | null> {
+    const page = await this.deps.browserSession.getSelectedPageOrNull();
+    return page ? this.deps.browserSession.getPageId(page) : null;
+  }
+
+  private async targetTitle(target: Target): Promise<{ title?: string }> {
+    if (kindOfTarget(target) !== 'page') {
+      return {};
+    }
+    try {
+      const page = await target.page();
+      const title = page ? await page.title() : '';
+      return title ? { title } : {};
+    } catch {
+      return {};
+    }
   }
 
   private resolveScriptUrl(inputUrl: string): string | null {
@@ -809,4 +1069,62 @@ function linePreviewAt(source: string, index: number): string {
 
 function truncatePreview(value: string): string {
   return value.length > MAX_PREVIEW_LENGTH ? `${value.slice(0, MAX_PREVIEW_LENGTH)}...[truncated]` : value;
+}
+
+function toCdpExceptionState(mode: ExceptionBreakpointMode): 'none' | 'uncaught' | 'all' {
+  if (mode === 'uncaught') {
+    return 'uncaught';
+  }
+  if (mode === 'caught' || mode === 'all') {
+    return 'all';
+  }
+  return 'none';
+}
+
+function targetIdOf(target: Target): string | null {
+  const maybeTarget = target as Target & {
+    _targetId?: string;
+    id?: () => string;
+  };
+  if (typeof maybeTarget.id === 'function') {
+    const id = maybeTarget.id();
+    if (id) {
+      return id;
+    }
+  }
+  return typeof maybeTarget._targetId === 'string' && maybeTarget._targetId.length > 0 ? maybeTarget._targetId : null;
+}
+
+function kindOfTarget(target: Target): DebugTargetSummary['kind'] {
+  const type = String(target.type());
+  if (type === 'page') {
+    return 'page';
+  }
+  if (type === 'worker') {
+    return 'worker';
+  }
+  if (type === 'shared_worker') {
+    return 'shared-worker';
+  }
+  return 'unknown';
+}
+
+function isDebuggableTargetKind(kind: DebugTargetSummary['kind']): boolean {
+  return kind === 'page' || kind === 'worker' || kind === 'shared-worker';
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timeout: NodeJS.Timeout | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
 }

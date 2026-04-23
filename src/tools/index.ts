@@ -14,12 +14,14 @@ import { analyzeFlowReasoningTool } from './reverse/analyzeFlowReasoning.js';
 import { analyzeTargetTool } from './reverse/analyzeTarget.js';
 import { analyzeSignatureChainTool } from './reverse/analyzeSignatureChain.js';
 import { analyzeUpgradeDiffTool } from './reverse/analyzeUpgradeDiff.js';
+import { addWatchExpressionTool } from './reverse/addWatchExpression.js';
 import { applyPatchTool } from './reverse/applyPatch.js';
 import { breakOnXhrTool } from './reverse/breakOnXhr.js';
 import { clickElementTool } from './reverse/clickElement.js';
 import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
 import { clearHookDataTool } from './reverse/clearHookData.js';
+import { clearExceptionBreakpointsTool } from './reverse/clearExceptionBreakpoints.js';
 import { correlateRequestFlowsTool } from './reverse/correlateRequestFlows.js';
 import { compareRebuildResultTool } from './reverse/compareRebuildResult.js';
 import { createHookTool } from './reverse/createHook.js';
@@ -52,6 +54,7 @@ import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportCaptureReportTool } from './reverse/exportCaptureReport.js';
 import { exportCompareAnchorReportTool } from './reverse/exportCompareAnchorReport.js';
 import { exportDebuggerReportTool } from './reverse/exportDebuggerReport.js';
+import { exportDebuggerFinishingReportTool } from './reverse/exportDebuggerFinishingReport.js';
 import { exportSourcePrecisionReportTool } from './reverse/exportSourcePrecisionReport.js';
 import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
@@ -172,7 +175,14 @@ import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
 import { evaluateOnCallFrameTool } from './reverse/evaluateOnCallFrame.js';
 import { findInScriptTool } from './reverse/findInScript.js';
+import { evaluateWatchExpressionsTool } from './reverse/evaluateWatchExpressions.js';
+import { getExceptionBreakpointsTool } from './reverse/getExceptionBreakpoints.js';
 import { pauseExecutionTool } from './reverse/pauseExecution.js';
+import { listDebugTargetsTool } from './reverse/listDebugTargets.js';
+import { listWatchExpressionsTool } from './reverse/listWatchExpressions.js';
+import { removeWatchExpressionTool } from './reverse/removeWatchExpression.js';
+import { selectDebugTargetTool } from './reverse/selectDebugTarget.js';
+import { setExceptionBreakpointsTool } from './reverse/setExceptionBreakpoints.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
 export const coreTools = [pingTool, getServerInfoTool, listToolsSummaryTool] satisfies readonly RegisteredToolDefinition[];
@@ -258,6 +268,16 @@ export const reverseTools = [
   getScopeVariablesTool,
   evaluateOnCallFrameTool,
   exportDebuggerReportTool,
+  setExceptionBreakpointsTool,
+  getExceptionBreakpointsTool,
+  clearExceptionBreakpointsTool,
+  addWatchExpressionTool,
+  listWatchExpressionsTool,
+  removeWatchExpressionTool,
+  evaluateWatchExpressionsTool,
+  listDebugTargetsTool,
+  selectDebugTargetTool,
+  exportDebuggerFinishingReportTool,
   selectCompareAnchorTool,
   listCompareAnchorsTool,
   exportCompareAnchorReportTool,
@@ -361,10 +381,12 @@ export {
   analyzeTargetTool,
   analyzeSignatureChainTool,
   analyzeUpgradeDiffTool,
+  addWatchExpressionTool,
   applyPatchTool,
   breakOnXhrTool,
   checkBrowserHealthTool,
   clickElementTool,
+  clearExceptionBreakpointsTool,
   clearHookDataTool,
   clearNetworkRequestsTool,
   collectCodeTool,
@@ -381,11 +403,13 @@ export {
   dumpSessionStateTool,
   evaluateScriptTool,
   evaluateOnCallFrameTool,
+  evaluateWatchExpressionsTool,
   exportBoundaryFixtureReportTool,
   exportAiAugmentationReportTool,
   exportBrowserOpsReportTool,
   exportCompareAnchorReportTool,
   exportDeliveryContextReportTool,
+  exportDebuggerFinishingReportTool,
   exportDebuggerReportTool,
   exportSourcePrecisionReportTool,
   exportFlowReasoningReportTool,
@@ -425,6 +449,7 @@ export {
   getCallFramesTool,
   getCollectedCodeFileTool,
   getConsoleMessageTool,
+  getExceptionBreakpointsTool,
   getHookDataTool,
   getNetworkRequestTool,
   getRequestInitiatorTool,
@@ -444,6 +469,7 @@ export {
   listCapturePresetsTool,
   listCompareAnchorsTool,
   listConsoleMessagesTool,
+  listDebugTargetsTool,
   listDependencyWindowsTool,
   listFlowReasoningResultsTool,
   listHelperBoundariesTool,
@@ -463,6 +489,7 @@ export {
   listStealthFeaturesTool,
   listStealthPresetsTool,
   listToolsSummaryTool,
+  listWatchExpressionsTool,
   listXhrBreakpointsTool,
   loadSessionStateTool,
   markAcceptanceTool,
@@ -487,6 +514,7 @@ export {
   registerRegressionBaselineTool,
   registerUpgradeBaselineTool,
   removeBreakpointTool,
+  removeWatchExpressionTool,
   removeXhrBreakpointTool,
   resumeExecutionTool,
   riskPanelTool,
@@ -512,9 +540,11 @@ export {
   searchCollectedCodeTool,
   searchInSourcesTool,
   selectCompareAnchorTool,
+  selectDebugTargetTool,
   selectPageTool,
   setBreakpointTool,
   setBreakpointOnTextTool,
+  setExceptionBreakpointsTool,
   setUserAgentTool,
   smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,

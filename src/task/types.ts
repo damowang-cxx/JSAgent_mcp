@@ -49,6 +49,7 @@ export interface TaskManifest {
     deliveryContext?: string | null;
     browserOps?: string | null;
     sourcePrecision?: string | null;
+    debuggerFinishing?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

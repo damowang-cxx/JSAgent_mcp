@@ -3,11 +3,16 @@ import type { DebuggerSessionManager } from './DebuggerSessionManager.js';
 import type {
   CallFrameEvaluationResult,
   DebuggerCallFrameDetail,
-  DebuggerScopeSummary
+  DebuggerScopeSummary,
+  WatchExpressionValue
 } from './types.js';
+import type { WatchExpressionRegistry } from './WatchExpressionRegistry.js';
 
 export class PausedInspector {
-  constructor(private readonly debuggerSessionManager: DebuggerSessionManager) {}
+  constructor(
+    private readonly debuggerSessionManager: DebuggerSessionManager,
+    private readonly watchExpressionRegistry?: WatchExpressionRegistry
+  ) {}
 
   async getCallFrames(): Promise<DebuggerCallFrameDetail[]> {
     await this.debuggerSessionManager.ensureAttached();
@@ -34,6 +39,14 @@ export class PausedInspector {
     this.assertPaused();
     this.assertFrameIndex(options.frameIndex ?? 0);
     return await this.debuggerSessionManager.evaluateOnCallFrame(options);
+  }
+
+  async evaluateWatchExpressions(options: { frameIndex?: number } = {}): Promise<WatchExpressionValue[]> {
+    await this.debuggerSessionManager.ensureAttached();
+    return await this.debuggerSessionManager.evaluateWatchExpressions(
+      this.watchExpressionRegistry?.list() ?? [],
+      options.frameIndex
+    );
   }
 
   private assertPaused(): void {

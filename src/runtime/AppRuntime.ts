@@ -25,10 +25,14 @@ import { DeliveryContextAssembler } from '../delivery-consumption/DeliveryContex
 import { DeliveryContextRegistry } from '../delivery-consumption/DeliveryContextRegistry.js';
 import { RegressionContextResolver } from '../delivery-consumption/RegressionContextResolver.js';
 import { BreakpointRegistry } from '../debugger/BreakpointRegistry.js';
+import { DebugTargetCatalog } from '../debugger/DebugTargetCatalog.js';
 import { DebuggerEvidenceCorrelator } from '../debugger/DebuggerEvidenceCorrelator.js';
+import { DebuggerFinishingRegistry } from '../debugger/DebuggerFinishingRegistry.js';
 import { DebuggerReportBuilder } from '../debugger/DebuggerReportBuilder.js';
 import { DebuggerSessionManager } from '../debugger/DebuggerSessionManager.js';
+import { ExceptionBreakpointManager } from '../debugger/ExceptionBreakpointManager.js';
 import { PausedInspector } from '../debugger/PausedInspector.js';
+import { WatchExpressionRegistry } from '../debugger/WatchExpressionRegistry.js';
 import { EvidenceStore } from '../evidence/EvidenceStore.js';
 import { AstIndexBuilder } from '../flow/AstIndexBuilder.js';
 import { FlowReasoningEngine } from '../flow/FlowReasoningEngine.js';
@@ -88,6 +92,7 @@ import { RebuildReportBuilder } from '../report/RebuildReportBuilder.js';
 import { RegressionReportBuilder } from '../report/RegressionReportBuilder.js';
 import { RegressionContextReportBuilder } from '../report/RegressionContextReportBuilder.js';
 import { AiAugmentationReportBuilder } from '../report/AiAugmentationReportBuilder.js';
+import { DebuggerFinishingReportBuilder } from '../report/DebuggerFinishingReportBuilder.js';
 import { RebuildContextReportBuilder } from '../report/RebuildContextReportBuilder.js';
 import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
@@ -246,6 +251,11 @@ export class AppRuntime implements AppRuntimeServices {
   readonly scenarioPatchHintReportBuilder: ScenarioPatchHintReportBuilder;
   readonly debuggerSessionManager: DebuggerSessionManager;
   readonly breakpointRegistry: BreakpointRegistry;
+  readonly exceptionBreakpointManager: ExceptionBreakpointManager;
+  readonly watchExpressionRegistry: WatchExpressionRegistry;
+  readonly debugTargetCatalog: DebugTargetCatalog;
+  readonly debuggerFinishingRegistry: DebuggerFinishingRegistry;
+  readonly debuggerFinishingReportBuilder: DebuggerFinishingReportBuilder;
   readonly pausedInspector: PausedInspector;
   readonly debuggerEvidenceCorrelator: DebuggerEvidenceCorrelator;
   readonly debuggerReportBuilder: DebuggerReportBuilder;
@@ -340,7 +350,15 @@ export class AppRuntime implements AppRuntimeServices {
     });
     this.sourcePrecisionReportBuilder = new SourcePrecisionReportBuilder();
     this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
-    this.pausedInspector = new PausedInspector(this.debuggerSessionManager);
+    this.exceptionBreakpointManager = new ExceptionBreakpointManager(this.debuggerSessionManager);
+    this.watchExpressionRegistry = new WatchExpressionRegistry();
+    this.debugTargetCatalog = new DebugTargetCatalog(this.debuggerSessionManager);
+    this.debuggerFinishingRegistry = new DebuggerFinishingRegistry({
+      evidenceStore: this.evidenceStore,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.debuggerFinishingReportBuilder = new DebuggerFinishingReportBuilder();
+    this.pausedInspector = new PausedInspector(this.debuggerSessionManager, this.watchExpressionRegistry);
     this.compareAnchorRegistry = new CompareAnchorRegistry(this.evidenceStore);
     this.patchPreflightRegistry = new PatchPreflightRegistry(this.evidenceStore);
     this.rebuildContextRegistry = new RebuildContextRegistry(this.evidenceStore);
@@ -1308,6 +1326,26 @@ export class AppRuntime implements AppRuntimeServices {
 
   getBreakpointRegistry(): BreakpointRegistry {
     return this.breakpointRegistry;
+  }
+
+  getExceptionBreakpointManager(): ExceptionBreakpointManager {
+    return this.exceptionBreakpointManager;
+  }
+
+  getWatchExpressionRegistry(): WatchExpressionRegistry {
+    return this.watchExpressionRegistry;
+  }
+
+  getDebugTargetCatalog(): DebugTargetCatalog {
+    return this.debugTargetCatalog;
+  }
+
+  getDebuggerFinishingRegistry(): DebuggerFinishingRegistry {
+    return this.debuggerFinishingRegistry;
+  }
+
+  getDebuggerFinishingReportBuilder(): DebuggerFinishingReportBuilder {
+    return this.debuggerFinishingReportBuilder;
   }
 
   getPausedInspector(): PausedInspector {

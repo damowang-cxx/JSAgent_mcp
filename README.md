@@ -48,6 +48,7 @@ The project currently includes:
 - Delivery / Regression Consumption for downstream provenance handoff
 - Browser Field Operations for selected-page DOM, console, storage, session, and stealth helpers
 - Script Intelligence & Source Precision for live selected-page script enumeration, exact source reads, and bounded source search
+- Debugger Finishing Pack for exception breakpoints, watch expressions, and lite debug target orchestration
 
 ## Design Principles
 
@@ -1479,6 +1480,58 @@ Recommended Phase 28 validation flow:
 9. `get_call_frames`.
 10. `export_source_precision_report` with `format='json'` and `format='markdown'`.
 
+## Phase 29: Debugger Finishing Pack
+
+Phase 29 completes the current debugger layer with high-reliability reverse-debugging helpers. It adds exception breakpoint modes, bounded watch expressions, debuggable target listing, basic worker/page target selection, and debugger finishing reports while keeping debugger use as a precise fallback after hooks, replay, scenario, boundary, and source precision evidence.
+
+New tools:
+
+- `set_exception_breakpoints`
+- `get_exception_breakpoints`
+- `clear_exception_breakpoints`
+- `add_watch_expression`
+- `list_watch_expressions`
+- `remove_watch_expression`
+- `evaluate_watch_expressions`
+- `list_debug_targets`
+- `select_debug_target`
+- `export_debugger_finishing_report`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Target-chain-first
+- Debugger as precise fallback, not default entry
+
+Current boundaries:
+
+- This is a debugger finishing layer.
+- It is not a full DevTools frontend.
+- It is not a full conditional breakpoint manager.
+- It is not a full timeline/profiler platform.
+- It is not a full worker/service-worker debugger platform.
+- It is not a full target graph visualizer.
+- It is not a second browser manager or global runtime singleton.
+- `select_debug_target` changes only debugger attachment and does not change the BrowserSessionManager selected page.
+
+Recommended Phase 29 validation flow:
+
+1. `list_scripts`.
+2. `find_in_script`.
+3. `set_breakpoint_on_text`.
+4. `set_exception_breakpoints`.
+5. `add_watch_expression`.
+6. `pause`.
+7. `get_paused_info`.
+8. `get_call_frames`.
+9. `evaluate_watch_expressions`.
+10. `list_debug_targets`.
+11. `select_debug_target`.
+12. `export_debugger_finishing_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1575,6 +1628,16 @@ Recommended Phase 28 validation flow:
 - `get_scope_variables`
 - `evaluate_on_call_frame`
 - `export_debugger_report`
+- `set_exception_breakpoints`
+- `get_exception_breakpoints`
+- `clear_exception_breakpoints`
+- `add_watch_expression`
+- `list_watch_expressions`
+- `remove_watch_expression`
+- `evaluate_watch_expressions`
+- `list_debug_targets`
+- `select_debug_target`
+- `export_debugger_finishing_report`
 - `select_compare_anchor`
 - `list_compare_anchors`
 - `export_compare_anchor_report`
@@ -1678,7 +1741,7 @@ The current stage still does not implement:
 - full DevTools-style debugger workflows
 - source map platform
 - worker / service worker source ecosystem
-- exception breakpoint family, watch expressions, worker debugger, and multi-page debugger orchestration
+- full conditional breakpoint manager, full worker/service-worker debugger platform, and full multi-target graph orchestration
 - full diff engine and semantic full-response diff platform
 - patch workflow consuming rebuild context and patch preflight context
 - browser-perfect rebuild emulation and automatic bundle slicing compiler
