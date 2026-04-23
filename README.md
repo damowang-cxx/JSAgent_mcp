@@ -50,7 +50,7 @@ The project currently includes:
 - Script Intelligence & Source Precision for live selected-page script enumeration, exact source reads, and bounded source search
 - Debugger Finishing Pack for exception breakpoints, watch expressions, and lite debug target orchestration
 - Function Scalpel Pack for quick selected-page function hooks, traces, bounded object inspection, and event monitoring
-- Thick Substrate Pack for bounded AST assistance, AI routing/provider substrate, and stronger stealth coordination
+- Thick Substrate Pack for bounded AST assistance, dual-mode AI provider routing, and stronger stealth coordination
 
 ## Design Principles
 
@@ -1592,7 +1592,7 @@ Recommended Phase 30 validation flow:
 
 ## Phase 31: Thick Substrate Pack
 
-Phase 31 thickens the substrate underneath the existing reverse chain instead of adding another workflow. It adds bounded AST-assisted locating/reference/rewrite preview helpers, a visible AI provider and routing-lite substrate, and stronger stealth coordination built on preload and feature-level state while keeping deterministic evidence as truth.
+Phase 31 thickens the substrate underneath the existing reverse chain instead of adding another workflow. It adds bounded AST-assisted locating/reference/rewrite preview helpers, a visible AI provider and routing-lite substrate with `openai-compatible` and `anthropic-compatible` support, and stronger stealth coordination built on preload and feature-level state while keeping deterministic evidence as truth.
 
 New tools:
 
@@ -1619,11 +1619,13 @@ Design principles referenced from JSReverser-MCP:
 Current boundaries:
 
 - This is a substrate-thickening layer for AST, AI routing/provider visibility, and stealth coordination.
+- AI substrate remains optional: provider-unavailable paths still fall back to deterministic-only behavior.
 - It is not a full AST/data-flow/SSA/taint engine.
 - It is not a full callgraph platform.
 - It is not an AI truth engine, AI auto patcher, or automatic pure synthesis system.
 - It is not a full anti-detection platform or site adapter.
 - It does not introduce a second browser manager or a global runtime singleton.
+- Existing `inject_stealth` and `list_stealth_features` now benefit from the thicker stealth coordination layer without changing browser ownership.
 
 Recommended Phase 31 validation flow:
 

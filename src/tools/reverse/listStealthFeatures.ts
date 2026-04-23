@@ -9,13 +9,13 @@ type ListStealthFeaturesParams = z.infer<typeof schema>;
 
 export const listStealthFeaturesTool = defineTool<ListStealthFeaturesParams>({
   name: 'list_stealth_features',
-  description: 'List minimal stealth feature toggles available to field operations; observe-first and bounded.',
+  description: 'List canonical stealth feature toggles from the thicker stealth substrate; observe-first, bounded, and not a site adapter.',
   annotations: {
     category: ToolCategory.REVERSE_ENGINEERING,
     readOnlyHint: true
   },
   schema,
   handler: async (_request, context) => ({
-    items: context.runtime.getStealthPresetRegistry().listFeatures()
+    items: context.runtime.getStealthFeatureRegistry().listFeatures().map((item) => item.featureId)
   })
 });

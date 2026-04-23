@@ -9,7 +9,7 @@ type ListAiProvidersParams = z.infer<typeof schema>;
 
 export const listAiProvidersTool = defineTool<ListAiProvidersParams>({
   name: 'list_ai_providers',
-  description: 'List AI provider substrate availability; AI is semantic enhancer only and deterministic-only remains available.',
+  description: 'List AI provider substrate availability across deterministic-only, openai-compatible, and anthropic-compatible routes; AI remains a semantic enhancer only.',
   annotations: {
     category: ToolCategory.REVERSE_ENGINEERING,
     readOnlyHint: true

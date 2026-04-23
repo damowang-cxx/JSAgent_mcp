@@ -19,7 +19,9 @@ export class AiProviderCatalog {
   listProviders(): AiProviderSummary[] {
     const env = this.deps.env ?? process.env;
     const current = this.deps.llmProviderManager.getProviderInfo();
-    const currentMode = inferMode(current.providerName, current.baseUrl);
+    const currentMode = current.mode ?? inferMode(current.providerName, current.baseUrl);
+    const openAiConfigured = Boolean(env.AI_API_KEY && env.AI_MODEL);
+    const anthropicConfigured = Boolean((env.ANTHROPIC_API_KEY || env.AI_API_KEY) && (env.ANTHROPIC_MODEL || env.AI_MODEL));
     const items: AiProviderSummary[] = [
       {
         available: true,
@@ -30,34 +32,35 @@ export class AiProviderCatalog {
     ];
 
     items.push({
-      available: current.providerAvailable && currentMode !== 'anthropic-compatible',
-      ...(current.modelName ? { model: current.modelName } : {}),
+      available: currentMode === 'openai-compatible' ? current.providerAvailable : openAiConfigured,
+      ...(currentMode === 'openai-compatible' ? (current.modelName ? { model: current.modelName } : {}) : (env.AI_MODEL ? { model: env.AI_MODEL } : {})),
       mode: currentMode === 'anthropic-compatible' ? 'openai-compatible' : currentMode,
       notes: [
-        current.providerAvailable
-          ? 'Configured through AI_PROVIDER / AI_API_KEY / AI_MODEL and used by the existing augmentation path.'
-          : 'OpenAI-compatible route is unavailable unless AI_PROVIDER, AI_API_KEY, and AI_MODEL are configured.',
+        current.providerAvailable && currentMode === 'openai-compatible'
+          ? 'Configured through AI_PROVIDER / AI_API_KEY / AI_MODEL and used by the augmentation path when routing permits.'
+          : 'OpenAI-compatible route is visible through AI_PROVIDER / AI_API_KEY / AI_MODEL and stays optional.',
         'Provider output is semantic enhancer context, not deterministic truth.'
       ],
-      providerId: current.providerName ?? 'openai-compatible'
+      providerId: currentMode === 'openai-compatible' ? (current.providerName ?? 'openai-compatible') : 'openai-compatible'
     });
 
     const anthropicModel = env.ANTHROPIC_MODEL ?? (env.AI_PROVIDER?.toLowerCase().includes('anthropic') ? env.AI_MODEL : undefined);
-    const anthropicAvailable = Boolean(
-      (env.ANTHROPIC_API_KEY || (env.AI_PROVIDER?.toLowerCase().includes('anthropic') && env.AI_API_KEY))
-      && anthropicModel
-    );
+    const anthropicAvailable = currentMode === 'anthropic-compatible'
+      ? current.providerAvailable
+      : Boolean(anthropicConfigured && anthropicModel);
     items.push({
       available: anthropicAvailable,
-      ...(anthropicModel ? { model: anthropicModel } : {}),
+      ...(currentMode === 'anthropic-compatible'
+        ? (current.modelName ? { model: current.modelName } : {})
+        : (anthropicModel ? { model: anthropicModel } : {})),
       mode: 'anthropic-compatible',
       notes: [
         anthropicAvailable
-          ? 'Anthropic-compatible credentials are visible to the substrate catalog.'
+          ? 'Anthropic-compatible credentials or active provider route are visible to the substrate catalog.'
           : 'Anthropic-compatible route is listed for routing policy awareness but is not required.',
         'This phase exposes routing-lite metadata and does not turn AI into a truth engine.'
       ],
-      providerId: 'anthropic-compatible'
+      providerId: currentMode === 'anthropic-compatible' ? (current.providerName ?? 'anthropic-compatible') : 'anthropic-compatible'
     });
 
     return items;

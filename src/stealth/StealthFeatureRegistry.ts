@@ -104,6 +104,10 @@ ${scripts.join('\n')}
 `;
 }
 
+export function normalizeLegacyStealthFeatureIds(features: readonly string[]): string[] {
+  return Array.from(new Set(features.map((feature) => LEGACY_ALIASES[feature] ?? feature)));
+}
+
 const FEATURE_SCRIPTS: Record<string, string> = {
   'chrome.runtime': `
     if (!window.chrome) {
@@ -151,4 +155,11 @@ const FEATURE_SCRIPTS: Record<string, string> = {
       } catch (_) {}
     }
 `
+};
+
+const LEGACY_ALIASES: Record<string, string> = {
+  'chrome.runtime placeholder': 'chrome.runtime',
+  languages: 'navigator.languages',
+  'permissions query soften': 'permissions.query',
+  plugins: 'navigator.plugins'
 };
