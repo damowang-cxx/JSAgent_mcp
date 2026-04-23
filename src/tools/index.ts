@@ -16,6 +16,7 @@ import { analyzeSignatureChainTool } from './reverse/analyzeSignatureChain.js';
 import { analyzeUpgradeDiffTool } from './reverse/analyzeUpgradeDiff.js';
 import { applyPatchTool } from './reverse/applyPatch.js';
 import { breakOnXhrTool } from './reverse/breakOnXhr.js';
+import { clickElementTool } from './reverse/clickElement.js';
 import { collectCodeTool } from './reverse/collectCode.js';
 import { collectionDiffTool } from './reverse/collectionDiff.js';
 import { clearHookDataTool } from './reverse/clearHookData.js';
@@ -24,11 +25,13 @@ import { compareRebuildResultTool } from './reverse/compareRebuildResult.js';
 import { createHookTool } from './reverse/createHook.js';
 import { deobfuscateCodeTool } from './reverse/deobfuscateCode.js';
 import { definePureBoundaryTool } from './reverse/definePureBoundary.js';
+import { deleteSessionStateTool } from './reverse/deleteSessionState.js';
 import { detectCryptoTool } from './reverse/detectCrypto.js';
 import { diffCrossLanguageTool } from './reverse/diffCrossLanguage.js';
 import { diffEnvRequirementsTool } from './reverse/diffEnvRequirements.js';
 import { exportBoundaryFixtureReportTool } from './reverse/exportBoundaryFixtureReport.js';
 import { exportAiAugmentationReportTool } from './reverse/exportAiAugmentationReport.js';
+import { exportBrowserOpsReportTool } from './reverse/exportBrowserOpsReport.js';
 import { exportDeliveryBundleTool } from './reverse/exportDeliveryBundle.js';
 import { exportDeliveryContextReportTool } from './reverse/exportDeliveryContextReport.js';
 import { exportDeliveryReportTool } from './reverse/exportDeliveryReport.js';
@@ -57,6 +60,7 @@ import { exportTaskStateReportTool } from './reverse/exportTaskStateReport.js';
 import { exportUpgradeReportTool } from './reverse/exportUpgradeReport.js';
 import { exportWindowReportTool } from './reverse/exportWindowReport.js';
 import { explainReverseContextWithAiTool } from './reverse/explainReverseContextWithAi.js';
+import { dumpSessionStateTool } from './reverse/dumpSessionState.js';
 import { extractDependencyWindowTool } from './reverse/extractDependencyWindow.js';
 import { extractHelperBoundaryTool } from './reverse/extractHelperBoundary.js';
 import { extractNodePureTool } from './reverse/extractNodePure.js';
@@ -66,11 +70,15 @@ import { generateBoundaryFixtureTool } from './reverse/generateBoundaryFixture.j
 import { generateScenarioPatchHintsTool } from './reverse/generateScenarioPatchHints.js';
 import { getCallFramesTool } from './reverse/getCallFrames.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
+import { getConsoleMessageTool } from './reverse/getConsoleMessage.js';
 import { getHookDataTool } from './reverse/getHookData.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
 import { getPausedInfoTool } from './reverse/getPausedInfo.js';
 import { getScopeVariablesTool } from './reverse/getScopeVariables.js';
+import { getStorageTool } from './reverse/getStorage.js';
 import { getTaskManifestTool } from './reverse/getTaskManifest.js';
+import { injectPreloadScriptTool } from './reverse/injectPreloadScript.js';
+import { injectStealthTool } from './reverse/injectStealth.js';
 import { injectHookTool } from './reverse/injectHook.js';
 import { listCollectedCodeTool } from './reverse/listCollectedCode.js';
 import { listBoundaryFixturesTool } from './reverse/listBoundaryFixtures.js';
@@ -78,6 +86,7 @@ import { listAiAugmentationsTool } from './reverse/listAiAugmentations.js';
 import { listBreakpointsTool } from './reverse/listBreakpoints.js';
 import { listCapturePresetsTool } from './reverse/listCapturePresets.js';
 import { listCompareAnchorsTool } from './reverse/listCompareAnchors.js';
+import { listConsoleMessagesTool } from './reverse/listConsoleMessages.js';
 import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listFlowReasoningResultsTool } from './reverse/listFlowReasoningResults.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
@@ -90,7 +99,11 @@ import { listRegressionBaselinesTool } from './reverse/listRegressionBaselines.j
 import { listRebuildContextsTool } from './reverse/listRebuildContexts.js';
 import { listScenarioPresetsTool } from './reverse/listScenarioPresets.js';
 import { listScenarioPatchHintsTool } from './reverse/listScenarioPatchHints.js';
+import { listSessionStatesTool } from './reverse/listSessionStates.js';
+import { listStealthFeaturesTool } from './reverse/listStealthFeatures.js';
+import { listStealthPresetsTool } from './reverse/listStealthPresets.js';
 import { listXhrBreakpointsTool } from './reverse/listXhrBreakpoints.js';
+import { loadSessionStateTool } from './reverse/loadSessionState.js';
 import { locateCryptoHelpersTool } from './reverse/locateCryptoHelpers.js';
 import { locateRequestSinkTool } from './reverse/locateRequestSink.js';
 import { markAcceptanceTool } from './reverse/markAcceptance.js';
@@ -103,6 +116,7 @@ import { prepareDeliveryContextTool } from './reverse/prepareDeliveryContext.js'
 import { prepareRebuildContextTool } from './reverse/prepareRebuildContext.js';
 import { prepareRegressionContextTool } from './reverse/prepareRegressionContext.js';
 import { probeReverseTargetTool } from './reverse/probeReverseTarget.js';
+import { queryDomTool } from './reverse/queryDom.js';
 import { recordReverseEvidenceTool } from './reverse/recordReverseEvidence.js';
 import { registerRegressionBaselineTool } from './reverse/registerRegressionBaseline.js';
 import { registerIntermediateBaselineTool } from './reverse/registerIntermediateBaseline.js';
@@ -112,6 +126,7 @@ import { removeXhrBreakpointTool } from './reverse/removeXhrBreakpoint.js';
 import { resumeExecutionTool } from './reverse/resumeExecution.js';
 import { riskPanelTool } from './reverse/riskPanel.js';
 import { replayTargetActionTool } from './reverse/replayTargetAction.js';
+import { restoreSessionStateTool } from './reverse/restoreSessionState.js';
 import { runCaptureRecipeTool } from './reverse/runCaptureRecipe.js';
 import { runDeliveryFromContextTool } from './reverse/runDeliveryFromContext.js';
 import { runScenarioRecipeTool } from './reverse/runScenarioRecipe.js';
@@ -128,8 +143,10 @@ import { runRebuildWorkflowTool } from './reverse/runRebuildWorkflow.js';
 import { runUpgradeWorkflowTool } from './reverse/runUpgradeWorkflow.js';
 import { listScenarioProbePlansTool } from './reverse/listScenarioProbePlans.js';
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
+import { saveSessionStateTool } from './reverse/saveSessionState.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
 import { selectCompareAnchorTool } from './reverse/selectCompareAnchor.js';
+import { setUserAgentTool } from './reverse/setUserAgent.js';
 import { setBreakpointTool } from './reverse/setBreakpoint.js';
 import { setBreakpointOnTextTool } from './reverse/setBreakpointOnText.js';
 import { smokeTestDeliveryBundleTool } from './reverse/smokeTestDeliveryBundle.js';
@@ -138,12 +155,15 @@ import { stepIntoTool } from './reverse/stepInto.js';
 import { stepOutTool } from './reverse/stepOut.js';
 import { stepOverTool } from './reverse/stepOver.js';
 import { summarizeCodeTool } from './reverse/summarizeCode.js';
+import { takeScreenshotTool } from './reverse/takeScreenshot.js';
 import { traceHelperConsumersTool } from './reverse/traceHelperConsumers.js';
 import { traceRequestFieldBindingTool } from './reverse/traceRequestFieldBinding.js';
 import { traceTokenFamilyTool } from './reverse/traceTokenFamily.js';
+import { typeTextTool } from './reverse/typeText.js';
 import { understandCodeTool } from './reverse/understandCode.js';
 import { verifyNodePureTool } from './reverse/verifyNodePure.js';
 import { verifyPythonPureTool } from './reverse/verifyPythonPure.js';
+import { waitForElementTool } from './reverse/waitForElement.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
 import { evaluateOnCallFrameTool } from './reverse/evaluateOnCallFrame.js';
@@ -255,6 +275,26 @@ export const reverseTools = [
   prepareDeliveryContextTool,
   exportDeliveryContextReportTool,
   runDeliveryFromContextTool,
+  queryDomTool,
+  clickElementTool,
+  typeTextTool,
+  waitForElementTool,
+  takeScreenshotTool,
+  listConsoleMessagesTool,
+  getConsoleMessageTool,
+  injectPreloadScriptTool,
+  getStorageTool,
+  saveSessionStateTool,
+  restoreSessionStateTool,
+  dumpSessionStateTool,
+  loadSessionStateTool,
+  deleteSessionStateTool,
+  listSessionStatesTool,
+  injectStealthTool,
+  listStealthPresetsTool,
+  listStealthFeaturesTool,
+  setUserAgentTool,
+  exportBrowserOpsReportTool,
   exportReverseReportTool,
   exportRebuildBundleTool,
   runRebuildProbeTool,
@@ -314,6 +354,7 @@ export {
   applyPatchTool,
   breakOnXhrTool,
   checkBrowserHealthTool,
+  clickElementTool,
   clearHookDataTool,
   clearNetworkRequestsTool,
   collectCodeTool,
@@ -323,13 +364,16 @@ export {
   createHookTool,
   deobfuscateCodeTool,
   definePureBoundaryTool,
+  deleteSessionStateTool,
   detectCryptoTool,
   diffCrossLanguageTool,
   diffEnvRequirementsTool,
+  dumpSessionStateTool,
   evaluateScriptTool,
   evaluateOnCallFrameTool,
   exportBoundaryFixtureReportTool,
   exportAiAugmentationReportTool,
+  exportBrowserOpsReportTool,
   exportCompareAnchorReportTool,
   exportDeliveryContextReportTool,
   exportDebuggerReportTool,
@@ -368,20 +412,25 @@ export {
   generateScenarioPatchHintsTool,
   getCallFramesTool,
   getCollectedCodeFileTool,
+  getConsoleMessageTool,
   getHookDataTool,
   getNetworkRequestTool,
   getRequestInitiatorTool,
   getPausedInfoTool,
   getScopeVariablesTool,
   getServerInfoTool,
+  getStorageTool,
   getTaskManifestTool,
   injectHookTool,
+  injectPreloadScriptTool,
+  injectStealthTool,
   listCollectedCodeTool,
   listAiAugmentationsTool,
   listBoundaryFixturesTool,
   listBreakpointsTool,
   listCapturePresetsTool,
   listCompareAnchorsTool,
+  listConsoleMessagesTool,
   listDependencyWindowsTool,
   listFlowReasoningResultsTool,
   listHelperBoundariesTool,
@@ -396,8 +445,12 @@ export {
   listRebuildContextsTool,
   listScenarioPatchHintsTool,
   listScenarioPresetsTool,
+  listSessionStatesTool,
+  listStealthFeaturesTool,
+  listStealthPresetsTool,
   listToolsSummaryTool,
   listXhrBreakpointsTool,
+  loadSessionStateTool,
   markAcceptanceTool,
   locateCryptoHelpersTool,
   locateRequestSinkTool,
@@ -414,6 +467,7 @@ export {
   prepareRebuildContextTool,
   prepareRegressionContextTool,
   probeReverseTargetTool,
+  queryDomTool,
   recordReverseEvidenceTool,
   registerIntermediateBaselineTool,
   registerRegressionBaselineTool,
@@ -423,6 +477,7 @@ export {
   resumeExecutionTool,
   riskPanelTool,
   replayTargetActionTool,
+  restoreSessionStateTool,
   runCaptureRecipeTool,
   runDeliveryFromContextTool,
   runPatchIterationTool,
@@ -439,22 +494,27 @@ export {
   runUpgradeWorkflowTool,
   listScenarioProbePlansTool,
   savePureFixtureTool,
+  saveSessionStateTool,
   searchCollectedCodeTool,
   selectCompareAnchorTool,
   selectPageTool,
   setBreakpointTool,
   setBreakpointOnTextTool,
+  setUserAgentTool,
   smokeTestDeliveryBundleTool,
   stabilizeFixtureTool,
   stepIntoTool,
   stepOutTool,
   stepOverTool,
   summarizeCodeTool,
+  takeScreenshotTool,
   traceHelperConsumersTool,
   traceRequestFieldBindingTool,
   traceTokenFamilyTool,
+  typeTextTool,
   understandCodeTool,
   verifyNodePureTool,
   verifyPythonPureTool,
+  waitForElementTool,
   buildPureFixtureTool
 };

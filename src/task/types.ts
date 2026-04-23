@@ -47,6 +47,7 @@ export interface TaskManifest {
     aiAugmentation?: string | null;
     regressionContext?: string | null;
     deliveryContext?: string | null;
+    browserOps?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

@@ -8,6 +8,13 @@ import { AiAugmentationRegistry } from '../ai/AiAugmentationRegistry.js';
 import { AiAugmentationService } from '../ai/AiAugmentationService.js';
 import { AiPromptLibrary } from '../ai/AiPromptLibrary.js';
 import { LLMProviderManager } from '../ai/LLMProviderManager.js';
+import { BrowserOpsRegistry } from '../browser-ops/BrowserOpsRegistry.js';
+import { ConsoleCollector } from '../browser-ops/ConsoleCollector.js';
+import { DomInspector } from '../browser-ops/DomInspector.js';
+import { PreloadScriptRegistry } from '../browser-ops/PreloadScriptRegistry.js';
+import { SessionStateManager } from '../browser-ops/SessionStateManager.js';
+import { StealthPresetRegistry } from '../browser-ops/StealthPresetRegistry.js';
+import { StorageInspector } from '../browser-ops/StorageInspector.js';
 import { BrowserSessionManager } from '../browser/BrowserSessionManager.js';
 import { CodeCollector } from '../collector/CodeCollector.js';
 import { CompareAnchorRegistry } from '../compare/CompareAnchorRegistry.js';
@@ -64,6 +71,7 @@ import { UpgradeRegressionRunner } from '../regression/UpgradeRegressionRunner.j
 import { RegressionRunner } from '../regression/RegressionRunner.js';
 import { VersionedBaselineRegistry } from '../regression/VersionedBaselineRegistry.js';
 import { DeliveryReportBuilder } from '../report/DeliveryReportBuilder.js';
+import { BrowserOpsReportBuilder } from '../report/BrowserOpsReportBuilder.js';
 import { DeliveryContextReportBuilder } from '../report/DeliveryContextReportBuilder.js';
 import { CaptureReportBuilder } from '../report/CaptureReportBuilder.js';
 import { CompareAnchorReportBuilder } from '../report/CompareAnchorReportBuilder.js';
@@ -261,6 +269,14 @@ export class AppRuntime implements AppRuntimeServices {
   readonly deliveryContextRegistry: DeliveryContextRegistry;
   readonly regressionContextReportBuilder: RegressionContextReportBuilder;
   readonly deliveryContextReportBuilder: DeliveryContextReportBuilder;
+  readonly domInspector: DomInspector;
+  readonly consoleCollector: ConsoleCollector;
+  readonly preloadScriptRegistry: PreloadScriptRegistry;
+  readonly storageInspector: StorageInspector;
+  readonly sessionStateManager: SessionStateManager;
+  readonly stealthPresetRegistry: StealthPresetRegistry;
+  readonly browserOpsRegistry: BrowserOpsRegistry;
+  readonly browserOpsReportBuilder: BrowserOpsReportBuilder;
   private readonly aiPromptLibrary: AiPromptLibrary;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
@@ -277,6 +293,23 @@ export class AppRuntime implements AppRuntimeServices {
     this.xhrWatchpointManager = new XhrWatchpointManager(browserSession, this.requestInitiatorTracker);
     this.evidenceStore = new EvidenceStore();
     this.taskManifestManager = new TaskManifestManager(this.evidenceStore);
+    this.domInspector = new DomInspector({
+      browserSession,
+      evidenceStore: this.evidenceStore,
+      pageController: this.pageController
+    });
+    this.consoleCollector = new ConsoleCollector(browserSession);
+    this.preloadScriptRegistry = new PreloadScriptRegistry(browserSession);
+    this.storageInspector = new StorageInspector(browserSession);
+    this.sessionStateManager = new SessionStateManager({
+      browserSession,
+      storageInspector: this.storageInspector
+    });
+    this.stealthPresetRegistry = new StealthPresetRegistry({
+      browserSession,
+      preloadScriptRegistry: this.preloadScriptRegistry
+    });
+    this.browserOpsRegistry = new BrowserOpsRegistry(this.evidenceStore);
     this.debuggerSessionManager = new DebuggerSessionManager({
       browserSession
     });
@@ -335,6 +368,7 @@ export class AppRuntime implements AppRuntimeServices {
     this.aiAugmentationReportBuilder = new AiAugmentationReportBuilder();
     this.regressionContextReportBuilder = new RegressionContextReportBuilder();
     this.deliveryContextReportBuilder = new DeliveryContextReportBuilder();
+    this.browserOpsReportBuilder = new BrowserOpsReportBuilder();
     this.runtimeTraceSampler = new RuntimeTraceSampler();
     this.boundaryDefiner = new BoundaryDefiner();
     this.pureFixtureBuilder = new PureFixtureBuilder();
@@ -1340,5 +1374,37 @@ export class AppRuntime implements AppRuntimeServices {
 
   getDeliveryContextReportBuilder(): DeliveryContextReportBuilder {
     return this.deliveryContextReportBuilder;
+  }
+
+  getDomInspector(): DomInspector {
+    return this.domInspector;
+  }
+
+  getConsoleCollector(): ConsoleCollector {
+    return this.consoleCollector;
+  }
+
+  getPreloadScriptRegistry(): PreloadScriptRegistry {
+    return this.preloadScriptRegistry;
+  }
+
+  getStorageInspector(): StorageInspector {
+    return this.storageInspector;
+  }
+
+  getSessionStateManager(): SessionStateManager {
+    return this.sessionStateManager;
+  }
+
+  getStealthPresetRegistry(): StealthPresetRegistry {
+    return this.stealthPresetRegistry;
+  }
+
+  getBrowserOpsRegistry(): BrowserOpsRegistry {
+    return this.browserOpsRegistry;
+  }
+
+  getBrowserOpsReportBuilder(): BrowserOpsReportBuilder {
+    return this.browserOpsReportBuilder;
   }
 }

@@ -172,6 +172,7 @@ export class TaskManifestManager {
         aiAugmentation: pointer('ai-augmentation/latest') ?? manifest.latestPointers.aiAugmentation ?? null,
         regressionContext: pointer('regression-context/latest') ?? manifest.latestPointers.regressionContext ?? null,
         deliveryContext: pointer('delivery-context/latest') ?? manifest.latestPointers.deliveryContext ?? null,
+        browserOps: pointer('browser-ops/latest') ?? manifest.latestPointers.browserOps ?? null,
         sdkPackage: pointer('delivery/sdk-package') ?? manifest.latestPointers.sdkPackage ?? null,
         upgradeWorkflow: pointer('run/upgrade-workflow') ?? manifest.latestPointers.upgradeWorkflow ?? null
       }

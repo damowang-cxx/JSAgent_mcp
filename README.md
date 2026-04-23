@@ -1367,6 +1367,69 @@ Recommended Phase 26 validation flow:
 9. `export_regression_context_report` with `format='json'` and `format='markdown'`.
 10. `export_delivery_context_report` with `format='json'` and `format='markdown'`.
 
+## Phase 27: Browser Field Operations Pack
+
+Phase 27 adds a browser field operations layer for selected-page work before heavier reverse workflows. It provides bounded DOM interaction, screenshots, console observation, preload injection, storage/session-state control, and minimal preset-based stealth/User-Agent helpers while keeping `BrowserSessionManager` as the only browser/page owner.
+
+New tools:
+
+- `query_dom`
+- `click_element`
+- `type_text`
+- `wait_for_element`
+- `take_screenshot`
+- `list_console_messages`
+- `get_console_message`
+- `inject_preload_script`
+- `get_storage`
+- `save_session_state`
+- `restore_session_state`
+- `dump_session_state`
+- `load_session_state`
+- `delete_session_state`
+- `list_session_states`
+- `inject_stealth`
+- `list_stealth_presets`
+- `list_stealth_features`
+- `set_user_agent`
+- `export_browser_ops_report`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Target-chain-first
+- Field-operations-first before heavy workflow escalation
+
+Current boundaries:
+
+- This is a browser field operations layer.
+- It is not a site automation platform.
+- It is not a full anti-detection platform.
+- It is not a second browser manager.
+- It is not a session or browser VM restore platform.
+- Session state is bounded to cookies, localStorage, and sessionStorage.
+
+Recommended Phase 27 validation flow:
+
+1. `list_pages`.
+2. `select_page`.
+3. `query_dom`.
+4. `click_element`.
+5. `type_text`.
+6. `wait_for_element`.
+7. `take_screenshot`.
+8. `list_console_messages`.
+9. `inject_preload_script`.
+10. `get_storage`.
+11. `save_session_state`.
+12. `restore_session_state`.
+13. `inject_stealth`.
+14. `set_user_agent`.
+15. `export_browser_ops_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1485,6 +1548,26 @@ Recommended Phase 26 validation flow:
 - `prepare_delivery_context`
 - `export_delivery_context_report`
 - `run_delivery_from_context`
+- `query_dom`
+- `click_element`
+- `type_text`
+- `wait_for_element`
+- `take_screenshot`
+- `list_console_messages`
+- `get_console_message`
+- `inject_preload_script`
+- `get_storage`
+- `save_session_state`
+- `restore_session_state`
+- `dump_session_state`
+- `load_session_state`
+- `delete_session_state`
+- `list_session_states`
+- `inject_stealth`
+- `list_stealth_presets`
+- `list_stealth_features`
+- `set_user_agent`
+- `export_browser_ops_report`
 - `export_reverse_report`
 - `export_rebuild_bundle`
 - `run_rebuild_probe`
