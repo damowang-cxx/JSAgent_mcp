@@ -48,6 +48,7 @@ export interface TaskManifest {
     regressionContext?: string | null;
     deliveryContext?: string | null;
     browserOps?: string | null;
+    sourcePrecision?: string | null;
   };
   stageState: Record<string, TaskStageState>;
   notes?: string[];

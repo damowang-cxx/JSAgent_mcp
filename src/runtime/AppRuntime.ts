@@ -93,6 +93,7 @@ import { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import { ScenarioPatchHintReportBuilder } from '../report/ScenarioPatchHintReportBuilder.js';
 import { SdkReportBuilder } from '../report/SdkReportBuilder.js';
+import { SourcePrecisionReportBuilder } from '../report/SourcePrecisionReportBuilder.js';
 import { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
 import { WindowReportBuilder } from '../report/WindowReportBuilder.js';
@@ -124,6 +125,10 @@ import { ScenarioPresetRegistry } from '../scenario/ScenarioPresetRegistry.js';
 import { ScenarioWorkflowRunner } from '../scenario/ScenarioWorkflowRunner.js';
 import { SignatureScenarioAnalyzer } from '../scenario/SignatureScenarioAnalyzer.js';
 import { TokenScenarioAnalyzer } from '../scenario/TokenScenarioAnalyzer.js';
+import { ScriptCatalog } from '../source-intel/ScriptCatalog.js';
+import { SourcePrecisionRegistry } from '../source-intel/SourcePrecisionRegistry.js';
+import { SourceReader } from '../source-intel/SourceReader.js';
+import { SourceSearchEngine } from '../source-intel/SourceSearchEngine.js';
 import { StageGateEvaluator } from '../task/StageGateEvaluator.js';
 import { TaskManifestManager } from '../task/TaskManifestManager.js';
 import { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
@@ -277,6 +282,11 @@ export class AppRuntime implements AppRuntimeServices {
   readonly stealthPresetRegistry: StealthPresetRegistry;
   readonly browserOpsRegistry: BrowserOpsRegistry;
   readonly browserOpsReportBuilder: BrowserOpsReportBuilder;
+  readonly scriptCatalog: ScriptCatalog;
+  readonly sourceReader: SourceReader;
+  readonly sourceSearchEngine: SourceSearchEngine;
+  readonly sourcePrecisionRegistry: SourcePrecisionRegistry;
+  readonly sourcePrecisionReportBuilder: SourcePrecisionReportBuilder;
   private readonly aiPromptLibrary: AiPromptLibrary;
   private readonly waitConditionEvaluator: WaitConditionEvaluator;
   private readonly replayEvidenceWindow: ReplayEvidenceWindow;
@@ -313,6 +323,22 @@ export class AppRuntime implements AppRuntimeServices {
     this.debuggerSessionManager = new DebuggerSessionManager({
       browserSession
     });
+    this.scriptCatalog = new ScriptCatalog({
+      debuggerSessionManager: this.debuggerSessionManager
+    });
+    this.sourceReader = new SourceReader({
+      debuggerSessionManager: this.debuggerSessionManager,
+      scriptCatalog: this.scriptCatalog
+    });
+    this.sourceSearchEngine = new SourceSearchEngine({
+      debuggerSessionManager: this.debuggerSessionManager,
+      scriptCatalog: this.scriptCatalog
+    });
+    this.sourcePrecisionRegistry = new SourcePrecisionRegistry({
+      evidenceStore: this.evidenceStore,
+      taskManifestManager: this.taskManifestManager
+    });
+    this.sourcePrecisionReportBuilder = new SourcePrecisionReportBuilder();
     this.breakpointRegistry = new BreakpointRegistry(this.evidenceStore);
     this.pausedInspector = new PausedInspector(this.debuggerSessionManager);
     this.compareAnchorRegistry = new CompareAnchorRegistry(this.evidenceStore);
@@ -1258,6 +1284,26 @@ export class AppRuntime implements AppRuntimeServices {
 
   getDebuggerSessionManager(): DebuggerSessionManager {
     return this.debuggerSessionManager;
+  }
+
+  getScriptCatalog(): ScriptCatalog {
+    return this.scriptCatalog;
+  }
+
+  getSourceReader(): SourceReader {
+    return this.sourceReader;
+  }
+
+  getSourceSearchEngine(): SourceSearchEngine {
+    return this.sourceSearchEngine;
+  }
+
+  getSourcePrecisionRegistry(): SourcePrecisionRegistry {
+    return this.sourcePrecisionRegistry;
+  }
+
+  getSourcePrecisionReportBuilder(): SourcePrecisionReportBuilder {
+    return this.sourcePrecisionReportBuilder;
   }
 
   getBreakpointRegistry(): BreakpointRegistry {

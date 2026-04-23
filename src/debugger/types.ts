@@ -2,6 +2,13 @@ export interface DebuggerScriptSummary {
   scriptId: string;
   url?: string;
   sourceMapURL?: string;
+  length?: number;
+  startLine?: number;
+  startColumn?: number;
+  endLine?: number;
+  endColumn?: number;
+  hasSourceURL?: boolean;
+  isModule?: boolean;
 }
 
 export interface BreakpointLocation {

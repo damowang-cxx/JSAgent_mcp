@@ -121,7 +121,14 @@ export class DebuggerSessionManager {
       .map((script) => ({
         scriptId: script.scriptId,
         ...(script.url ? { url: script.url } : {}),
-        ...(script.sourceMapURL ? { sourceMapURL: script.sourceMapURL } : {})
+        ...(script.sourceMapURL ? { sourceMapURL: script.sourceMapURL } : {}),
+        ...(typeof script.length === 'number' ? { length: script.length } : {}),
+        ...(typeof script.startLine === 'number' ? { startLine: script.startLine } : {}),
+        ...(typeof script.startColumn === 'number' ? { startColumn: script.startColumn } : {}),
+        ...(typeof script.endLine === 'number' ? { endLine: script.endLine } : {}),
+        ...(typeof script.endColumn === 'number' ? { endColumn: script.endColumn } : {}),
+        ...(typeof script.hasSourceURL === 'boolean' ? { hasSourceURL: script.hasSourceURL } : {}),
+        ...(typeof script.isModule === 'boolean' ? { isModule: script.isModule } : {})
       }))
       .sort((left, right) => (left.url ?? '').localeCompare(right.url ?? '') || left.scriptId.localeCompare(right.scriptId));
   }
@@ -422,14 +429,32 @@ export class DebuggerSessionManager {
     this.clearStateForPageChange();
 
     session.on('Debugger.scriptParsed', (event: unknown) => {
-      const record = event as { scriptId?: string; url?: string; sourceMapURL?: string };
+      const record = event as {
+        scriptId?: string;
+        url?: string;
+        sourceMapURL?: string;
+        length?: number;
+        startLine?: number;
+        startColumn?: number;
+        endLine?: number;
+        endColumn?: number;
+        hasSourceURL?: boolean;
+        isModule?: boolean;
+      };
       if (!record.scriptId) {
         return;
       }
       this.scripts.set(record.scriptId, {
         scriptId: record.scriptId,
         ...(record.url ? { url: record.url } : {}),
-        ...(record.sourceMapURL ? { sourceMapURL: record.sourceMapURL } : {})
+        ...(record.sourceMapURL ? { sourceMapURL: record.sourceMapURL } : {}),
+        ...(typeof record.length === 'number' ? { length: record.length } : {}),
+        ...(typeof record.startLine === 'number' ? { startLine: record.startLine } : {}),
+        ...(typeof record.startColumn === 'number' ? { startColumn: record.startColumn } : {}),
+        ...(typeof record.endLine === 'number' ? { endLine: record.endLine } : {}),
+        ...(typeof record.endColumn === 'number' ? { endColumn: record.endColumn } : {}),
+        ...(typeof record.hasSourceURL === 'boolean' ? { hasSourceURL: record.hasSourceURL } : {}),
+        ...(typeof record.isModule === 'boolean' ? { isModule: record.isModule } : {})
       });
     });
     session.on('Debugger.paused', (event: unknown) => {

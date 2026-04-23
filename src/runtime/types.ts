@@ -92,6 +92,7 @@ import type { ReverseReportBuilder } from '../report/ReverseReportBuilder.js';
 import type { ScenarioReportBuilder } from '../report/ScenarioReportBuilder.js';
 import type { ScenarioPatchHintReportBuilder } from '../report/ScenarioPatchHintReportBuilder.js';
 import type { SdkReportBuilder } from '../report/SdkReportBuilder.js';
+import type { SourcePrecisionReportBuilder } from '../report/SourcePrecisionReportBuilder.js';
 import type { TaskStateReportBuilder } from '../report/TaskStateReportBuilder.js';
 import type { UpgradeReportBuilder } from '../report/UpgradeReportBuilder.js';
 import type { WindowReportBuilder } from '../report/WindowReportBuilder.js';
@@ -121,6 +122,10 @@ import type { ScenarioPresetRegistry } from '../scenario/ScenarioPresetRegistry.
 import type { ScenarioWorkflowRunner } from '../scenario/ScenarioWorkflowRunner.js';
 import type { SignatureScenarioAnalyzer } from '../scenario/SignatureScenarioAnalyzer.js';
 import type { TokenScenarioAnalyzer } from '../scenario/TokenScenarioAnalyzer.js';
+import type { ScriptCatalog } from '../source-intel/ScriptCatalog.js';
+import type { SourcePrecisionRegistry } from '../source-intel/SourcePrecisionRegistry.js';
+import type { SourceReader } from '../source-intel/SourceReader.js';
+import type { SourceSearchEngine } from '../source-intel/SourceSearchEngine.js';
 import type { StageGateEvaluator } from '../task/StageGateEvaluator.js';
 import type { TaskManifestManager } from '../task/TaskManifestManager.js';
 import type { AnalyzeTargetRunner } from '../workflow/AnalyzeTargetRunner.js';
@@ -274,4 +279,9 @@ export interface AppRuntimeServices {
   stealthPresetRegistry: StealthPresetRegistry;
   browserOpsRegistry: BrowserOpsRegistry;
   browserOpsReportBuilder: BrowserOpsReportBuilder;
+  scriptCatalog: ScriptCatalog;
+  sourceReader: SourceReader;
+  sourceSearchEngine: SourceSearchEngine;
+  sourcePrecisionRegistry: SourcePrecisionRegistry;
+  sourcePrecisionReportBuilder: SourcePrecisionReportBuilder;
 }

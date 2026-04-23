@@ -52,6 +52,7 @@ import { exportRuntimeTraceTool } from './reverse/exportRuntimeTrace.js';
 import { exportCaptureReportTool } from './reverse/exportCaptureReport.js';
 import { exportCompareAnchorReportTool } from './reverse/exportCompareAnchorReport.js';
 import { exportDebuggerReportTool } from './reverse/exportDebuggerReport.js';
+import { exportSourcePrecisionReportTool } from './reverse/exportSourcePrecisionReport.js';
 import { exportScenarioPatchHintReportTool } from './reverse/exportScenarioPatchHintReport.js';
 import { exportScenarioReportTool } from './reverse/exportScenarioReport.js';
 import { exportSdkPackageTool } from './reverse/exportSdkPackage.js';
@@ -72,6 +73,7 @@ import { getCallFramesTool } from './reverse/getCallFrames.js';
 import { getCollectedCodeFileTool } from './reverse/getCollectedCodeFile.js';
 import { getConsoleMessageTool } from './reverse/getConsoleMessage.js';
 import { getHookDataTool } from './reverse/getHookData.js';
+import { getScriptSourceTool } from './reverse/getScriptSource.js';
 import { getRequestInitiatorTool } from './reverse/getRequestInitiator.js';
 import { getPausedInfoTool } from './reverse/getPausedInfo.js';
 import { getScopeVariablesTool } from './reverse/getScopeVariables.js';
@@ -91,6 +93,7 @@ import { listDependencyWindowsTool } from './reverse/listDependencyWindows.js';
 import { listFlowReasoningResultsTool } from './reverse/listFlowReasoningResults.js';
 import { listHelperBoundariesTool } from './reverse/listHelperBoundaries.js';
 import { listHooksTool } from './reverse/listHooks.js';
+import { listScriptsTool } from './reverse/listScripts.js';
 import { listPatchHistoryTool } from './reverse/listPatchHistory.js';
 import { listPatchPreflightsTool } from './reverse/listPatchPreflights.js';
 import { listPurePreflightsTool } from './reverse/listPurePreflights.js';
@@ -145,6 +148,7 @@ import { listScenarioProbePlansTool } from './reverse/listScenarioProbePlans.js'
 import { savePureFixtureTool } from './reverse/savePureFixture.js';
 import { saveSessionStateTool } from './reverse/saveSessionState.js';
 import { searchCollectedCodeTool } from './reverse/searchCollectedCode.js';
+import { searchInSourcesTool } from './reverse/searchInSources.js';
 import { selectCompareAnchorTool } from './reverse/selectCompareAnchor.js';
 import { setUserAgentTool } from './reverse/setUserAgent.js';
 import { setBreakpointTool } from './reverse/setBreakpoint.js';
@@ -167,6 +171,7 @@ import { waitForElementTool } from './reverse/waitForElement.js';
 import { buildPureFixtureTool } from './reverse/buildPureFixture.js';
 import { evaluateStageGateTool } from './reverse/evaluateStageGate.js';
 import { evaluateOnCallFrameTool } from './reverse/evaluateOnCallFrame.js';
+import { findInScriptTool } from './reverse/findInScript.js';
 import { pauseExecutionTool } from './reverse/pauseExecution.js';
 import type { RegisteredToolDefinition } from './ToolDefinition.js';
 
@@ -190,6 +195,11 @@ export const reverseTools = [
   getCollectedCodeFileTool,
   listCollectedCodeTool,
   searchCollectedCodeTool,
+  listScriptsTool,
+  getScriptSourceTool,
+  findInScriptTool,
+  searchInSourcesTool,
+  exportSourcePrecisionReportTool,
   createHookTool,
   listHooksTool,
   injectHookTool,
@@ -377,6 +387,7 @@ export {
   exportCompareAnchorReportTool,
   exportDeliveryContextReportTool,
   exportDebuggerReportTool,
+  exportSourcePrecisionReportTool,
   exportFlowReasoningReportTool,
   exportPatchReportTool,
   exportPatchPreflightReportTool,
@@ -407,6 +418,7 @@ export {
   extractHelperBoundaryTool,
   extractNodePureTool,
   extractPythonPureTool,
+  findInScriptTool,
   freezeRuntimeSampleTool,
   generateBoundaryFixtureTool,
   generateScenarioPatchHintsTool,
@@ -419,6 +431,7 @@ export {
   getPausedInfoTool,
   getScopeVariablesTool,
   getServerInfoTool,
+  getScriptSourceTool,
   getStorageTool,
   getTaskManifestTool,
   injectHookTool,
@@ -435,6 +448,7 @@ export {
   listFlowReasoningResultsTool,
   listHelperBoundariesTool,
   listHooksTool,
+  listScriptsTool,
   listIntermediateBaselinesTool,
   listNetworkRequestsTool,
   listPagesTool,
@@ -496,6 +510,7 @@ export {
   savePureFixtureTool,
   saveSessionStateTool,
   searchCollectedCodeTool,
+  searchInSourcesTool,
   selectCompareAnchorTool,
   selectPageTool,
   setBreakpointTool,

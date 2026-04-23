@@ -45,6 +45,9 @@ The project currently includes:
 - Flow Reasoning Lite for helper consumers, request field binders, and sink-adjacent bindings
 - Pure Preflight Integration for reverse-to-pure context provenance
 - AI Augmentation for optional semantic explanations over deterministic artifacts
+- Delivery / Regression Consumption for downstream provenance handoff
+- Browser Field Operations for selected-page DOM, console, storage, session, and stealth helpers
+- Script Intelligence & Source Precision for live selected-page script enumeration, exact source reads, and bounded source search
 
 ## Design Principles
 
@@ -60,6 +63,8 @@ The project currently includes:
   - move from observe/capture/analyze into local probeable bundles
 - Target-chain-first
   - reason around the selected reverse chain before broad project exploration
+- Script-first precision before broad code collection fallback
+  - inspect live selected-page scripts directly before falling back to collected-code analysis
 - Smallest useful reasoning first
   - produce bounded, explainable chains instead of full static-analysis graphs
 - Patch around first divergence
@@ -1430,6 +1435,50 @@ Recommended Phase 27 validation flow:
 14. `set_user_agent`.
 15. `export_browser_ops_report` with `format='json'` and `format='markdown'`.
 
+## Phase 28: Script Intelligence & Source Precision Pack
+
+Phase 28 adds a live script/source precision layer for the currently selected page. It complements the collected-code analysis path with script-first source inspection: enumerate loaded scripts, read bounded source excerpts by `scriptId`, search exactly inside one live script, search across live scripts, and export source precision artifacts that debugger and flow reasoning workflows can consume.
+
+New tools:
+
+- `list_scripts`
+- `get_script_source`
+- `find_in_script`
+- `search_in_sources`
+- `export_source_precision_report`
+
+Design principles referenced from JSReverser-MCP:
+
+- Observe-first
+- Hook-preferred
+- Breakpoint-last
+- Evidence-first
+- Target-chain-first
+- Script-first precision before broad code collection fallback
+
+Current boundaries:
+
+- This is a source precision layer over selected-page live scripts.
+- It is not a source map platform.
+- It is not a worker or service worker source ecosystem.
+- It is not a full dependency graph.
+- It is not a full AST/data-flow/SSA/taint engine.
+- It is not a site adapter, function scalpel pack, debugger finishing pack, or second browser manager.
+- `collect_code`, `get_collected_code_file`, and `search_collected_code` remain the collected-code analysis path; Phase 28 uses live `Debugger.getScriptSource` content first.
+
+Recommended Phase 28 validation flow:
+
+1. `list_pages`.
+2. `select_page`.
+3. `list_scripts`.
+4. `search_in_sources`.
+5. `find_in_script`.
+6. `get_script_source`.
+7. `set_breakpoint_on_text`.
+8. Reproduce the target action.
+9. `get_call_frames`.
+10. `export_source_precision_report` with `format='json'` and `format='markdown'`.
+
 ## Tool Summary
 
 ### Core Tools
@@ -1463,6 +1512,11 @@ Recommended Phase 27 validation flow:
 - `get_collected_code_file`
 - `list_collected_code`
 - `search_collected_code`
+- `list_scripts`
+- `get_script_source`
+- `find_in_script`
+- `search_in_sources`
+- `export_source_precision_report`
 - `create_hook`
 - `list_hooks`
 - `inject_hook`
@@ -1622,6 +1676,8 @@ Recommended Phase 27 validation flow:
 The current stage still does not implement:
 
 - full DevTools-style debugger workflows
+- source map platform
+- worker / service worker source ecosystem
 - exception breakpoint family, watch expressions, worker debugger, and multi-page debugger orchestration
 - full diff engine and semantic full-response diff platform
 - patch workflow consuming rebuild context and patch preflight context
